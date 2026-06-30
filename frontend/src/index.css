@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Variables ───────────────────────── */
+:root {
+  --green: #B5D317;
+  --black: #0A0A0A;
+  --white: #F5F5F0;
+}
+
+/* ── Base ────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--black);
+}
+
+body {
+  font-family: 'Barlow Condensed', sans-serif;
+  background-color: #0A0A0A;
+  color: #F5F5F0;
+  overflow-x: hidden;
+  /* cursor: none; */
+  /* aktifkan jika mau custom cursor */
+}
+
+/* ── Scrollbar ───────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: #B5D317; }
+
+/* ── Selection ───────────────────────── */
+::selection {
+  background: #B5D317;
+  color: #0A0A0A;
+}
+
+/* ── Lenis ───────────────────────────── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+/* ── Retro Grid ──────────────────────── */
+.retro-grid {
+  background-image:
+    linear-gradient(rgba(181,211,23,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(181,211,23,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Scanlines ───────────────────────── */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.015) 2px,
+    rgba(0,0,0,0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Marquee ─────────────────────────── */
+.marquee-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+.marquee-track {
+  display: inline-flex;
+  animation: marquee 25s linear infinite;
+}
+
+/* ── Card ────────────────────────────── */
+.card-retro {
+  background: #1A1A1A;
+  border: 2px solid #2A2A2A;
+  position: relative;
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+.card-retro:hover {
+  border-color: #B5D317;
+  box-shadow: 4px 4px 0 #B5D317;
+  transform: translate(-2px, -2px);
+}
+/* corner deco */
+.card-retro::before,
+.card-retro::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: #B5D317;
+  border-style: solid;
+}
+.card-retro::before {
+  top: -2px; left: -2px;
+  border-width: 2px 0 0 2px;
+}
+.card-retro::after {
+  bottom: -2px; right: -2px;
+  border-width: 0 2px 2px 0;
+}
+
+/* ── Button ──────────────────────────── */
+.btn-retro {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.1em;
+  border: 2px solid #B5D317;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-retro:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 #B5D317;
+}
+.btn-retro:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #B5D317;
+}
+.btn-retro:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Input ───────────────────────────── */
+.input-retro {
+  background: #1A1A1A;
+  border: 2px solid #3A3A3A;
+  color: #F5F5F0;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.input-retro:focus {
+  border-color: #B5D317;
+  box-shadow: 0 0 0 1px #B5D317;
+}
+.input-retro::placeholder {
+  color: #3A3A3A;
+}
+
+/* ── Text Effects ────────────────────── */
+.text-neon {
+  color: #B5D317;
+  text-shadow: 0 0 7px #B5D317, 0 0 20px rgba(181,211,23,0.5);
+}
+.text-retro-shadow {
+  text-shadow: 3px 3px 0 #B5D317;
+}
+
+/* ── Tab active underline ────────────── */
+.tab-active {
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 2px;
+  background: #B5D317;
+}
