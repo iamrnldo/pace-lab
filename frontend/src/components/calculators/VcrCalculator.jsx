@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSaveCalculation } from "../../hooks/useSaveCalculation";
 import clsx from "clsx";
 import { calcVcrProfile } from "../../utils/vcrCalculator";
 import Modal from "../ui/Modal";
@@ -12,9 +13,13 @@ export default function VcrCalculator() {
   const [result, setResult] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
+  const save = useSaveCalculation();
+
   const handleCalc = () => {
-    setResult(calcVcrProfile(testMinutes, distanceMeters));
+    const r = calcVcrProfile(testMinutes, distanceMeters);
+    setResult(r);
     setIsDetailOpen(false);
+    save("vcr-calculator", { test_minutes: testMinutes, distance_meters: distanceMeters }, r);
   };
 
   return (

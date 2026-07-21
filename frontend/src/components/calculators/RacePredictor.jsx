@@ -1,5 +1,8 @@
 // src/components/calculators/RacePredictor.jsx
+/* eslint-disable no-useless-assignment */
+/* eslint-disable no-unused-vars */
 import { useMemo, useState } from "react";
+import { useSaveCalculation } from "../../hooks/useSaveCalculation";
 import { riegelPredict, formatTime } from "../../utils/paceUtils";
 import clsx from "clsx";
 
@@ -27,24 +30,19 @@ const createInitialRows = () =>
 
 function parseTimeInput(value) {
   if (!value?.trim()) return null;
-
   const parts = value
     .trim()
     .split(":")
     .map((part) => Number(part));
-
   if (parts.some((part) => Number.isNaN(part) || part < 0)) return null;
-
   if (parts.length === 2) {
     const [minutes, seconds] = parts;
     return minutes * 60 + seconds;
   }
-
   if (parts.length === 3) {
     const [hours, minutes, seconds] = parts;
     return hours * 3600 + minutes * 60 + seconds;
   }
-
   return null;
 }
 
@@ -55,33 +53,41 @@ function formatSegmentDistance(distanceKm) {
 
 function buildAutoDetailRows(distanceKm, totalSeconds) {
   const maxCheckpoints = ROW_COUNT;
-  const step = distanceKm <= maxCheckpoints ? 1 : Math.ceil(distanceKm / (maxCheckpoints - 1));
+  const step =
+    distanceKm <= maxCheckpoints
+      ? 1
+      : Math.ceil(distanceKm / (maxCheckpoints - 1));
   const checkpoints = [];
-
   let current = step;
   while (current < distanceKm && checkpoints.length < maxCheckpoints - 1) {
     checkpoints.push(Number(current.toFixed(3)));
     current += step;
   }
-
   const roundedDistance = Number(distanceKm.toFixed(3));
-  if (!checkpoints.length || checkpoints[checkpoints.length - 1] !== roundedDistance) {
+  if (
+    !checkpoints.length ||
+    checkpoints[checkpoints.length - 1] !== roundedDistance
+  ) {
     checkpoints.push(roundedDistance);
   }
-
   const filledRows = checkpoints.slice(0, maxCheckpoints).map((checkpoint) => ({
-    distance: checkpoint % 1 === 0 ? String(checkpoint.toFixed(0)) : String(checkpoint),
+    distance:
+      checkpoint % 1 === 0
+        ? String(checkpoint.toFixed(0))
+        : String(checkpoint),
     unit: "km",
     time: formatTime((totalSeconds * checkpoint) / distanceKm),
   }));
-
   return [
     ...filledRows,
-    ...Array.from({ length: Math.max(0, maxCheckpoints - filledRows.length) }, () => ({
-      distance: "",
-      unit: "km",
-      time: "",
-    })),
+    ...Array.from(
+      { length: Math.max(0, maxCheckpoints - filledRows.length) },
+      () => ({
+        distance: "",
+        unit: "km",
+        time: "",
+      })
+    ),
   ];
 }
 
@@ -89,45 +95,36 @@ function calculateDetailResults(rows, preferredPaceUnit) {
   let previousDistanceKm = 0;
   let previousTimeSec = 0;
   const segments = [];
-
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index];
     const hasDistance = String(row.distance).trim() !== "";
     const hasTime = String(row.time).trim() !== "";
-
     if (!hasDistance && !hasTime) continue;
     if (!hasDistance || !hasTime) {
       return { error: `Row ${index + 1} must have both distance and time.` };
     }
-
     const unit = UNIT_OPTIONS.find((option) => option.value === row.unit);
     const distanceValue = Number(row.distance);
     const timeSec = parseTimeInput(row.time);
-
     if (!unit || Number.isNaN(distanceValue) || distanceValue <= 0 || !timeSec) {
       return { error: `Row ${index + 1} contains invalid data.` };
     }
-
     const cumulativeDistanceKm = distanceValue * unit.toKm;
-
     if (cumulativeDistanceKm <= previousDistanceKm) {
       return {
         error: `Row ${index + 1} distance must be greater than the previous point.`,
       };
     }
-
     if (timeSec <= previousTimeSec) {
       return {
         error: `Row ${index + 1} time must be greater than the previous point.`,
       };
     }
-
     const segmentDistanceKm = cumulativeDistanceKm - previousDistanceKm;
     const segmentTimeSec = timeSec - previousTimeSec;
     const pacePerKmSec = segmentTimeSec / segmentDistanceKm;
     const paceSec =
       preferredPaceUnit === "mi" ? pacePerKmSec * 1.60934 : pacePerKmSec;
-
     segments.push({
       point: index + 1,
       cumulativeDistanceLabel: `${distanceValue} ${unit.label}`,
@@ -137,15 +134,12 @@ function calculateDetailResults(rows, preferredPaceUnit) {
       pace: `${formatTime(paceSec)}/${preferredPaceUnit === "mi" ? "mi" : "km"}`,
       speedKmh: ((segmentDistanceKm / segmentTimeSec) * 3600).toFixed(2),
     });
-
     previousDistanceKm = cumulativeDistanceKm;
     previousTimeSec = timeSec;
   }
-
   if (!segments.length) {
     return { error: "Please fill at least one valid checkpoint row." };
   }
-
   return {
     segments,
     totalDistanceKm: previousDistanceKm,
@@ -153,7 +147,7 @@ function calculateDetailResults(rows, preferredPaceUnit) {
     averagePace: `${formatTime(
       preferredPaceUnit === "mi"
         ? (previousTimeSec / previousDistanceKm) * 1.60934
-        : previousTimeSec / previousDistanceKm,
+        : previousTimeSec / previousDistanceKm
     )}/${preferredPaceUnit === "mi" ? "mi" : "km"}`,
   };
 }
@@ -164,15 +158,16 @@ export default function RacePredictor() {
   const [seconds, setSeconds] = useState(0);
   const [distance, setDistance] = useState(10);
   const [result, setResult] = useState(null);
-
   const [detailRows, setDetailRows] = useState(createInitialRows);
   const [preferredPaceUnit, setPreferredPaceUnit] = useState("mi");
   const [detailResults, setDetailResults] = useState(null);
   const [detailError, setDetailError] = useState("");
 
+  const save = useSaveCalculation();
+
   const selectedRace = useMemo(
     () => TARGETS.find(({ km }) => km === distance) || TARGETS[1],
-    [distance],
+    [distance]
   );
 
   const handleCalc = () => {
@@ -185,14 +180,25 @@ export default function RacePredictor() {
     const s = Math.floor(paceKm % 60);
 
     const autoRows = buildAutoDetailRows(distKm, Math.round(predSec));
-    const autoDetailResults = calculateDetailResults(autoRows, preferredPaceUnit);
+    const autoDetailResults = calculateDetailResults(
+      autoRows,
+      preferredPaceUnit
+    );
 
-    setResult({
+    const raceResult = {
       label: selectedRace.label,
       distanceKm: distKm,
       time: formatTime(Math.round(predSec)),
       pace: `${m}:${String(s).padStart(2, "0")}/km`,
-    });
+    };
+
+    setResult(raceResult);
+    save(
+      "race-predictor",
+      { hours, minutes, seconds, distance },
+      raceResult
+    );
+
     setDetailRows(autoRows);
     if (autoDetailResults.error) {
       setDetailResults(null);
@@ -206,8 +212,8 @@ export default function RacePredictor() {
   const updateDetailRow = (index, field, value) => {
     setDetailRows((current) =>
       current.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, [field]: value } : row,
-      ),
+        rowIndex === index ? { ...row, [field]: value } : row
+      )
     );
   };
 
@@ -218,7 +224,6 @@ export default function RacePredictor() {
       setDetailError(computed.error);
       return;
     }
-
     setDetailResults(computed);
     setDetailError("");
   };
@@ -279,7 +284,7 @@ export default function RacePredictor() {
                     "py-3 font-retro tracking-widest text-sm border-2 transition-all",
                     distance === km
                       ? "bg-retro-green text-retro-black border-retro-green"
-                      : "bg-transparent text-retro-white/50 border-retro-gray-light hover:border-retro-green",
+                      : "bg-transparent text-retro-white/50 border-retro-gray-light hover:border-retro-green"
                   )}
                 >
                   {label}
@@ -441,7 +446,9 @@ export default function RacePredictor() {
             </div>
 
             {detailError && (
-              <p className="mt-4 font-sport text-sm text-red-300">{detailError}</p>
+              <p className="mt-4 font-sport text-sm text-red-300">
+                {detailError}
+              </p>
             )}
           </div>
 
@@ -453,8 +460,9 @@ export default function RacePredictor() {
                     DETAIL RESULT
                   </p>
                   <p className="mt-1 font-sport text-sm text-retro-white/45">
-                    Total distance {detailResults.totalDistanceKm.toFixed(2)} km ·
-                    Total time {detailResults.totalTime} · Avg pace {detailResults.averagePace}
+                    Total distance {detailResults.totalDistanceKm.toFixed(2)} km
+                    · Total time {detailResults.totalTime} · Avg pace{" "}
+                    {detailResults.averagePace}
                   </p>
                 </div>
               </div>

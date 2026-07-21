@@ -1,5 +1,6 @@
 // src/components/calculators/TrainingZone.jsx
 import { useState } from "react";
+import { useSaveCalculation } from "../../hooks/useSaveCalculation";
 import { calcTrainingZones } from "../../utils/paceUtils";
 
 export default function TrainingZone() {
@@ -8,9 +9,13 @@ export default function TrainingZone() {
   const [method, setMethod] = useState("max_hr");
   const [zones, setZones] = useState(null);
 
+  const save = useSaveCalculation();
+
   const handleCalc = () => {
     const mhr = method === "formula" ? 220 - Number(age) : Number(maxHR);
-    setZones(calcTrainingZones(mhr));
+    const z = calcTrainingZones(mhr);
+    setZones(z);
+    save("training-zone", { max_heart_rate: mhr, method, age }, { zones: z });
   };
 
   return (
