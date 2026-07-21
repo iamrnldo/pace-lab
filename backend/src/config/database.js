@@ -98,7 +98,7 @@ async function autoMigrate() {
   console.log("🔄 Checking migrations...");
 
   try {
-    // Cek kolom yang mungkin belum ada
+    // Cek kolom yang mungkin belum ada di users
     const columnsToAdd = [
       { name: "password_hash", type: "VARCHAR(255)" },
       { name: "age", type: "SMALLINT" },
@@ -120,6 +120,61 @@ async function autoMigrate() {
         await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
         console.log(`  ➕ Added column: ${col.name}`);
       }
+    }
+
+    // Pastikan tabel calculator_types ada
+    await pool.query(`
+      DO $$ BEGIN
+        CREATE TYPE calculator_category AS ENUM (
+          'pace', 'race_prediction', 'training_zone', 'vo2max', 'calorie', 'split', 'finish_time'
+        );
+      EXCEPTION WHEN duplicate_object THEN null;
+      END $$;
+
+      CREATE TABLE IF NOT EXISTS calculator_types (
+        id SMALLSERIAL PRIMARY KEY,
+        slug VARCHAR(50) UNIQUE NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        category calculator_category NOT NULL DEFAULT 'pace',
+        icon VARCHAR(50),
+        is_active BOOLEAN DEFAULT true,
+        sort_order SMALLINT DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Pastikan tabel calculation_history ada
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS calculation_history (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        calculator_type_id SMALLINT REFERENCES calculator_types(id),
+        input_data JSONB,
+        result_data JSONB,
+        is_saved BOOLEAN DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_calc_history_user ON calculation_history(user_id);
+      CREATE INDEX IF NOT EXISTS idx_calc_history_type ON calculation_history(calculator_type_id);
+    `);
+
+    // Seed calculator_types jika kosong
+    const { rows: typeCount } = await pool.query(`SELECT COUNT(*) FROM calculator_types`);
+    if (parseInt(typeCount[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO calculator_types (slug, name, description, category, icon, sort_order) VALUES
+        ('vcr-calculator', 'VCR Calculator', 'Calculate VCR from timed tests', 'pace', '⚡', 1),
+        ('race-predictor', 'Race Predictor', 'Predict finish time based on performance', 'race_prediction', '🏆', 2),
+        ('training-zone', 'Training Zones', 'Calculate HR training zones', 'training_zone', '❤️', 3),
+        ('vo2max-calculator', 'VO2 Max', 'Estimate aerobic capacity', 'vo2max', '🫁', 4),
+        ('calorie-calculator', 'Calorie Calculator', 'Calculate calories burned', 'calorie', '🔥', 5),
+        ('split-calculator', 'Split Calculator', 'Calculate race splits', 'split', '📊', 6),
+        ('finish-time', 'Finish Time', 'Calculate finish time with pace', 'finish_time', '🏁', 7)
+        ON CONFLICT (slug) DO NOTHING;
+      `);
+      console.log("  ✅ Calculator types seeded");
     }
 
     console.log("✅ Migrations complete");

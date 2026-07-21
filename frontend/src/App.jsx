@@ -10,6 +10,7 @@ import HomePage from "./pages/HomePage";
 import CalculatorPage from "./pages/CalculatorPage";
 import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
+import DashboardPage from "./pages/DashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminPage from "./pages/AdminPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -53,6 +54,16 @@ export default function App() {
             element={
               <AuthGuard>
                 <CalculatorPage />
+              </AuthGuard>
+            }
+          />
+
+          {/* Dashboard — protected */}
+          <Route
+            path="dashboard"
+            element={
+              <AuthGuard>
+                <DashboardPage />
               </AuthGuard>
             }
           />
