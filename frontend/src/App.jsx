@@ -9,6 +9,7 @@ import RoleGuard from "./components/auth/RoleGuard";
 import HomePage from "./pages/HomePage";
 import CalculatorPage from "./pages/CalculatorPage";
 import LoginPage from "./pages/LoginPage";
+import ProfilePage from "./pages/ProfilePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminPage from "./pages/AdminPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -43,9 +44,28 @@ export default function App() {
         {/* Public Routes */}
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="calculator" element={<CalculatorPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="*" element={<NotFoundPage />} />
+
+          {/* Calculator — protected, harus login */}
+          <Route
+            path="calculator"
+            element={
+              <AuthGuard>
+                <CalculatorPage />
+              </AuthGuard>
+            }
+          />
+
+          {/* Profile — protected */}
+          <Route
+            path="profile"
+            element={
+              <AuthGuard>
+                <ProfilePage />
+              </AuthGuard>
+            }
+          />
         </Route>
 
         {/* Admin Routes */}

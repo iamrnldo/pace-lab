@@ -5,6 +5,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
+const path = require("path");
 const passport = require("./config/passport");
 const corsOptions = require("./config/cors");
 const routes = require("./routes");
@@ -14,11 +15,17 @@ const { apiLimiter } = require("./middleware/rateLimiter");
 const app = express();
 
 // Security & Parsing
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: false,
+}));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Passport
 app.use(passport.initialize());

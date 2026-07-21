@@ -1,17 +1,20 @@
 // src/pages/HomePage.jsx
+import { useAuth } from "../context/AuthContext";
 import HeroSection from "../components/sections/HeroSection";
 import StatsSection from "../components/sections/StatsSection";
 import CalculatorGrid from "../components/sections/CalculatorGrid";
 import HowItWorks from "../components/sections/HowItWorks";
 
 export default function HomePage() {
-  // ❌ Hapus pt-28 atau pt-[xxx]
-  // MainLayout sudah handle paddingTop otomatis
+  const auth = useAuth();
+  const user = auth?.user;
+
   return (
     <div>
       <HeroSection />
       <StatsSection />
-      <CalculatorGrid />
+      {/* CalculatorGrid hanya muncul setelah login */}
+      {user && <CalculatorGrid />}
       <HowItWorks />
     </div>
   );

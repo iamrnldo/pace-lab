@@ -98,17 +98,31 @@ async function autoMigrate() {
   console.log("🔄 Checking migrations...");
 
   try {
-    // Cek apakah kolom password_hash ada
-    const { rows } = await pool.query(`
-      SELECT column_name FROM information_schema.columns 
-      WHERE table_name = 'users' AND column_name = 'password_hash'
-    `);
+    // Cek kolom yang mungkin belum ada
+    const columnsToAdd = [
+      { name: "password_hash", type: "VARCHAR(255)" },
+      { name: "age", type: "SMALLINT" },
+      { name: "weight_kg", type: "DECIMAL(5,2)" },
+      { name: "height_cm", type: "DECIMAL(5,2)" },
+      { name: "gender", type: "VARCHAR(10)" },
+      { name: "max_heart_rate", type: "SMALLINT" },
+      { name: "resting_hr", type: "SMALLINT" },
+    ];
 
-    if (rows.length === 0) {
-      console.log("➕ Adding password_hash column...");
-      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`);
-      console.log("✅ password_hash column added");
+    for (const col of columnsToAdd) {
+      const { rows } = await pool.query(
+        `SELECT column_name FROM information_schema.columns 
+         WHERE table_name = 'users' AND column_name = $1`,
+        [col.name]
+      );
+
+      if (rows.length === 0) {
+        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+        console.log(`  ➕ Added column: ${col.name}`);
+      }
     }
+
+    console.log("✅ Migrations complete");
   } catch (err) {
     console.warn("⚠️  Migration warning:", err.message);
   }

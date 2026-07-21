@@ -1,6 +1,7 @@
 // src/components/sections/HeroSection.jsx
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import OptimizedImage from "../ui/OptimizedImage";
 import hero640 from "../../assets/optimized/pace-lab-640.webp";
 import hero960 from "../../assets/optimized/pace-lab-960.webp";
@@ -11,13 +12,13 @@ import heroPlaceholder from "../../assets/optimized/pace-lab-placeholder.png";
 
 const HERO_IMAGE_SIZES =
   "(max-width: 640px) 88vw, (max-width: 768px) 470px, (max-width: 1024px) 580px, 760px";
-
 const HERO_IMAGE_SRCSET = `${hero640} 640w, ${hero960} 960w, ${hero1280} 1280w, ${hero1600} 1600w`;
 
 export default function HeroSection() {
   const lineRef = useRef(null);
+  const auth = useAuth();
+  const user = auth?.user;
 
-  /* simple parallax on scroll */
   useEffect(() => {
     const onScroll = () => {
       if (lineRef.current) {
@@ -73,20 +74,34 @@ export default function HeroSection() {
             performance.
           </p>
 
-          {/* CTAs */}
+          {/* CTAs — berubah sesuai login status */}
           <div className="mb-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center lg:justify-start">
-            <Link to="/calculator" className="w-full sm:w-auto">
-              <button
-                className="btn-retro w-full bg-retro-green px-6 py-3.5 text-lg font-retro
-                               tracking-widest text-retro-black sm:px-8 sm:py-4 sm:text-xl"
-              >
-                START CALCULATING →
-              </button>
-            </Link>
+            {user ? (
+              /* Sudah login → START CALCULATING */
+              <Link to="/calculator" className="w-full sm:w-auto">
+                <button
+                  className="btn-retro w-full bg-retro-green px-6 py-3.5 text-lg font-retro
+                    tracking-widest text-retro-black sm:px-8 sm:py-4 sm:text-xl"
+                >
+                  START CALCULATING →
+                </button>
+              </Link>
+            ) : (
+              /* Belum login → SIGN IN */
+              <Link to="/login" className="w-full sm:w-auto">
+                <button
+                  className="btn-retro w-full bg-retro-green px-6 py-3.5 text-lg font-retro
+                    tracking-widest text-retro-black sm:px-8 sm:py-4 sm:text-xl"
+                >
+                  SIGN IN TO START →
+                </button>
+              </Link>
+            )}
+
             <a href="#how-it-works" className="w-full sm:w-auto">
               <button
                 className="btn-retro w-full border-retro-white/30 px-6 py-3.5 text-lg font-retro
-                               tracking-widest text-retro-white hover:border-retro-white sm:px-8 sm:py-4 sm:text-xl"
+                  tracking-widest text-retro-white hover:border-retro-white sm:px-8 sm:py-4 sm:text-xl"
               >
                 HOW IT WORKS
               </button>
@@ -128,22 +143,10 @@ export default function HeroSection() {
               width={1600}
               height={1600}
               priority
-              wrapperClassName="relative z-10 w-full rounded-[2rem]"
-              imgClassName="h-auto w-full object-contain mix-blend-screen"
-              style={{
-                filter: "drop-shadow(0 24px 60px rgba(223,245,255,0.12))",
-              }}
+              wrapperClassName="relative z-10 w-full rounded-[2rem] overflow-hidden"
             />
           </div>
         </div>
-      </div>
-
-      {/* scroll indicator */}
-      <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex lg:bottom-8">
-        <span className="font-mono text-[10px] tracking-widest text-retro-white/25">
-          SCROLL
-        </span>
-        <div className="h-10 w-px animate-bounce-slow bg-gradient-to-b from-retro-green/60 to-transparent" />
       </div>
     </section>
   );
