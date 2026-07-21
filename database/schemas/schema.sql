@@ -103,7 +103,7 @@ CREATE TABLE calculator_types (
 -- Seed Calculator Types
 INSERT INTO calculator_types (slug, name, description, category, icon, sort_order) 
 VALUES
-    ('pace-calculator',    'Pace Calculator',         'Calculate your running pace per km/mile',              'pace',             '⚡', 1),
+    ('vcr-calculator',     'VCR Calculator',          'Calculate VCR from timed tests and training targets',   'pace',             '⚡', 1),
     ('race-predictor',     'Race Time Predictor',     'Predict finish time based on recent performance',      'race_prediction',  '🏆', 2),
     ('training-zone',      'Training Zone Calculator','Calculate HR training zones',                          'training_zone',    '❤️', 3),
     ('vo2max-calculator',  'VO2 Max Calculator',      'Estimate your aerobic capacity',                       'vo2max',           '🫁', 4),
@@ -298,23 +298,21 @@ ORDER BY total_uses DESC;
 -- ============================================
 
 /*
--- Pace Calculator Input:
+-- VCR Calculator Input:
 {
-    "distance_km": 10,
-    "time_seconds": 3600,
-    "unit": "metric"
+    "test_minutes": 45,
+    "distance_meters": 9000
 }
 
--- Pace Calculator Result:
+-- VCR Calculator Result:
 {
-    "pace_per_km": "6:00",
-    "pace_per_mile": "9:39",
-    "speed_kmh": 10.0,
-    "speed_mph": 6.21,
-    "finish_time_5k": "0:30:00",
-    "finish_time_10k": "1:00:00",
-    "finish_time_half": "2:11:36",
-    "finish_time_full": "4:23:12"
+    "vcr_ms": 3.33,
+    "vcr_kmh": 12.0,
+    "base_pace_per_km": "5:00",
+    "training_zones": [...],
+    "interval_targets": [...],
+    "middle_distance_targets": [...],
+    "long_distance_targets": [...]
 }
 
 -- Race Predictor Input:

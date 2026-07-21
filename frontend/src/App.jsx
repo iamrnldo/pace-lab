@@ -2,12 +2,19 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useEffect, useRef } from "react";
 import Lenis from "@studio-freight/lenis";
-
 import MainLayout from "./components/layout/MainLayout";
+import AdminLayout from "./components/layout/AdminLayout";
+import AuthGuard from "./components/auth/AuthGuard";
+import RoleGuard from "./components/auth/RoleGuard";
 import HomePage from "./pages/HomePage";
 import CalculatorPage from "./pages/CalculatorPage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AdminPage from "./pages/AdminPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import AdminUserLogPage from "./pages/AdminUserLogPage";
+import AdminAdminLogPage from "./pages/AdminAdminLogPage";
+import AdminProfilePage from "./pages/AdminProfilePage";
 
 export default function App() {
   const lenisRef = useRef(null);
@@ -19,7 +26,6 @@ export default function App() {
       smoothWheel: true,
       smoothTouch: false,
     });
-
     lenisRef.current = lenis;
 
     function raf(time) {
@@ -34,11 +40,30 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public Routes */}
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="calculator" element={<CalculatorPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="*" element={<NotFoundPage />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AuthGuard>
+              <RoleGuard role="admin">
+                <AdminLayout />
+              </RoleGuard>
+            </AuthGuard>
+          }
+        >
+          <Route index element={<AdminPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="logs/user" element={<AdminUserLogPage />} />
+          <Route path="logs/admin" element={<AdminAdminLogPage />} />
+          <Route path="profile" element={<AdminProfilePage />} />
         </Route>
       </Routes>
 
@@ -46,16 +71,16 @@ export default function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: "#1A1A1A",
-            color: "#F5F5F0",
-            border: "2px solid #B5D317",
+            background: "#0C6FBA",
+            color: "#FFFFFF",
+            border: "2px solid #DFF5FF",
             borderRadius: "0",
             fontFamily: '"Barlow Condensed", sans-serif',
             fontSize: "16px",
             letterSpacing: "0.05em",
           },
           success: {
-            iconTheme: { primary: "#B5D317", secondary: "#0A0A0A" },
+            iconTheme: { primary: "#DFF5FF", secondary: "#005BAC" },
           },
         }}
       />

@@ -4,43 +4,25 @@ import { Link } from "react-router-dom";
 
 const CALCS = [
   {
-    id: "pace-calculator",
-    icon: "⚡",
-    title: "Pace Calculator",
-    desc: "Convert time, distance & pace instantly",
+    id: "vcr-calculator",
+    title: "VCR Calculator",
+    desc: "Calculate VCR from timed tests and training targets",
     badge: "Popular",
   },
   {
     id: "race-predictor",
-    icon: "🏆",
     title: "Race Predictor",
     desc: "Predict finish time from recent results",
     badge: "Hot",
   },
   {
     id: "training-zone",
-    icon: "❤️",
     title: "Training Zones",
     desc: "Calculate HR zones for optimal training",
     badge: null,
   },
   {
-    id: "vo2max-calculator",
-    icon: "🫁",
-    title: "VO2 Max",
-    desc: "Estimate your aerobic capacity",
-    badge: null,
-  },
-  {
-    id: "calorie-calculator",
-    icon: "🔥",
-    title: "Calorie Burner",
-    desc: "Calories burned by distance & weight",
-    badge: null,
-  },
-  {
     id: "split-calculator",
-    icon: "📊",
     title: "Split Calculator",
     desc: "Plan even or negative race splits",
     badge: "New",
@@ -94,18 +76,16 @@ export default function CalculatorGrid() {
         </p>
       </div>
 
-      {/* grid */}
       <div
         ref={ref}
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
       >
-        {CALCS.map(({ id, icon, title, desc, badge }) => (
+        {CALCS.map(({ id, title, desc, badge }) => (
           <div key={id} data-card>
             <Link to={`/calculator?type=${id}`}>
               <div className="card-retro p-6 h-full group cursor-pointer">
-                {/* top row */}
                 <div className="flex items-start justify-between mb-4">
-                  <span className="text-3xl">{icon}</span>
+                  <span className="text-3xl"></span>
                   {badge && (
                     <span
                       className="font-retro text-xs tracking-widest px-2 py-0.5

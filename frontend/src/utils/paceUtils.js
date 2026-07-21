@@ -40,12 +40,12 @@ export function riegelPredict(timeSec, distKm, targetKm) {
   return timeSec * Math.pow(targetKm / distKm, 1.06);
 }
 
-export function calcTrainingZones(maxHR, restingHR) {
+export function calcTrainingZones(maxHR) {
   const zones = [
     {
       z: 1,
       name: "Recovery",
-      color: "#60B5FF",
+      color: "#A9E5FF",
       lo: 0.5,
       hi: 0.6,
       tip: "Easy recovery & warm-up",
@@ -53,7 +53,7 @@ export function calcTrainingZones(maxHR, restingHR) {
     {
       z: 2,
       name: "Aerobic",
-      color: "#B5D317",
+      color: "#6FD2FF",
       lo: 0.6,
       hi: 0.7,
       tip: "Base building long runs",
@@ -61,7 +61,7 @@ export function calcTrainingZones(maxHR, restingHR) {
     {
       z: 3,
       name: "Tempo",
-      color: "#F59E0B",
+      color: "#2BBBF4",
       lo: 0.7,
       hi: 0.8,
       tip: "Comfortably hard efforts",
@@ -69,7 +69,7 @@ export function calcTrainingZones(maxHR, restingHR) {
     {
       z: 4,
       name: "Threshold",
-      color: "#EF4444",
+      color: "#00AEEF",
       lo: 0.8,
       hi: 0.9,
       tip: "Lactate threshold work",
@@ -77,7 +77,7 @@ export function calcTrainingZones(maxHR, restingHR) {
     {
       z: 5,
       name: "VO2 Max",
-      color: "#8B5CF6",
+      color: "#005BAC",
       lo: 0.9,
       hi: 1.0,
       tip: "Maximum intensity intervals",
@@ -85,14 +85,8 @@ export function calcTrainingZones(maxHR, restingHR) {
   ];
 
   return zones.map(({ z, name, color, lo, hi, tip }) => {
-    const useKarvonen = restingHR && restingHR > 0;
-    const hrr = useKarvonen ? maxHR - restingHR : 0;
-    const minHR = useKarvonen
-      ? Math.round(restingHR + hrr * lo)
-      : Math.round(maxHR * lo);
-    const maxHRZ = useKarvonen
-      ? Math.round(restingHR + hrr * hi)
-      : Math.round(maxHR * hi);
+    const minHR = Math.round(maxHR * lo);
+    const maxHRZ = Math.round(maxHR * hi);
     return {
       z,
       name,
@@ -117,7 +111,3 @@ export function calcVO2Max(timeSec, distKm) {
   return Math.round(vo2 / percent);
 }
 
-export function calcCalories(weightKg, distKm) {
-  if (!weightKg || !distKm) return null;
-  return Math.round(weightKg * distKm * 1.036);
-}

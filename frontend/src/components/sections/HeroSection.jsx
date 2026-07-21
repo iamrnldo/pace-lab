@@ -1,6 +1,18 @@
 // src/components/sections/HeroSection.jsx
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import OptimizedImage from "../ui/OptimizedImage";
+import hero640 from "../../assets/optimized/pace-lab-640.webp";
+import hero960 from "../../assets/optimized/pace-lab-960.webp";
+import hero1280 from "../../assets/optimized/pace-lab-1280.webp";
+import hero1600 from "../../assets/optimized/pace-lab-1600.webp";
+import heroFallback from "../../assets/optimized/pace-lab-fallback.png";
+import heroPlaceholder from "../../assets/optimized/pace-lab-placeholder.png";
+
+const HERO_IMAGE_SIZES =
+  "(max-width: 640px) 88vw, (max-width: 768px) 470px, (max-width: 1024px) 580px, 760px";
+
+const HERO_IMAGE_SRCSET = `${hero640} 640w, ${hero960} 960w, ${hero1280} 1280w, ${hero1600} 1600w`;
 
 export default function HeroSection() {
   const lineRef = useRef(null);
@@ -17,107 +29,121 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center overflow-hidden px-6">
+    <section className="relative flex items-center overflow-hidden px-4 py-10 sm:px-6 sm:py-14 lg:min-h-[92vh] lg:px-10 lg:py-12">
       {/* bg huge text */}
       <div
         ref={lineRef}
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
+        className="absolute inset-0 hidden items-center justify-center pointer-events-none select-none sm:flex"
       >
-        <span className="font-retro text-[28vw] text-retro-white/[0.018] whitespace-nowrap leading-none">
+        <span className="font-retro text-[26vw] text-retro-white/[0.018] whitespace-nowrap leading-none lg:text-[20vw]">
           RUNNING
         </span>
       </div>
 
-      {/* left accent lines */}
-      <div
-        className="absolute left-6 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-2"
-        aria-hidden="true"
-      >
-        {[...Array(10)].map((_, i) => (
-          <div
-            key={i}
-            style={{ width: `${16 + i * 10}px`, height: "2px" }}
-            className="bg-retro-green/25"
-          />
-        ))}
-      </div>
+      <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)] lg:gap-16 xl:gap-20">
+        {/* content */}
+        <div className="order-1 text-center animate-slide-up lg:order-2 lg:text-left">
+          {/* tag */}
+          <div className="mb-5 inline-flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            <span className="h-px w-6 bg-retro-green sm:w-8" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-retro-green sm:text-xs sm:tracking-[0.3em]">
+              Professional Running Tools
+            </span>
+            <span className="h-px w-6 bg-retro-green sm:w-8" />
+          </div>
 
-      {/* content */}
-      <div className="relative z-10 text-center max-w-5xl mx-auto animate-slide-up">
-        {/* tag */}
-        <div className="inline-flex items-center gap-3 mb-6">
-          <span className="w-8 h-px bg-retro-green" />
-          <span className="font-mono text-retro-green text-xs tracking-[0.3em] uppercase">
-            Professional Running Tools
-          </span>
-          <span className="w-8 h-px bg-retro-green" />
+          {/* title */}
+          <h1 className="mb-5 font-retro leading-[0.92] sm:mb-6">
+            <span className="block text-[clamp(2.7rem,12vw,7rem)] tracking-tight text-retro-white">
+              CALCULATE
+            </span>
+            <span
+              className="block text-[clamp(2.7rem,12vw,7rem)] tracking-tight text-retro-green"
+              style={{ textShadow: "4px 4px 0 rgba(223,245,255,0.28)" }}
+            >
+              YOUR PACE
+            </span>
+          </h1>
+
+          {/* sub */}
+          <p className="mx-auto mb-8 max-w-xl font-sport text-base leading-relaxed tracking-wide text-retro-white/75 sm:mb-10 sm:text-lg md:text-xl lg:mx-0 lg:max-w-[34rem] lg:pr-6">
+            Professional running calculators for athletes. Track pace,
+            predict race times, analyze training zones and optimize your
+            performance.
+          </p>
+
+          {/* CTAs */}
+          <div className="mb-10 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center lg:justify-start">
+            <Link to="/calculator" className="w-full sm:w-auto">
+              <button
+                className="btn-retro w-full bg-retro-green px-6 py-3.5 text-lg font-retro
+                               tracking-widest text-retro-black sm:px-8 sm:py-4 sm:text-xl"
+              >
+                START CALCULATING →
+              </button>
+            </Link>
+            <a href="#how-it-works" className="w-full sm:w-auto">
+              <button
+                className="btn-retro w-full border-retro-white/30 px-6 py-3.5 text-lg font-retro
+                               tracking-widest text-retro-white hover:border-retro-white sm:px-8 sm:py-4 sm:text-xl"
+              >
+                HOW IT WORKS
+              </button>
+            </a>
+          </div>
+
+          {/* mini stats */}
+          <div className="grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:justify-center sm:gap-8 lg:justify-start lg:gap-10">
+            {[
+              { val: "7+", label: "Calculators" },
+              { val: "100%", label: "Free" },
+              { val: "∞", label: "Calculations" },
+            ].map(({ val, label }) => (
+              <div
+                key={label}
+                className="flex min-w-0 flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 lg:items-start lg:text-left"
+              >
+                <span className="font-retro text-2xl text-retro-green sm:text-3xl">
+                  {val}
+                </span>
+                <span className="font-sport text-xs uppercase tracking-[0.22em] text-retro-white/55 sm:text-sm sm:tracking-widest">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* title */}
-        <h1 className="font-retro leading-none mb-6">
-          <span className="block text-[clamp(3.5rem,11vw,9rem)] text-retro-white tracking-tight">
-            CALCULATE
-          </span>
-          <span
-            className="block text-[clamp(3.5rem,11vw,9rem)] text-retro-green tracking-tight"
-            style={{ textShadow: "4px 4px 0 rgba(181,211,23,0.25)" }}
-          >
-            YOUR PACE
-          </span>
-        </h1>
-
-        {/* sub */}
-        <p className="font-sport text-retro-white/55 text-xl max-w-xl mx-auto mb-10 leading-relaxed tracking-wide">
-          Professional running calculators for athletes. Track pace, predict
-          race times, analyze training zones and optimize your performance.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-12">
-          <Link to="/calculator">
-            <button
-              className="btn-retro bg-retro-green text-retro-black font-retro
-                               tracking-widest px-8 py-4 text-xl"
-            >
-              START CALCULATING →
-            </button>
-          </Link>
-          <a href="#how-it-works">
-            <button
-              className="btn-retro border-retro-white/30 text-retro-white font-retro
-                               tracking-widest px-8 py-4 text-xl hover:border-retro-white"
-            >
-              HOW IT WORKS
-            </button>
-          </a>
-        </div>
-
-        {/* mini stats */}
-        <div className="flex flex-wrap justify-center gap-8">
-          {[
-            { val: "7+", label: "Calculators" },
-            { val: "100%", label: "Free" },
-            { val: "∞", label: "Calculations" },
-          ].map(({ val, label }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="font-retro text-2xl text-retro-green">
-                {val}
-              </span>
-              <span className="font-sport text-retro-white/40 text-sm tracking-widest uppercase">
-                {label}
-              </span>
-            </div>
-          ))}
+        {/* visual */}
+        <div className="order-2 flex justify-center animate-slide-up lg:order-1 lg:justify-start">
+          <div className="relative w-full max-w-[360px] sm:max-w-[470px] md:max-w-[580px] lg:max-w-[760px]">
+            <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-r from-transparent via-retro-black/10 to-transparent blur-3xl" />
+            <OptimizedImage
+              alt="Pace calculator and running athlete visual"
+              fallbackSrc={heroFallback}
+              sources={[{ type: "image/webp", srcSet: HERO_IMAGE_SRCSET }]}
+              placeholderSrc={heroPlaceholder}
+              sizes={HERO_IMAGE_SIZES}
+              width={1600}
+              height={1600}
+              priority
+              wrapperClassName="relative z-10 w-full rounded-[2rem]"
+              imgClassName="h-auto w-full object-contain mix-blend-screen"
+              style={{
+                filter: "drop-shadow(0 24px 60px rgba(223,245,255,0.12))",
+              }}
+            />
+          </div>
         </div>
       </div>
 
       {/* scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-        <span className="font-mono text-[10px] text-retro-white/25 tracking-widest">
+      <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex lg:bottom-8">
+        <span className="font-mono text-[10px] tracking-widest text-retro-white/25">
           SCROLL
         </span>
-        <div className="w-px h-10 bg-gradient-to-b from-retro-green/60 to-transparent animate-bounce-slow" />
+        <div className="h-10 w-px animate-bounce-slow bg-gradient-to-b from-retro-green/60 to-transparent" />
       </div>
     </section>
   );

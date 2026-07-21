@@ -10,11 +10,9 @@ export const RACE_DISTANCES = [
 
 // src/constants/calculatorTypes.js
 export const CALCULATOR_TYPES = {
-  PACE: "pace-calculator",
+  VCR: "vcr-calculator",
   RACE: "race-predictor",
   TRAINING: "training-zone",
-  VO2MAX: "vo2max-calculator",
-  CALORIE: "calorie-calculator",
   SPLIT: "split-calculator",
   FINISH_TIME: "finish-time",
 };

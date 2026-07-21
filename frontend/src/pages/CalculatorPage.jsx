@@ -1,45 +1,48 @@
 // src/pages/CalculatorPage.jsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import PaceCalculator from "../components/calculators/PaceCalculator";
+import VcrCalculator from "../components/calculators/VcrCalculator";
 import RacePredictor from "../components/calculators/RacePredictor";
 import TrainingZone from "../components/calculators/TrainingZone";
-import VO2MaxCalculator from "../components/calculators/VO2MaxCalculator";
-import CalorieCalculator from "../components/calculators/CalorieCalculator";
 import clsx from "clsx";
 
 const TABS = [
   {
-    id: "pace-calculator",
-    emoji: "⚡",
-    label: "Pace",
-    Component: PaceCalculator,
+    id: "vcr-calculator",
+    label: "VCR",
+    Component: VcrCalculator,
   },
   {
     id: "race-predictor",
-    emoji: "🏆",
     label: "Race",
     Component: RacePredictor,
   },
-  { id: "training-zone", emoji: "❤️", label: "Zones", Component: TrainingZone },
   {
-    id: "vo2max-calculator",
-    emoji: "🫁",
-    label: "VO2 Max",
-    Component: VO2MaxCalculator,
-  },
-  {
-    id: "calorie-calculator",
-    emoji: "🔥",
-    label: "Calories",
-    Component: CalorieCalculator,
+    id: "training-zone",
+    label: "Zones",
+    Component: TrainingZone,
   },
 ];
 
+const LEGACY_TAB_MAP = {
+  "pace-calculator": "vcr-calculator",
+  "race-zones": "race-predictor",
+};
+
 export default function CalculatorPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const defaultTab = searchParams.get("type") || TABS[0].id;
-  const [activeId, setActiveId] = useState(defaultTab);
+
+  const normalizedDefaultTab = useMemo(() => {
+    const rawType = searchParams.get("type");
+    const mappedType = LEGACY_TAB_MAP[rawType] || rawType;
+    return TABS.some((tab) => tab.id === mappedType) ? mappedType : TABS[0].id;
+  }, [searchParams]);
+
+  const [activeId, setActiveId] = useState(normalizedDefaultTab);
+
+  useEffect(() => {
+    setActiveId(normalizedDefaultTab);
+  }, [normalizedDefaultTab]);
 
   const { Component } = TABS.find((t) => t.id === activeId) || TABS[0];
 
@@ -49,8 +52,7 @@ export default function CalculatorPage() {
   };
 
   return (
-    <section className="pt-36 pb-24 px-4 max-w-6xl mx-auto">
-      {/* heading */}
+    <section className="max-w-6xl mx-auto px-4 pt-36 pb-24">
       <div className="mb-10 animate-slide-up">
         <span className="font-mono text-retro-green text-xs tracking-[0.3em]">
           // TOOLS
@@ -60,25 +62,23 @@ export default function CalculatorPage() {
         </h1>
       </div>
 
-      {/* tab bar */}
-      <div className="flex gap-0 mb-8 overflow-x-auto border-b-2 border-retro-gray-light">
-        {TABS.map(({ id, emoji, label }) => (
+      <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
+        {TABS.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => handleTab(id)}
             className={clsx(
-              "font-retro tracking-widest whitespace-nowrap px-5 py-3 text-sm transition-all duration-150 border-b-2 -mb-0.5",
+              "font-retro whitespace-nowrap border-b-2 -mb-0.5 px-5 py-3 text-sm tracking-widest transition-all duration-150",
               activeId === id
-                ? "text-retro-black bg-retro-green border-retro-green"
-                : "text-retro-white/50 border-transparent hover:text-retro-white hover:bg-retro-gray-mid",
+                ? "border-retro-green bg-retro-green text-retro-black"
+                : "border-transparent text-retro-white/50 hover:bg-retro-gray-mid hover:text-retro-white",
             )}
           >
-            {emoji} {label}
+            {label}
           </button>
         ))}
       </div>
 
-      {/* active calculator */}
       <div key={activeId} className="animate-fade-in">
         <Component />
       </div>

@@ -4,34 +4,29 @@ import { calcTrainingZones } from "../../utils/paceUtils";
 
 export default function TrainingZone() {
   const [maxHR, setMaxHR] = useState(185);
-  const [restingHR, setRestingHR] = useState(60);
   const [age, setAge] = useState(30);
-  const [method, setMethod] = useState("karvonen");
+  const [method, setMethod] = useState("max_hr");
   const [zones, setZones] = useState(null);
 
   const handleCalc = () => {
     const mhr = method === "formula" ? 220 - Number(age) : Number(maxHR);
-    setZones(
-      calcTrainingZones(mhr, method === "karvonen" ? Number(restingHR) : null),
-    );
+    setZones(calcTrainingZones(mhr));
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="card-retro p-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
+      <div className="card-retro self-start p-6">
         <h2 className="font-retro text-2xl text-retro-white tracking-wide mb-6">
-          ❤️ TRAINING ZONES
+          TRAINING ZONES
         </h2>
 
-        {/* method */}
         <div className="mb-5">
           <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
             Method
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {[
               { val: "max_hr", label: "Max HR" },
-              { val: "karvonen", label: "Karvonen" },
               { val: "formula", label: "220−Age" },
             ].map(({ val, label }) => (
               <button
@@ -68,48 +63,29 @@ export default function TrainingZone() {
             </p>
           </div>
         ) : (
-          <>
-            <div className="mb-5">
-              <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
-                Max Heart Rate (bpm)
-              </label>
-              <input
-                type="number"
-                value={maxHR}
-                min={100}
-                max={230}
-                onChange={(e) => setMaxHR(Number(e.target.value))}
-                className="input-retro py-3 px-4 text-lg w-full"
-              />
-            </div>
-            {method === "karvonen" && (
-              <div className="mb-5">
-                <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
-                  Resting Heart Rate (bpm)
-                </label>
-                <input
-                  type="number"
-                  value={restingHR}
-                  min={30}
-                  max={100}
-                  onChange={(e) => setRestingHR(Number(e.target.value))}
-                  className="input-retro py-3 px-4 text-lg w-full"
-                />
-              </div>
-            )}
-          </>
+          <div className="mb-5">
+            <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
+              Max Heart Rate (bpm)
+            </label>
+            <input
+              type="number"
+              value={maxHR}
+              min={100}
+              max={230}
+              onChange={(e) => setMaxHR(Number(e.target.value))}
+              className="input-retro py-3 px-4 text-lg w-full"
+            />
+          </div>
         )}
 
         <button
           onClick={handleCalc}
-          className="btn-retro bg-retro-green text-retro-black font-retro
-                     tracking-widest w-full py-4 text-xl"
+          className="btn-retro bg-retro-green text-retro-black font-retro tracking-widest w-full py-4 text-xl"
         >
           CALCULATE ZONES →
         </button>
       </div>
 
-      {/* zones result */}
       <div className="card-retro p-6">
         {zones ? (
           <>
@@ -119,7 +95,6 @@ export default function TrainingZone() {
             <div className="space-y-3">
               {zones.map(({ z, name, color, minHR, maxHR, pct, tip }) => (
                 <div key={z} className="relative overflow-hidden">
-                  {/* bg bar */}
                   <div
                     className="absolute inset-0 opacity-10 rounded-sm"
                     style={{ backgroundColor: color }}
@@ -157,7 +132,6 @@ export default function TrainingZone() {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <span className="text-5xl mb-4 opacity-20">❤️</span>
             <p className="font-retro text-retro-white/25 text-xl tracking-wider">
               SET YOUR HR
             </p>

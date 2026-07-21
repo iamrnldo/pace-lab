@@ -1,14 +1,13 @@
-/* eslint-disable no-unused-vars */
 // src/components/calculators/VO2MaxCalculator.jsx
 import { useState } from "react";
-import { calcVO2Max, formatTime } from "../../utils/paceUtils";
+import { calcVO2Max } from "../../utils/paceUtils";
 
 const FITNESS = [
   { min: 0, max: 29, label: "Poor", color: "#EF4444" },
   { min: 30, max: 39, label: "Fair", color: "#F59E0B" },
-  { min: 40, max: 49, label: "Good", color: "#B5D317" },
-  { min: 50, max: 59, label: "Excellent", color: "#22C55E" },
-  { min: 60, max: 999, label: "Superior", color: "#8B5CF6" },
+  { min: 40, max: 49, label: "Good", color: "#00AEEF" },
+  { min: 50, max: 59, label: "Excellent", color: "#008DCE" },
+  { min: 60, max: 999, label: "Superior", color: "#005BAC" },
 ];
 
 export default function VO2MaxCalculator() {
@@ -29,10 +28,10 @@ export default function VO2MaxCalculator() {
     : null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="card-retro p-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="card-retro self-start p-6">
         <h2 className="font-retro text-2xl text-retro-white tracking-wide mb-2">
-          🫁 VO2 MAX
+          VO2 MAX
         </h2>
         <p className="font-sport text-retro-white/40 text-sm mb-6">
           Estimated from race performance
@@ -91,8 +90,7 @@ export default function VO2MaxCalculator() {
 
         <button
           onClick={handleCalc}
-          className="btn-retro bg-retro-green text-retro-black font-retro
-                     tracking-widest w-full py-4 text-xl"
+          className="btn-retro bg-retro-green text-retro-black font-retro tracking-widest w-full py-4 text-xl"
         >
           ESTIMATE VO2 MAX →
         </button>
@@ -104,10 +102,9 @@ export default function VO2MaxCalculator() {
             <p className="font-mono text-[11px] text-retro-white/40 tracking-widest uppercase mb-4">
               Estimated VO2 Max
             </p>
-            {/* big number */}
             <div
               className="font-retro text-8xl mb-2 tabular-nums animate-fade-in"
-              style={{ color: fitness?.color || "#B5D317" }}
+              style={{ color: fitness?.color || "#00AEEF" }}
             >
               {vo2}
             </div>
@@ -115,7 +112,6 @@ export default function VO2MaxCalculator() {
               ml/kg/min
             </p>
 
-            {/* fitness label */}
             <div
               className="inline-block px-6 py-2 border-2 font-retro text-2xl tracking-widest mb-8"
               style={{ borderColor: fitness?.color, color: fitness?.color }}
@@ -123,7 +119,6 @@ export default function VO2MaxCalculator() {
               {fitness?.label?.toUpperCase()}
             </div>
 
-            {/* scale */}
             <div className="w-full space-y-2">
               {FITNESS.map(({ min, max, label, color }) => (
                 <div key={label} className="flex items-center gap-3">
@@ -141,7 +136,7 @@ export default function VO2MaxCalculator() {
                       color:
                         label === fitness?.label
                           ? color
-                          : "rgba(245,245,240,0.3)",
+                          : "rgba(255,255,255,0.45)",
                     }}
                   >
                     {label} ({min}–{max === 999 ? "60+" : max})
@@ -152,7 +147,6 @@ export default function VO2MaxCalculator() {
           </div>
         ) : (
           <div className="text-center">
-            <span className="text-5xl mb-4 block opacity-20">🫁</span>
             <p className="font-retro text-retro-white/25 text-xl tracking-wider">
               ENTER RACE DATA
             </p>

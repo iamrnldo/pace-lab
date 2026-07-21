@@ -1,51 +1,37 @@
 // src/components/layout/MarqueeBanner.jsx
-import { useState, useEffect } from "react";
-
 export default function MarqueeBanner() {
-  const [headerHeight, setHeaderHeight] = useState(0);
-
-  useEffect(() => {
-    const calculate = () => {
-      const header = document.querySelector("header");
-      setHeaderHeight(header?.offsetHeight || 0);
-    };
-
-    const timer = setTimeout(calculate, 30);
-    window.addEventListener("resize", calculate);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("resize", calculate);
-    };
-  }, []);
-
   const ITEMS = [
-    "⚡ PACE CALCULATOR",
-    "🏆 RACE PREDICTOR",
-    "❤️ TRAINING ZONES",
-    "🫁 VO2 MAX",
-    "🔥 CALORIES",
-    "📊 SPLIT CALCULATOR",
-    "🏁 FINISH TIME",
+    "VCR CALCULATOR",
+    "RACE PREDICTOR",
+    "TRAINING ZONES",
+    "SPLIT CALCULATOR",
+    "FINISH TIME",
   ];
 
-  const repeated = [...ITEMS, ...ITEMS, ...ITEMS, ...ITEMS];
+  const longLoopItems = Array.from({ length: 8 }, () => ITEMS).flat();
 
   return (
     <div
-      data-marquee // ← penting untuk selector di MainLayout
-      style={{ top: `${headerHeight}px` }}
-      className="fixed left-0 right-0 z-40 bg-retro-green overflow-hidden border-y-2 border-retro-green-dark py-1.5"
+      data-marquee
+      className="fixed left-0 right-0 top-[68px] z-40 h-9 overflow-hidden border-y-2 border-retro-green-dark bg-retro-green md:top-[96px]"
     >
-      <div className="marquee-wrap">
-        <div className="marquee-track">
-          {repeated.map((item, i) => (
-            <span
-              key={i}
-              className="font-retro text-retro-black text-sm tracking-widest mx-8 select-none"
+      <div className="marquee-wrap h-full">
+        <div className="marquee-track marquee-track-right h-full items-center">
+          {[0, 1].map((group) => (
+            <div
+              key={group}
+              className="marquee-group marquee-group-compact h-full items-center"
+              aria-hidden={group === 1}
             >
-              {item}
-            </span>
+              {longLoopItems.map((item, i) => (
+                <span
+                  key={`${group}-${i}-${item}`}
+                  className="select-none font-retro text-sm tracking-widest text-retro-black"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
           ))}
         </div>
       </div>

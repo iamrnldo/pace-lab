@@ -23,12 +23,13 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      if (!token) return;
-
+      if (!token) return null;
       const data = await authService.getProfile();
       setUser(data.user);
+      return data.user;
     } catch {
       localStorage.removeItem("access_token");
+      return null;
     } finally {
       setLoading(false);
     }

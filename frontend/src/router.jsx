@@ -4,13 +4,16 @@ import MainLayout from "@components/layout/MainLayout";
 import AdminLayout from "@components/layout/AdminLayout";
 import AuthGuard from "@components/auth/AuthGuard";
 import RoleGuard from "@components/auth/RoleGuard";
-
 import HomePage from "@pages/HomePage";
 import CalculatorPage from "@pages/CalculatorPage";
 import DashboardPage from "@pages/DashboardPage";
 import HistoryPage from "@pages/HistoryPage";
 import ProfilePage from "@pages/ProfilePage";
 import AdminPage from "@pages/AdminPage";
+import AdminUsersPage from "@pages/AdminUsersPage";
+import AdminUserLogPage from "@pages/AdminUserLogPage";
+import AdminAdminLogPage from "@pages/AdminAdminLogPage";
+import AdminProfilePage from "@pages/AdminProfilePage";
 import LoginPage from "@pages/LoginPage";
 import NotFoundPage from "@pages/NotFoundPage";
 
@@ -57,7 +60,13 @@ const router = createBrowserRouter([
         </RoleGuard>
       </AuthGuard>
     ),
-    children: [{ index: true, element: <AdminPage /> }],
+    children: [
+      { index: true, element: <AdminPage /> },
+      { path: "users", element: <AdminUsersPage /> },
+      { path: "logs/user", element: <AdminUserLogPage /> },
+      { path: "logs/admin", element: <AdminAdminLogPage /> },
+      { path: "profile", element: <AdminProfilePage /> },
+    ],
   },
   { path: "*", element: <NotFoundPage /> },
 ]);

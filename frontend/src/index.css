@@ -6,9 +6,9 @@
 
 /* ── Variables ───────────────────────── */
 :root {
-  --green: #B5D317;
-  --black: #0A0A0A;
-  --white: #F5F5F0;
+  --green: #DFF5FF;
+  --black: #005BAC;
+  --white: #FFFFFF;
 }
 
 /* ── Base ────────────────────────────── */
@@ -24,8 +24,8 @@ html {
 
 body {
   font-family: 'Barlow Condensed', sans-serif;
-  background-color: #0A0A0A;
-  color: #F5F5F0;
+  background-color: var(--black);
+  color: var(--white);
   overflow-x: hidden;
   /* cursor: none; */
   /* aktifkan jika mau custom cursor */
@@ -33,13 +33,13 @@ body {
 
 /* ── Scrollbar ───────────────────────── */
 ::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-track { background: #0A0A0A; }
-::-webkit-scrollbar-thumb { background: #B5D317; }
+::-webkit-scrollbar-track { background: #005BAC; }
+::-webkit-scrollbar-thumb { background: #DFF5FF; }
 
 /* ── Selection ───────────────────────── */
 ::selection {
-  background: #B5D317;
-  color: #0A0A0A;
+  background: #DFF5FF;
+  color: #005BAC;
 }
 
 /* ── Lenis ───────────────────────────── */
@@ -53,8 +53,8 @@ html.lenis, html.lenis body {
 /* ── Retro Grid ──────────────────────── */
 .retro-grid {
   background-image:
-    linear-gradient(rgba(181,211,23,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(181,211,23,0.03) 1px, transparent 1px);
+    linear-gradient(rgba(223,245,255,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(223,245,255,0.12) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -70,8 +70,8 @@ html.lenis, html.lenis body {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0,0,0,0.015) 2px,
-    rgba(0,0,0,0.015) 4px
+    rgba(255,255,255,0.02) 2px,
+    rgba(255,255,255,0.02) 4px
   );
   pointer-events: none;
   z-index: 9999;
@@ -82,21 +82,52 @@ html.lenis, html.lenis body {
   overflow: hidden;
   white-space: nowrap;
 }
+
 .marquee-track {
-  display: inline-flex;
-  animation: marquee 25s linear infinite;
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  min-width: max-content;
+  gap: 2rem;
+}
+
+.marquee-group-compact {
+  gap: 1.25rem;
+}
+
+.marquee-track-left {
+  animation: marquee-left 60s linear infinite;
+}
+
+.marquee-track-right {
+  animation: marquee-right 60s linear infinite;
+}
+
+@keyframes marquee-left {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes marquee-right {
+  0% { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 /* ── Card ────────────────────────────── */
 .card-retro {
-  background: #1A1A1A;
-  border: 2px solid #2A2A2A;
+  background: #0C6FBA;
+  border: 2px solid #5CAEE2;
   position: relative;
   transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
 }
 .card-retro:hover {
-  border-color: #B5D317;
-  box-shadow: 4px 4px 0 #B5D317;
+  border-color: #DFF5FF;
+  box-shadow: 4px 4px 0 #DFF5FF;
   transform: translate(-2px, -2px);
 }
 /* corner deco */
@@ -106,7 +137,7 @@ html.lenis, html.lenis body {
   position: absolute;
   width: 10px;
   height: 10px;
-  border-color: #B5D317;
+  border-color: #DFF5FF;
   border-style: solid;
 }
 .card-retro::before {
@@ -122,16 +153,16 @@ html.lenis, html.lenis body {
 .btn-retro {
   font-family: 'Bebas Neue', sans-serif;
   letter-spacing: 0.1em;
-  border: 2px solid #B5D317;
+  border: 2px solid #DFF5FF;
   transition: transform 0.12s, box-shadow 0.12s;
 }
 .btn-retro:hover:not(:disabled) {
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 #B5D317;
+  box-shadow: 4px 4px 0 #DFF5FF;
 }
 .btn-retro:active:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #B5D317;
+  box-shadow: 1px 1px 0 #DFF5FF;
 }
 .btn-retro:disabled {
   opacity: 0.4;
@@ -140,29 +171,29 @@ html.lenis, html.lenis body {
 
 /* ── Input ───────────────────────────── */
 .input-retro {
-  background: #1A1A1A;
-  border: 2px solid #3A3A3A;
-  color: #F5F5F0;
+  background: #0A69B1;
+  border: 2px solid #5CAEE2;
+  color: #FFFFFF;
   font-family: 'JetBrains Mono', monospace;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
 }
 .input-retro:focus {
-  border-color: #B5D317;
-  box-shadow: 0 0 0 1px #B5D317;
+  border-color: #DFF5FF;
+  box-shadow: 0 0 0 1px #DFF5FF;
 }
 .input-retro::placeholder {
-  color: #3A3A3A;
+  color: #BFEAFF;
 }
 
 /* ── Text Effects ────────────────────── */
 .text-neon {
-  color: #B5D317;
-  text-shadow: 0 0 7px #B5D317, 0 0 20px rgba(181,211,23,0.5);
+  color: #DFF5FF;
+  text-shadow: 0 0 7px #DFF5FF, 0 0 20px rgba(223,245,255,0.35);
 }
 .text-retro-shadow {
-  text-shadow: 3px 3px 0 #B5D317;
+  text-shadow: 3px 3px 0 #DFF5FF;
 }
 
 /* ── Tab active underline ────────────── */
@@ -174,5 +205,116 @@ html.lenis, html.lenis body {
   position: absolute;
   bottom: -2px; left: 0; right: 0;
   height: 2px;
-  background: #B5D317;
+  background: #DFF5FF;
+}
+
+/* ── Image loading / optimization ────── */
+.image-shell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.image-shell picture {
+  display: block;
+  width: 100%;
+}
+
+.image-shell img {
+  display: block;
+  width: 100%;
+}
+
+.image-reveal {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.image-reveal.is-loaded {
+  opacity: 1;
+}
+
+.image-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(12,111,186,0.28);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 1;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  z-index: 2;
+}
+
+.image-shell.is-loaded .image-loading-overlay {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.image-error-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.8);
+  background: rgba(0,91,172,0.85);
+  z-index: 3;
+}
+
+/* ── Modal ───────────────────────────── */
+.retro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 28, 52, 0.52);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.retro-modal-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.retro-modal-panel {
+  max-height: 88vh;
+  overflow: hidden;
+  border: 2px solid #DFF5FF;
+  background: #0C6FBA;
+  box-shadow: 8px 8px 0 #DFF5FF;
+  transform: translateY(12px);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.retro-modal-panel.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.retro-modal-content {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-reveal,
+  .image-loading-overlay,
+  .retro-modal-overlay,
+  .retro-modal-panel {
+    transition: none;
+  }
 }

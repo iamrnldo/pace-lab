@@ -7,11 +7,11 @@
 
 /* ── Base Reset ─────────────────────────────── */
 :root {
-  --color-black:       #0A0A0A;
-  --color-white:       #F5F5F0;
-  --color-green:       #B5D317;
-  --color-green-dark:  #8FA810;
-  --color-green-light: #CCEE33;
+  --color-black:       #005BAC;
+  --color-white:       #FFFFFF;
+  --color-green:       #DFF5FF;
+  --color-green-dark:  #BFEAFF;
+  --color-green-light: #00AEEF;
   --lenis-duration:    1.2s;
 }
 
@@ -28,8 +28,8 @@ html {
 
 body {
   font-family: 'Barlow Condensed', sans-serif;
-  background-color: #0A0A0A;
-  color: #F5F5F0;
+  background-color: #005BAC;
+  color: #FFFFFF;
   overflow-x: hidden;
   cursor: none; /* Custom cursor */
 }
@@ -38,7 +38,7 @@ body {
 .cursor-dot {
   width: 8px;
   height: 8px;
-  background: #B5D317;
+  background: #DFF5FF;
   border-radius: 50%;
   position: fixed;
   pointer-events: none;
@@ -49,7 +49,7 @@ body {
 .cursor-ring {
   width: 32px;
   height: 32px;
-  border: 2px solid #B5D317;
+  border: 2px solid #DFF5FF;
   border-radius: 50%;
   position: fixed;
   pointer-events: none;
@@ -60,7 +60,7 @@ body {
 .cursor-ring.hovering {
   width: 48px;
   height: 48px;
-  background: rgba(181, 211, 23, 0.1);
+  background: rgba(223, 245, 255, 0.12);
 }
 
 /* ── Scrollbar ───────────────────────────────── */
@@ -68,18 +68,18 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0A0A0A;
+  background: #005BAC;
 }
 ::-webkit-scrollbar-thumb {
-  background: #B5D317;
+  background: #DFF5FF;
   border-radius: 0;
 }
 
 /* ── Retro Grid Background ───────────────────── */
 .retro-grid {
   background-image:
-    linear-gradient(rgba(181,211,23,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(181,211,23,0.04) 1px, transparent 1px);
+    linear-gradient(rgba(223,245,255,0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(223,245,255,0.1) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -95,8 +95,8 @@ body {
     0deg,
     transparent,
     transparent 2px,
-    rgba(0,0,0,0.03) 2px,
-    rgba(0,0,0,0.03) 4px
+    rgba(255,255,255,0.025) 2px,
+    rgba(255,255,255,0.025) 4px
   );
   pointer-events: none;
   z-index: 1;
@@ -109,76 +109,76 @@ body {
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
-  opacity: 0.4;
+  opacity: 0.25;
   z-index: 0;
 }
 
 /* ── Retro Text Effects ──────────────────────── */
 .text-retro-shadow {
-  text-shadow: 3px 3px 0px #B5D317;
+  text-shadow: 3px 3px 0px #DFF5FF;
 }
 
 .text-neon {
-  color: #B5D317;
+  color: #DFF5FF;
   text-shadow:
-    0 0 7px #B5D317,
-    0 0 10px #B5D317,
-    0 0 21px #B5D317;
+    0 0 7px #DFF5FF,
+    0 0 10px #DFF5FF,
+    0 0 21px #DFF5FF;
 }
 
 .text-neon-white {
-  color: #F5F5F0;
+  color: #FFFFFF;
   text-shadow:
-    0 0 7px rgba(245,245,240,0.8),
-    0 0 10px rgba(245,245,240,0.5);
+    0 0 7px rgba(223,245,255,0.4),
+    0 0 10px rgba(223,245,255,0.25);
 }
 
 /* ── Retro Button Base ───────────────────────── */
 .btn-retro {
   position: relative;
-  border: 2px solid #B5D317;
+  border: 2px solid #DFF5FF;
   background: transparent;
-  color: #B5D317;
+  color: #DFF5FF;
   font-family: 'Bebas Neue', sans-serif;
   letter-spacing: 0.1em;
   transition: all 0.15s ease;
-  box-shadow: 4px 4px 0px #B5D317;
+  box-shadow: 4px 4px 0px #DFF5FF;
 }
 
 .btn-retro:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px #B5D317;
+  box-shadow: 6px 6px 0px #DFF5FF;
 }
 
 .btn-retro:active {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px #B5D317;
+  box-shadow: 2px 2px 0px #DFF5FF;
 }
 
 .btn-retro-solid {
-  background: #B5D317;
-  color: #0A0A0A;
+  background: #DFF5FF;
+  color: #005BAC;
 }
 
 /* ── Input Retro Style ───────────────────────── */
 .input-retro {
-  background: #1A1A1A;
-  border: 2px solid #3A3A3A;
-  color: #F5F5F0;
+  background: #0A69B1;
+  border: 2px solid #5CAEE2;
+  color: #FFFFFF;
   font-family: 'JetBrains Mono', monospace;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-retro:focus {
   outline: none;
-  border-color: #B5D317;
-  box-shadow: 0 0 0 1px #B5D317, 0 0 10px rgba(181,211,23,0.2);
+  border-color: #DFF5FF;
+  box-shadow: 0 0 0 1px #DFF5FF, 0 0 10px rgba(223,245,255,0.2);
 }
 
 /* ── Card Retro Style ────────────────────────── */
 .card-retro {
-  background: #1A1A1A;
-  border: 2px solid #2A2A2A;
+  background: #0C6FBA;
+  border: 2px solid #5CAEE2;
   position: relative;
   transition: all 0.3s ease;
 }
@@ -190,13 +190,13 @@ body {
   left: -1px;
   right: -1px;
   bottom: -1px;
-  border: 1px solid rgba(181,211,23,0.1);
+  border: 1px solid rgba(223,245,255,0.12);
   pointer-events: none;
 }
 
 .card-retro:hover {
-  border-color: #B5D317;
-  box-shadow: 4px 4px 0px #B5D317, 0 0 20px rgba(181,211,23,0.1);
+  border-color: #DFF5FF;
+  box-shadow: 4px 4px 0px #DFF5FF, 0 0 20px rgba(223,245,255,0.15);
   transform: translate(-2px, -2px);
 }
 
@@ -222,6 +222,6 @@ html.lenis {
 
 /* ── Selection Style ─────────────────────────── */
 ::selection {
-  background: #B5D317;
-  color: #0A0A0A;
+  background: #DFF5FF;
+  color: #005BAC;
 }

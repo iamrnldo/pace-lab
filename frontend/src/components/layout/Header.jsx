@@ -35,7 +35,7 @@ export default function Header() {
       {/* ── top strip — HANYA desktop, tinggi fixed 28px ── */}
       <div className="hidden md:flex items-center justify-between px-6 h-7 border-b border-retro-gray-light/10">
         <span className="font-mono text-[11px] text-retro-white/25 tracking-widest">
-          RUNCALC PRO // v1.0.0
+          PACELAB PRO // v1.0.0
         </span>
         <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">
           {time.toLocaleTimeString("en-US", { hour12: false })}
@@ -62,7 +62,7 @@ export default function Header() {
           </div>
           <div>
             <p className="font-retro text-2xl text-retro-white leading-none tracking-wider">
-              RUN<span className="text-retro-green">CALC</span>
+              PACE<span className="text-retro-green">LAB</span>
             </p>
             <p className="font-mono text-[9px] text-retro-white/30 tracking-[0.35em]">
               PRO EDITION

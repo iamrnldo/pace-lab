@@ -1,120 +1,96 @@
-// src/components/calculators/PaceCalculator.jsx
 import { useState } from "react";
-import { calcPace } from "../../utils/paceUtils";
 import clsx from "clsx";
+import { calcVcrProfile } from "../../utils/vcrCalculator";
 
-const PRESETS = [
-  { label: "5K", km: 5 },
-  { label: "10K", km: 10 },
-  { label: "Half", km: 21.0975 },
-  { label: "Full", km: 42.195 },
-];
+const TEST_PRESETS = [15, 30, 45, 60];
+
+const DISTANCE_PRESETS = [3000, 5000, 9000, 12000];
 
 export default function PaceCalculator() {
-  const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(45);
-  const [seconds, setSeconds] = useState(0);
-  const [distance, setDistance] = useState(10);
-  const [unit, setUnit] = useState("km");
+  const [testMinutes, setTestMinutes] = useState(45);
+  const [distanceMeters, setDistanceMeters] = useState(9000);
   const [result, setResult] = useState(null);
 
   const handleCalc = () => {
-    const totalSec =
-      Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
-    const distKm = unit === "miles" ? distance * 1.60934 : distance;
-    setResult(calcPace(totalSec, distKm));
+    setResult(calcVcrProfile(testMinutes, distanceMeters));
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* ── Input ── */}
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <div className="card-retro p-6">
-        <h2 className="font-retro text-2xl text-retro-white tracking-wide mb-6">
-          ⚡ PACE CALCULATOR
+        <h2 className="mb-2 font-retro text-2xl tracking-wide text-retro-white">
+          VCR CALCULATOR
         </h2>
+        <p className="mb-6 font-sport text-sm leading-relaxed text-retro-white/45">
+          Formula: VCR = distance (meters) ÷ total test time (seconds).
+          Based on the VCR spreadsheet for middle and long distance tests.
+        </p>
 
-        {/* time */}
         <div className="mb-5">
-          <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
-            Finish Time
+          <label className="mb-2 block font-mono text-[11px] uppercase tracking-widest text-retro-white/50">
+            Test Duration (Minutes)
           </label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { val: hours, set: setHours, ph: "HH", max: 23 },
-              { val: minutes, set: setMinutes, ph: "MM", max: 59 },
-              { val: seconds, set: setSeconds, ph: "SS", max: 59 },
-            ].map(({ val, set, ph, max }) => (
-              <input
-                key={ph}
-                type="number"
-                min={0}
-                max={max}
-                value={val}
-                onChange={(e) =>
-                  set(Math.max(0, Math.min(max, Number(e.target.value))))
-                }
-                placeholder={ph}
-                className="input-retro py-3 px-4 text-center text-lg"
-              />
-            ))}
+          <div className="relative">
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={testMinutes}
+              onChange={(e) => setTestMinutes(Number(e.target.value))}
+              className="input-retro py-3 pl-4 pr-20 text-lg"
+            />
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-sm text-retro-white/40">
+              min
+            </span>
           </div>
-        </div>
-
-        {/* unit */}
-        <div className="mb-5">
-          <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
-            Unit
-          </label>
-          <div className="flex">
-            {["km", "miles"].map((u) => (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {TEST_PRESETS.map((preset) => (
               <button
-                key={u}
-                onClick={() => setUnit(u)}
+                key={preset}
+                onClick={() => setTestMinutes(preset)}
                 className={clsx(
-                  "flex-1 py-3 font-retro tracking-widest text-sm border-2 transition-all",
-                  unit === u
-                    ? "bg-retro-green text-retro-black border-retro-green"
-                    : "bg-transparent text-retro-white/50 border-retro-gray-light hover:border-retro-green hover:text-retro-white",
+                  "border px-3 py-1 font-mono text-xs transition-all",
+                  testMinutes === preset
+                    ? "border-retro-green bg-retro-green text-retro-black"
+                    : "border-retro-gray-light text-retro-white/45 hover:border-retro-green hover:text-retro-green",
                 )}
               >
-                {u.toUpperCase()}
+                {preset} MIN
               </button>
             ))}
           </div>
         </div>
 
-        {/* distance */}
         <div className="mb-6">
-          <label className="font-mono text-[11px] text-retro-white/50 tracking-widest uppercase block mb-2">
-            Distance
+          <label className="mb-2 block font-mono text-[11px] uppercase tracking-widest text-retro-white/50">
+            Distance (Meters)
           </label>
           <div className="relative">
             <input
               type="number"
-              min={0.1}
-              step={0.01}
-              value={distance}
-              onChange={(e) => setDistance(Number(e.target.value))}
-              className="input-retro py-3 pl-4 pr-16 text-lg"
+              min={1}
+              step={1}
+              value={distanceMeters}
+              onChange={(e) => setDistanceMeters(Number(e.target.value))}
+              className="input-retro py-3 pl-4 pr-20 text-lg"
             />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 font-mono text-sm text-retro-white/40">
-              {unit}
+              m
             </span>
           </div>
-          {/* presets */}
-          <div className="flex gap-2 mt-2 flex-wrap">
-            {PRESETS.map(({ label, km }) => (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DISTANCE_PRESETS.map((preset) => (
               <button
-                key={label}
-                onClick={() =>
-                  setDistance(
-                    unit === "miles" ? +(km / 1.60934).toFixed(2) : km,
-                  )
-                }
-                className="font-mono text-xs border border-retro-gray-light text-retro-white/40
-                           px-3 py-1 hover:border-retro-green hover:text-retro-green transition-all"
+                key={preset}
+                onClick={() => setDistanceMeters(preset)}
+                className={clsx(
+                  "border px-3 py-1 font-mono text-xs transition-all",
+                  distanceMeters === preset
+                    ? "border-retro-green bg-retro-green text-retro-black"
+                    : "border-retro-gray-light text-retro-white/45 hover:border-retro-green hover:text-retro-green",
+                )}
               >
-                {label}
+                {preset} M
               </button>
             ))}
           </div>
@@ -122,81 +98,200 @@ export default function PaceCalculator() {
 
         <button
           onClick={handleCalc}
-          className="btn-retro bg-retro-green text-retro-black font-retro tracking-widest
-                     w-full py-4 text-xl"
+          className="btn-retro w-full bg-retro-green py-4 text-xl font-retro tracking-widest text-retro-black"
         >
-          CALCULATE →
+          CALCULATE VCR →
         </button>
       </div>
 
-      {/* ── Result ── */}
       <div className="flex flex-col gap-4">
         {result ? (
           <>
-            {/* main pace */}
             <div className="card-retro p-6 animate-pulse-green">
-              <p className="font-mono text-[11px] text-retro-green/60 tracking-widest uppercase mb-2">
-                Your Pace
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-widest text-retro-green/60">
+                VCR RESULT
               </p>
-              <div className="font-retro text-7xl text-retro-green animate-fade-in tabular-nums">
-                {result.pacePerKm}
+              <div className="font-retro text-6xl text-retro-green tabular-nums sm:text-7xl">
+                {result.vcrMs.toFixed(2)}
               </div>
-              <p className="font-mono text-retro-white/35 text-sm mt-2">
-                per km &nbsp;·&nbsp; {result.pacePerMile} per mile
+              <p className="mt-2 font-mono text-sm text-retro-white/40">
+                m/s · {result.vcrKmh.toFixed(2)} km/h · {result.basePacePerKm}
+                /km
+              </p>
+              <p className="mt-3 font-sport text-sm text-retro-white/50">
+                60-minute equivalent distance: {result.vcr60Km.toFixed(2)} km
               </p>
             </div>
 
-            {/* speed */}
-            <div className="card-retro p-5">
-              <p className="font-mono text-[11px] text-retro-white/40 tracking-widest uppercase mb-3">
-                Speed
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { val: result.speedKmh, unit: "km/h" },
-                  { val: result.speedMph, unit: "mph" },
-                ].map(({ val, unit: u }) => (
-                  <div key={u}>
-                    <span className="font-retro text-3xl text-retro-white tabular-nums">
-                      {val}
-                    </span>
-                    <span className="font-mono text-retro-white/35 text-xs ml-1">
-                      {u}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* projections */}
-            <div className="card-retro p-5">
-              <p className="font-mono text-[11px] text-retro-white/40 tracking-widest uppercase mb-4">
-                Projected Times
-              </p>
-              {result.projections.map(({ label, time }) => (
-                <div
-                  key={label}
-                  className="flex justify-between items-center py-2.5
-                             border-b border-retro-gray-light/25 last:border-0"
-                >
-                  <span className="font-sport text-retro-white/55 tracking-wide">
-                    {label}
-                  </span>
-                  <span className="font-retro text-retro-green text-xl tabular-nums">
-                    {time}
-                  </span>
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="card-retro p-5">
+                <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                  Pace Training Zone
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {result.trainingZones.map((zone) => (
+                    <div
+                      key={zone.label}
+                      className="border border-retro-gray-light/30 bg-retro-black/10 p-3"
+                    >
+                      <p className="font-mono text-[11px] tracking-widest text-retro-white/45">
+                        {zone.label}
+                      </p>
+                      <p className="mt-1 font-retro text-2xl text-retro-green tabular-nums">
+                        {zone.pacePerKm}
+                      </p>
+                      <p className="font-mono text-[10px] text-retro-white/30">
+                        per km
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="card-retro p-5">
+                <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                  Test Summary
+                </p>
+                <div className="space-y-3">
+                  {[
+                    ["Test Duration", `${result.testMinutes} min`],
+                    ["Distance", `${result.distanceMeters.toLocaleString()} m`],
+                    ["Base Pace", `${result.basePacePerKm}/km`],
+                    ["VCR 100%", `${result.vcrMs.toFixed(2)} m/s`],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between border-b border-retro-gray-light/20 pb-2 last:border-0 last:pb-0"
+                    >
+                      <span className="font-sport tracking-wide text-retro-white/55">
+                        {label}
+                      </span>
+                      <span className="font-retro text-lg text-retro-white tabular-nums">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="card-retro p-5">
+              <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                Interval Targets
+              </p>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-retro-gray-light/30 text-retro-white/45">
+                      {[
+                        "%",
+                        "VCR",
+                        "Pace /km",
+                        "1000 m",
+                        "400 m",
+                        "200 m",
+                      ].map((heading) => (
+                        <th
+                          key={heading}
+                          className="px-2 py-2 font-mono text-[11px] uppercase tracking-widest first:pl-0"
+                        >
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.intervals.map((item) => (
+                      <tr
+                        key={item.label}
+                        className="border-b border-retro-gray-light/15 last:border-0"
+                      >
+                        <td className="px-2 py-2 pl-0 font-retro text-retro-green">
+                          {item.label}
+                        </td>
+                        <td className="px-2 py-2 font-mono text-sm text-retro-white tabular-nums">
+                          {item.vcrMs.toFixed(2)}
+                        </td>
+                        <td className="px-2 py-2 font-retro text-retro-white tabular-nums">
+                          {item.pacePerKm}
+                        </td>
+                        <td className="px-2 py-2 font-retro text-retro-white/85 tabular-nums">
+                          {item.time1000}
+                        </td>
+                        <td className="px-2 py-2 font-retro text-retro-white/85 tabular-nums">
+                          {item.time400}
+                        </td>
+                        <td className="px-2 py-2 font-retro text-retro-white/85 tabular-nums">
+                          {item.time200}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+              <div className="card-retro p-5">
+                <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                  Middle Distance Targets
+                </p>
+                <div className="space-y-3">
+                  {result.middleDistanceTargets.map((target) => (
+                    <div
+                      key={target.label}
+                      className="flex items-center justify-between border-b border-retro-gray-light/20 pb-2 last:border-0 last:pb-0"
+                    >
+                      <div>
+                        <p className="font-retro text-lg text-retro-green">
+                          {target.label}
+                        </p>
+                        <p className="font-mono text-[10px] tracking-widest text-retro-white/30">
+                          {Math.round(target.multiplier * 100)}% · {target.pacePerKm}/km
+                        </p>
+                      </div>
+                      <span className="font-retro text-2xl text-retro-white tabular-nums">
+                        {target.totalTime}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card-retro p-5">
+                <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                  Long Distance Targets
+                </p>
+                <div className="space-y-3">
+                  {result.longDistanceTargets.map((target) => (
+                    <div
+                      key={target.label}
+                      className="flex items-center justify-between border-b border-retro-gray-light/20 pb-2 last:border-0 last:pb-0"
+                    >
+                      <div>
+                        <p className="font-retro text-lg text-retro-green">
+                          {target.label}
+                        </p>
+                        <p className="font-mono text-[10px] tracking-widest text-retro-white/30">
+                          {Math.round(target.multiplier * 100)}% · {target.pacePerKm}/km
+                        </p>
+                      </div>
+                      <span className="font-retro text-2xl text-retro-white tabular-nums">
+                        {target.totalTime}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </>
         ) : (
-          <div className="card-retro p-6 flex flex-col items-center justify-center min-h-[300px] text-center">
-            <span className="text-5xl mb-4 opacity-20">⚡</span>
-            <p className="font-retro text-retro-white/25 text-xl tracking-wider">
-              ENTER YOUR TIME
+          <div className="card-retro flex min-h-[320px] flex-col items-center justify-center p-6 text-center">
+            <p className="font-retro text-xl tracking-wider text-retro-white/25">
+              ENTER TEST DATA
             </p>
-            <p className="font-sport text-retro-white/20 text-sm mt-2">
-              Results appear here
+            <p className="mt-2 font-sport text-sm text-retro-white/20">
+              VCR, interval targets, and distance projections appear here.
             </p>
           </div>
         )}

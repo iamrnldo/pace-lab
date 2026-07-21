@@ -3,20 +3,27 @@ import { Link } from "react-router-dom";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const STRIP_ITEMS = Array.from({ length: 12 }, () =>
+    "RUN FAST · TRAIN SMART · CALCULATE BETTER ·",
+  );
 
   return (
     <footer className="border-t-2 border-retro-green/20 mt-24">
       {/* top green strip */}
       <div className="bg-retro-green py-1 overflow-hidden">
         <div className="marquee-wrap">
-          <div className="marquee-track">
-            {[...Array(12)].map((_, i) => (
-              <span
-                key={i}
-                className="font-retro text-retro-black text-xs tracking-[0.3em] mx-8"
-              >
-                RUN FAST · TRAIN SMART · CALCULATE BETTER ·
-              </span>
+          <div className="marquee-track marquee-track-left">
+            {[0, 1].map((group) => (
+              <div key={group} className="marquee-group items-center">
+                {STRIP_ITEMS.map((item, i) => (
+                  <span
+                    key={`${group}-${i}`}
+                    className="font-retro text-retro-black text-xs tracking-[0.3em]"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -26,7 +33,7 @@ export default function Footer() {
         {/* brand */}
         <div>
           <p className="font-retro text-3xl text-retro-white mb-1">
-            RUN<span className="text-retro-green">CALC</span>
+            PACE<span className="text-retro-green">LAB</span>
           </p>
           <p className="font-mono text-[10px] text-retro-white/25 tracking-[0.3em] mb-4">
             PRO EDITION
@@ -44,11 +51,9 @@ export default function Footer() {
           </h4>
           <ul className="space-y-2">
             {[
-              ["Pace Calculator", "pace-calculator"],
+              ["VCR Calculator", "vcr-calculator"],
               ["Race Predictor", "race-predictor"],
               ["Training Zones", "training-zone"],
-              ["VO2 Max", "vo2max-calculator"],
-              ["Calorie Burner", "calorie-calculator"],
             ].map(([label, type]) => (
               <li key={type}>
                 <Link
@@ -88,7 +93,7 @@ export default function Footer() {
 
       <div className="border-t border-retro-gray-light/10 px-6 py-4 flex items-center justify-between">
         <span className="font-mono text-[11px] text-retro-white/20 tracking-widest">
-          © {year} RUNCALC PRO. ALL RIGHTS RESERVED.
+          © {year} PACELAB PRO. ALL RIGHTS RESERVED.
         </span>
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
