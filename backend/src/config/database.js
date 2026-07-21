@@ -13,7 +13,6 @@ const DB_CONFIG = {
 
 const DB_NAME = process.env.DB_NAME || "running_calculator";
 
-// Main pool — connected to running_calculator
 const pool = new Pool({
   ...DB_CONFIG,
   database: DB_NAME,
@@ -27,22 +26,15 @@ pool.on("error", (err) => {
   process.exit(-1);
 });
 
-/**
- * Auto-create database + run schema if needed
- */
 async function initDatabase() {
-  // Step 1: Connect to default 'postgres' DB to create our DB
+  // Step 1: Create database if not exists
   const adminPool = new Pool({ ...DB_CONFIG, database: "postgres" });
-
   try {
-    // Check if database exists
     const { rows } = await adminPool.query(
       `SELECT 1 FROM pg_database WHERE datname = $1`,
       [DB_NAME]
     );
-
     if (rows.length === 0) {
-      // Create database (can't use parameterized query for CREATE DATABASE)
       await adminPool.query(`CREATE DATABASE ${DB_NAME}`);
       console.log(`✅ Database "${DB_NAME}" created`);
     } else {
@@ -50,7 +42,6 @@ async function initDatabase() {
     }
   } catch (err) {
     if (err.code === "42P04") {
-      // Database already exists (race condition)
       console.log(`📦 Database "${DB_NAME}" already exists`);
     } else {
       throw err;
@@ -59,16 +50,14 @@ async function initDatabase() {
     await adminPool.end();
   }
 
-  // Step 2: Run schema.sql if tables don't exist
+  // Step 2: Run schema if tables don't exist
   try {
     const { rows } = await pool.query(
-      `SELECT 1 FROM information_schema.tables 
-       WHERE table_name = 'users' AND table_schema = 'public'`
+      `SELECT 1 FROM information_schema.tables WHERE table_name = 'users' AND table_schema = 'public'`
     );
 
     if (rows.length === 0) {
       console.log("🔧 Running schema...");
-
       const schemaPath = path.join(__dirname, "../../../database/schemas/schema.sql");
       const seedPath = path.join(__dirname, "../../../database/schemas/seed.sql");
 
@@ -77,8 +66,7 @@ async function initDatabase() {
         await pool.query(schema);
         console.log("✅ Schema applied");
       } else {
-        console.warn("⚠️  schema.sql not found at:", schemaPath);
-        // Create minimal tables
+        console.warn("⚠️  schema.sql not found, using minimal schema");
         await createMinimalSchema();
       }
 
@@ -92,7 +80,6 @@ async function initDatabase() {
     }
   } catch (err) {
     console.error("❌ Schema error:", err.message);
-    // Try minimal schema as fallback
     try {
       await createMinimalSchema();
     } catch (fallbackErr) {
@@ -100,8 +87,31 @@ async function initDatabase() {
     }
   }
 
-  // Step 3: Seed admin user if not exists
+  // Step 3: Auto-migrate — pastikan kolom yang dibutuhkan ada
+  await autoMigrate();
+
+  // Step 4: Seed admin
   await seedAdmin();
+}
+
+async function autoMigrate() {
+  console.log("🔄 Checking migrations...");
+
+  try {
+    // Cek apakah kolom password_hash ada
+    const { rows } = await pool.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND column_name = 'password_hash'
+    `);
+
+    if (rows.length === 0) {
+      console.log("➕ Adding password_hash column...");
+      await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255)`);
+      console.log("✅ password_hash column added");
+    }
+  } catch (err) {
+    console.warn("⚠️  Migration warning:", err.message);
+  }
 }
 
 async function seedAdmin() {
@@ -111,11 +121,12 @@ async function seedAdmin() {
 
   try {
     const { rows } = await pool.query(
-      `SELECT id FROM users WHERE email = $1`,
+      `SELECT id, password_hash FROM users WHERE email = $1`,
       [adminEmail]
     );
 
     if (rows.length === 0) {
+      // Admin belum ada — buat baru
       const bcrypt = require("bcryptjs");
       const passwordHash = await bcrypt.hash(adminPassword, 12);
 
@@ -124,46 +135,45 @@ async function seedAdmin() {
          VALUES ($1, $2, $3, 'admin', true, true)`,
         [adminEmail, adminName, passwordHash]
       );
-      console.log(`✅ Admin user created: ${adminEmail}`);
-      console.log(`🔑 Default password: ${adminPassword}`);
+      console.log(`✅ Admin created: ${adminEmail}`);
+      console.log(`🔑 Password: ${adminPassword}`);
+    } else if (!rows[0].password_hash) {
+      // Admin ada tapi belum punya password — update
+      const bcrypt = require("bcryptjs");
+      const passwordHash = await bcrypt.hash(adminPassword, 12);
+
+      await pool.query(
+        `UPDATE users SET password_hash = $1, role = 'admin', is_active = true WHERE email = $2`,
+        [passwordHash, adminEmail]
+      );
+      console.log(`✅ Admin password set: ${adminEmail}`);
+      console.log(`🔑 Password: ${adminPassword}`);
     } else {
-      console.log(`👤 Admin user already exists: ${adminEmail}`);
+      console.log(`👤 Admin exists: ${adminEmail}`);
     }
   } catch (err) {
-    console.warn("⚠️  Could not seed admin:", err.message);
+    console.error("❌ Admin seed error:", err.message);
   }
 }
 
-/**
- * Minimal schema fallback — just enough for auth + admin to work
- */
 async function createMinimalSchema() {
   console.log("🔧 Creating minimal schema...");
-
   await pool.query(`
-    -- Extensions
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-    -- Enum types
-    DO $$ BEGIN
-      CREATE TYPE user_role AS ENUM ('admin', 'user');
-    EXCEPTION WHEN duplicate_object THEN null;
-    END $$;
+    DO $$ BEGIN CREATE TYPE user_role AS ENUM ('admin', 'user');
+    EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-    DO $$ BEGIN
-      CREATE TYPE unit_preference AS ENUM ('metric', 'imperial');
-    EXCEPTION WHEN duplicate_object THEN null;
-    END $$;
+    DO $$ BEGIN CREATE TYPE unit_preference AS ENUM ('metric', 'imperial');
+    EXCEPTION WHEN duplicate_object THEN null; END $$;
 
     DO $$ BEGIN
       CREATE TYPE activity_action AS ENUM (
         'login', 'logout', 'calculation', 'profile_update',
         'goal_created', 'goal_completed', 'admin_action'
       );
-    EXCEPTION WHEN duplicate_object THEN null;
-    END $$;
+    EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-    -- Users table
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       google_id VARCHAR(255) UNIQUE,
@@ -187,7 +197,6 @@ async function createMinimalSchema() {
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
 
-    -- Activity logs
     CREATE TABLE IF NOT EXISTS activity_logs (
       id BIGSERIAL PRIMARY KEY,
       user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -199,7 +208,6 @@ async function createMinimalSchema() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
-    -- Refresh tokens
     CREATE TABLE IF NOT EXISTS refresh_tokens (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -211,17 +219,13 @@ async function createMinimalSchema() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
-    -- Indexes
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
     CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON activity_logs(user_id);
-    CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action);
-    CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
   `);
-
   console.log("✅ Minimal schema created");
 }
 

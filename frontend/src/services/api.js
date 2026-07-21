@@ -22,13 +22,18 @@ api.interceptors.response.use(
   async (err) => {
     const original = err.config;
 
-    if (err.response?.status === 401 && !original._retry) {
+    // JANGAN intercept login/register endpoints
+    const isAuthEndpoint =
+      original.url?.includes("/auth/admin/login") ||
+      original.url?.includes("/auth/refresh");
+
+    if (err.response?.status === 401 && !original._retry && !isAuthEndpoint) {
       original._retry = true;
       try {
         const { data } = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
           {},
-          { withCredentials: true },
+          { withCredentials: true }
         );
         localStorage.setItem("access_token", data.accessToken);
         original.headers.Authorization = `Bearer ${data.accessToken}`;
@@ -38,8 +43,9 @@ api.interceptors.response.use(
         window.location.href = "/login";
       }
     }
+
     return Promise.reject(err);
-  },
+  }
 );
 
 export default api;

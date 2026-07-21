@@ -1,5 +1,5 @@
 // src/pages/LoginPage.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const redirected = useRef(false);
 
   // Handle token from Google OAuth callback
   useEffect(() => {
@@ -34,18 +35,16 @@ export default function LoginPage() {
       return;
     }
 
-    if (token) {
+    if (token && checkAuth) {
       localStorage.setItem("access_token", token);
-      // Fetch profile, redirect setelah user ter-set
-      if (checkAuth) {
-        checkAuth();
-      }
+      checkAuth();
     }
   }, [searchParams, checkAuth]);
 
-  // Redirect jika sudah login — INI yang handle semua redirect
+  // Redirect jika sudah login
   useEffect(() => {
-    if (user) {
+    if (user && !redirected.current) {
+      redirected.current = true;
       if (user.role === "admin") {
         navigate("/admin", { replace: true });
       } else {
@@ -73,8 +72,11 @@ export default function LoginPage() {
       // Simpan token
       localStorage.setItem("access_token", data.accessToken);
 
-      // Force full page reload — AuthContext akan fetch profile & redirect ke /admin
-      window.location.href = "/admin";
+      // Set user LANGSUNG dari response login — tidak perlu fetch profile lagi
+      if (data.user && setUser) {
+        setUser(data.user);
+      }
+      // useEffect di atas akan detect user terisi dan redirect ke /admin
     } catch (err) {
       setError(err.response?.data?.error || "Login failed");
       setLoading(false);
@@ -104,10 +106,7 @@ export default function LoginPage() {
           {/* Tab Switcher */}
           <div className="flex mb-6 border-b-2 border-retro-green/20">
             <button
-              onClick={() => {
-                setActiveTab("user");
-                setError("");
-              }}
+              onClick={() => { setActiveTab("user"); setError(""); }}
               className={`flex-1 py-3 font-retro text-lg tracking-widest transition-colors relative ${
                 activeTab === "user"
                   ? "text-retro-green"
@@ -120,10 +119,7 @@ export default function LoginPage() {
               )}
             </button>
             <button
-              onClick={() => {
-                setActiveTab("admin");
-                setError("");
-              }}
+              onClick={() => { setActiveTab("admin"); setError(""); }}
               className={`flex-1 py-3 font-retro text-lg tracking-widest transition-colors relative ${
                 activeTab === "admin"
                   ? "text-retro-green"
