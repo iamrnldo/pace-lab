@@ -57,7 +57,7 @@ export default function CreateTrainingProgramPage() {
             onClick={() => navigate("/calculator")}
             className="btn-retro bg-retro-green px-8 py-3 text-retro-black"
           >
-            GO TO CALCULATOR
+            KE KALKULATOR
           </button>
         </div>
       </section>
@@ -102,8 +102,8 @@ export default function CreateTrainingProgramPage() {
     const iPace = getPace("100%");
 
     for (let w = 1; w <= weeks; w++) {
-      // 3:1 MESOCYCLE LOGIC
-      const weekInCycle = (w - 1) % 4;
+      // 3:1 MESOCYCLE LOGIC (Recovery Week at Week 2)
+      const weekInCycle = (w - 1) % 4; // 0=w1, 1=w2, 2=w3, 3=w4
       const cycleNumber = Math.floor((w - 1) / 4);
 
       let weeklyMileage;
@@ -111,32 +111,32 @@ export default function CreateTrainingProgramPage() {
       const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
 
       if (isRecoveryWeek) {
-        weeklyMileage = cycleStartMileage * 0.7;
+        // Recovery week: 85% dari beban dasar untuk transisi yang halus
+        weeklyMileage = cycleStartMileage * 0.85;
       } else {
-        const buildingMultipliers = [1.0, 0.7, 1.1, 1.2];
-        weeklyMileage = cycleStartMileage * buildingMultipliers[weekInCycle];
+        // Multipliers: W1=1.0, W3=1.1, W4=1.2
+        const multipliers = [1.0, 0.85, 1.1, 1.2];
+        weeklyMileage = cycleStartMileage * multipliers[weekInCycle];
       }
 
-      // ALLOCATION RULES
       const longRunMileage = weeklyMileage * 0.3;
       const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
       const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
       const easyMileage =
         weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
 
-      // PHASE LOGIC
       const competitionWeek = weeks;
       const preCompetitionWeeks = 3;
 
       let phase = 1;
       if (w === competitionWeek) {
-        phase = 4; // Competition
+        phase = 4;
       } else if (w > competitionWeek - 1 - preCompetitionWeeks) {
-        phase = 3; // Pre Competition
+        phase = 3;
       } else if (w <= foundationWeeks) {
-        phase = 1; // General Preparation
+        phase = 1;
       } else {
-        phase = 2; // Specific Preparation
+        phase = 2;
       }
 
       const weekData = {
@@ -151,7 +151,6 @@ export default function CreateTrainingProgramPage() {
           let activity = "Easy Run";
           let pace = ePace;
 
-          // Khusus Minggu Kompetisi (Fase 4)
           if (phase === 4) {
             if (
               day === "Minggu" ||
