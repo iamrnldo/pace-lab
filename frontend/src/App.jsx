@@ -11,6 +11,7 @@ import CalculatorPage from "./pages/CalculatorPage";
 import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
+import CreateTrainingProgramPage from "./pages/CreateTrainingProgramPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminPage from "./pages/AdminPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -64,6 +65,16 @@ export default function App() {
             element={
               <AuthGuard>
                 <DashboardPage />
+              </AuthGuard>
+            }
+          />
+
+          {/* Create Training Program — protected */}
+          <Route
+            path="create-training-program"
+            element={
+              <AuthGuard>
+                <CreateTrainingProgramPage />
               </AuthGuard>
             }
           />
