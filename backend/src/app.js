@@ -24,8 +24,9 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Serve uploaded files (lokal: backend/uploads, serverless: /tmp/uploads)
+const { uploadsDir } = require("./config/uploads");
+app.use("/uploads", express.static(uploadsDir));
 
 // Passport
 app.use(passport.initialize());
