@@ -4,8 +4,18 @@ import clsx from "clsx";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
 const MONTHS_LIST = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  "Januari",
+  "Februari",
+  "Maret",
+  "April",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
+  "September",
+  "Oktober",
+  "November",
+  "Desember",
 ];
 
 const Label = ({ children }) => (
@@ -22,6 +32,7 @@ export default function CreateTrainingProgramPage() {
   const [formData, setFormData] = useState({
     raceName: "",
     raceEvent: "5K",
+    level: "beginner",
     prepMonths: 4,
     startMonth: "Agustus",
     endMonth: "November",
@@ -29,12 +40,15 @@ export default function CreateTrainingProgramPage() {
   });
 
   const [showProgram, setShowProgram] = useState(false);
+  const [activeWeek, setActiveWeek] = useState(1);
 
   if (!vcrData) {
     return (
       <section className="max-w-4xl mx-auto px-4 pt-36 pb-24 text-center">
         <div className="card-retro p-10">
-          <h2 className="font-retro text-3xl text-retro-white mb-4">NO VCR DATA FOUND</h2>
+          <h2 className="font-retro text-3xl text-retro-white mb-4">
+            NO VCR DATA FOUND
+          </h2>
           <p className="text-retro-white/50 mb-8 font-sport">
             Please calculate your VCR first before creating a training program.
           </p>
@@ -61,90 +75,91 @@ export default function CreateTrainingProgramPage() {
   const generatedProgram = useMemo(() => {
     if (!showProgram) return null;
 
-    // Simplified Jack Daniels' inspired logic
-    // Phase 1: 25% of time - Foundation (Easy runs)
-    // Phase 2: 25% of time - Early Quality (Easy + Repetitions)
-    // Phase 3: 25% of time - Transition Quality (Easy + Intervals)
-    // Phase 4: 25% of time - Final Quality (Easy + Threshold + Taper)
-
     const weeks = formData.prepMonths * 4;
     const program = [];
 
+    const mileageMap = {
+      "5K": { beginner: 16, intermediate: 24 },
+      "10K": { beginner: 25, intermediate: 30 },
+      "Half Marathon": { beginner: 31, intermediate: 50 },
+      "Full Marathon": { beginner: 50, intermediate: 100 },
+    };
+
+    const baseMileage = mileageMap[formData.raceEvent]?.[formData.level] || 20;
+    const foundationWeeks =
+      formData.level === "beginner"
+        ? Math.ceil(weeks * 0.3)
+        : Math.ceil(weeks * 0.2);
+
     const getPace = (label) => {
-        const found = vcrData.intervals.find(i => i.label === label);
-        return found ? found.pacePerKm : vcrData.basePacePerKm;
+      const found = vcrData.intervals.find((i) => i.label === label);
+      return found ? found.pacePerKm : vcrData.basePacePerKm;
     };
 
     const ePace = getPace("70%");
-    const mPace = getPace("80%");
     const tPace = getPace("90%");
     const iPace = getPace("100%");
-    const rPace = getPace("110%");
 
     for (let w = 1; w <= weeks; w++) {
-      const phase = Math.ceil((w / weeks) * 4);
+      const increaseFactor = Math.floor((w - 1) / 2) * 0.1;
+      const weeklyMileage = baseMileage * (1 + increaseFactor);
+
+      const longRunMileage = weeklyMileage * 0.3;
+      const tempoMileage = weeklyMileage * 0.15;
+      const intervalMileage = weeklyMileage * 0.12;
+      const easyMileage =
+        weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
+
+      let phase = 1;
+      if (w <= foundationWeeks) phase = 1;
+      else if (w <= weeks / 2) phase = 2;
+      else if (w <= (weeks * 3) / 4) phase = 3;
+      else phase = 4;
+
       const weekData = {
         week: w,
+        mileage: weeklyMileage.toFixed(1),
         phase,
         days: DAYS.map((day) => {
-          if (!formData.trainingDays.includes(day)) return { day, activity: "Istirahat", pace: "-" };
+          if (!formData.trainingDays.includes(day))
+            return { day, activity: "Istirahat", pace: "-", distance: "-" };
 
-          let activity = "Lari Santai (Easy Run)";
+          let activity = "Easy Run";
           let pace = ePace;
-          let details = "30-50 menit kecepatan nyaman";
+          let distance = (
+            easyMileage /
+            (formData.trainingDays.length - (phase > 1 ? 2 : 1))
+          ).toFixed(1);
 
-          // Saturday/Sunday Long Run
-          if (day === "Minggu" || (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))) {
-             activity = "Lari Jauh (Long Run)";
-             details = `${20 + Math.min(w, 10)}% dari total volume mingguan, kecepatan stabil`;
-             pace = ePace;
-          } else {
-              // Quality Sessions
-              const trainingDaysInWeek = formData.trainingDays.filter(d => d !== "Minggu" && d !== "Sabtu");
-              const isFirstQuality = day === trainingDaysInWeek[0];
-              const isSecondQuality = day === trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)] && trainingDaysInWeek.length > 2;
-
-              if (isFirstQuality) {
-                  if (phase === 1) {
-                      activity = "Lari Santai + Strides";
-                      details = "40 menit E + 6-8 x 20 detik lari cepat (strides)";
-                      pace = ePace;
-                  } else if (phase === 2) {
-                      activity = "Sesi Repetisi (R)";
-                      pace = rPace;
-                      details = "10 x 400m pada pace R dengan 400m jog pemulihan";
-                  } else if (phase === 3) {
-                      activity = "Sesi Interval (I)";
-                      pace = iPace;
-                      details = "6 x 800m pada pace I dengan 2-3 menit pemulihan";
-                  } else if (phase === 4) {
-                      activity = "Sesi Threshold (T)";
-                      pace = tPace;
-                      details = "20 menit stabil pada pace T atau 4 x 5 menit";
-                  }
-              } else if (isSecondQuality) {
-                  if (phase === 2) {
-                      activity = "Lari Santai + Strides";
-                      details = "30 menit E + 6 x 30 detik lari cepat (strides)";
-                      pace = ePace;
-                  } else if (phase === 3) {
-                      activity = "Sesi Threshold (T)";
-                      pace = tPace;
-                      details = "3 x 3km pada pace T dengan 2 menit istirahat";
-                  } else if (phase === 4) {
-                      activity = "Latihan Pace Lomba";
-                      pace = mPace;
-                      details = "Latihan pace lomba selama 30-40 menit";
-                  }
+          if (
+            day === "Minggu" ||
+            (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))
+          ) {
+            activity = "Long Run";
+            pace = ePace;
+            distance = longRunMileage.toFixed(1);
+          } else if (phase > 1) {
+            const trainingDaysInWeek = formData.trainingDays.filter(
+              (d) => d !== "Minggu" && d !== "Sabtu",
+            );
+            if (day === trainingDaysInWeek[0]) {
+              if (phase === 2) {
+                activity = "Tempo Run";
+                pace = tPace;
+                distance = tempoMileage.toFixed(1);
+              } else if (phase >= 3) {
+                activity = "Interval Run";
+                pace = iPace;
+                distance = intervalMileage.toFixed(1);
               }
+            } else if (day === trainingDaysInWeek[1] && phase >= 3) {
+              activity = "Tempo Run";
+              pace = tPace;
+              distance = tempoMileage.toFixed(1);
+            }
           }
 
-          // Tapering in last 2 weeks
-          if (w > weeks - 2) {
-              details = "(Tapering) " + details.replace(/\d+ menit/g, (m) => Math.round(parseInt(m) * 0.7) + " menit");
-          }
-
-          return { day, activity, pace, details };
+          return { day, activity, pace, distance: distance + " Km" };
         }),
       };
       program.push(weekData);
@@ -159,7 +174,8 @@ export default function CreateTrainingProgramPage() {
           // PROGRAM GENERATOR
         </span>
         <h1 className="font-retro text-5xl md:text-7xl text-retro-white mt-1 leading-none">
-          TRAINING PROGRAM<span className="text-retro-green animate-blink">_</span>
+          TRAINING PROGRAM
+          <span className="text-retro-green animate-blink">_</span>
         </h1>
       </div>
 
@@ -172,7 +188,9 @@ export default function CreateTrainingProgramPage() {
                 <input
                   type="text"
                   value={formData.raceName}
-                  onChange={(e) => setFormData({ ...formData, raceName: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, raceName: e.target.value })
+                  }
                   placeholder="Contoh: Jakarta Marathon"
                   className="input-retro w-full"
                 />
@@ -181,17 +199,47 @@ export default function CreateTrainingProgramPage() {
                 <Label>Nomor Perlombaan</Label>
                 <select
                   value={formData.raceEvent}
-                  onChange={(e) => setFormData({ ...formData, raceEvent: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, raceEvent: e.target.value })
+                  }
                   className="input-retro w-full"
                 >
-                  <option value="800M">800M</option>
-                  <option value="1500M">1500M</option>
-                  <option value="3K">3K</option>
                   <option value="5K">5K</option>
                   <option value="10K">10K</option>
                   <option value="Half Marathon">Half Marathon</option>
                   <option value="Full Marathon">Full Marathon</option>
                 </select>
+              </div>
+              <div>
+                <Label>Level Pelari</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, level: "beginner" })
+                    }
+                    className={clsx(
+                      "btn-retro py-2 text-sm",
+                      formData.level === "beginner"
+                        ? "bg-retro-green text-retro-black"
+                        : "border-retro-white/30 text-retro-white",
+                    )}
+                  >
+                    BEGINNER
+                  </button>
+                  <button
+                    onClick={() =>
+                      setFormData({ ...formData, level: "intermediate" })
+                    }
+                    className={clsx(
+                      "btn-retro py-2 text-sm",
+                      formData.level === "intermediate"
+                        ? "bg-retro-green text-retro-black"
+                        : "border-retro-white/30 text-retro-white",
+                    )}
+                  >
+                    INTERMEDIATE
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -202,7 +250,10 @@ export default function CreateTrainingProgramPage() {
                     max="12"
                     value={formData.prepMonths}
                     onChange={(e) =>
-                      setFormData({ ...formData, prepMonths: parseInt(e.target.value) })
+                      setFormData({
+                        ...formData,
+                        prepMonths: parseInt(e.target.value),
+                      })
                     }
                     className="input-retro w-full"
                   />
@@ -212,7 +263,9 @@ export default function CreateTrainingProgramPage() {
                   <div className="flex items-center gap-2">
                     <select
                       value={formData.startMonth}
-                      onChange={(e) => setFormData({ ...formData, startMonth: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startMonth: e.target.value })
+                      }
                       className="input-retro w-full text-xs"
                     >
                       {MONTHS_LIST.map((m) => (
@@ -224,7 +277,9 @@ export default function CreateTrainingProgramPage() {
                     <span className="text-retro-white/50">-</span>
                     <select
                       value={formData.endMonth}
-                      onChange={(e) => setFormData({ ...formData, endMonth: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endMonth: e.target.value })
+                      }
                       className="input-retro w-full text-xs"
                     >
                       {MONTHS_LIST.map((m) => (
@@ -262,7 +317,9 @@ export default function CreateTrainingProgramPage() {
           <div className="mt-8">
             <button
               onClick={() => setShowProgram(true)}
-              disabled={!formData.raceName || formData.trainingDays.length === 0}
+              disabled={
+                !formData.raceName || formData.trainingDays.length === 0
+              }
               className="btn-retro w-full bg-retro-green py-4 text-xl font-retro tracking-widest text-retro-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
               BUAT PROGRAM LATIHAN →
@@ -271,82 +328,141 @@ export default function CreateTrainingProgramPage() {
         </>
       ) : (
         <div className="space-y-8 animate-fade-in">
-           <div className="flex justify-between items-end">
-                <div>
-                    <h2 className="font-retro text-3xl text-retro-green">{formData.raceName.toUpperCase()}</h2>
-                    <p className="font-mono text-retro-white/60">
-                        {formData.raceEvent} · {formData.prepMonths} Bulan ({formData.startMonth} - {formData.endMonth})
-                    </p>
-                </div>
-                <button
-                    onClick={() => setShowProgram(false)}
-                    className="text-retro-green font-mono text-sm hover:underline"
-                >
-                    UBAH PENGATURAN
-                </button>
-           </div>
+          <div className="flex justify-between items-end">
+            <div>
+              <h2 className="font-retro text-3xl text-retro-green">
+                {formData.raceName.toUpperCase()}
+              </h2>
+              <p className="font-mono text-retro-white/60">
+                {formData.raceEvent} · {formData.prepMonths} Bulan (
+                {formData.startMonth} - {formData.endMonth})
+              </p>
+            </div>
+            <button
+              onClick={() => setShowProgram(false)}
+              className="text-retro-green font-mono text-sm hover:underline"
+            >
+              UBAH PENGATURAN
+            </button>
+          </div>
 
-           <div className="space-y-12">
-              {generatedProgram.map((week) => (
-                <div key={week.week} className="card-retro overflow-hidden">
-                    <div className="bg-retro-gray-mid/50 px-6 py-3 flex justify-between items-center border-b border-retro-gray-light">
-                        <span className="font-retro text-xl text-retro-white">MINGGU {week.week}</span>
-                        <span className="font-mono text-xs text-retro-green px-2 py-1 border border-retro-green/30">
-                            FASE {week.phase}: {
-                                week.phase === 1 ? "Fondasi (Base)" :
-                                week.phase === 2 ? "Kualitas Awal (Repetition)" :
-                                week.phase === 3 ? "Transisi Kualitas (Interval)" : "Kualitas Akhir & Taper"
-                            }
-                        </span>
+          <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
+            {generatedProgram.map((week) => (
+              <button
+                key={week.week}
+                onClick={() => setActiveWeek(week.week)}
+                className={clsx(
+                  "font-retro whitespace-nowrap border-b-2 -mb-0.5 px-5 py-3 text-xs tracking-widest transition-all duration-150",
+                  activeWeek === week.week
+                    ? "border-retro-green bg-retro-green text-retro-black"
+                    : "border-transparent text-retro-white/50 hover:bg-retro-gray-mid hover:text-retro-white",
+                )}
+              >
+                MINGGU {week.week}
+              </button>
+            ))}
+          </div>
+
+          <div className="space-y-12">
+            {generatedProgram
+              .filter((w) => w.week === activeWeek)
+              .map((week) => (
+                <div
+                  key={week.week}
+                  className="card-retro overflow-hidden animate-fade-in"
+                >
+                  <div className="bg-retro-gray-mid/50 px-6 py-4 flex justify-between items-center border-b border-retro-gray-light">
+                    <div>
+                      <span className="font-retro text-2xl text-retro-white">
+                        MINGGU {week.week}
+                      </span>
+                      <p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">
+                        Total Mileage: {week.mileage} Km
+                      </p>
                     </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-retro-gray-light/30">
-                                    <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Hari</th>
-                                    <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Aktivitas</th>
-                                    <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Pace</th>
-                                    <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Detail</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {week.days.map((d, idx) => (
-                                    <tr key={idx} className={clsx(
-                                        "border-b border-retro-gray-light/10 last:border-0",
-                                        d.activity === "Rest" ? "opacity-30" : ""
-                                    )}>
-                                        <td className="px-6 py-4 font-retro text-retro-white">{d.day}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={clsx(
-                                                "font-sport text-sm",
-                                                d.activity.includes("Session") || d.activity.includes("Kualitas") ? "text-retro-green" : "text-retro-white/80"
-                                            )}>{d.activity}</span>
-                                        </td>
-                                        <td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td>
-                                        <td className="px-6 py-4 font-mono text-[11px] text-retro-white/50">{d.details}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <span className="font-mono text-xs text-retro-green px-3 py-1 border border-retro-green/30">
+                      FASE {week.phase}:{" "}
+                      {week.phase === 1
+                        ? "Fondasi (Base)"
+                        : week.phase === 2
+                          ? "Kualitas Awal"
+                          : week.phase === 3
+                            ? "Transisi Kualitas"
+                            : "Kualitas Akhir & Taper"}
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-retro-gray-light/30">
+                          <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                            Hari
+                          </th>
+                          <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                            Aktivitas
+                          </th>
+                          <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                            Jarak
+                          </th>
+                          <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                            Pace
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {week.days.map((d, idx) => (
+                          <tr
+                            key={idx}
+                            className={clsx(
+                              "border-b border-retro-gray-light/10 last:border-0",
+                              d.activity === "Istirahat" ? "opacity-30" : "",
+                            )}
+                          >
+                            <td className="px-6 py-4 font-retro text-retro-white">
+                              {d.day}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={clsx(
+                                  "font-sport text-sm",
+                                  d.activity !== "Easy Run" &&
+                                    d.activity !== "Istirahat"
+                                    ? "text-retro-green"
+                                    : "text-retro-white/80",
+                                )}
+                              >
+                                {d.activity}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-sm text-retro-white">
+                              {d.distance}
+                            </td>
+                            <td className="px-6 py-4 font-mono text-sm text-retro-white">
+                              {d.pace}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               ))}
-           </div>
+          </div>
 
-           <div className="flex gap-4">
-                <button
-                    onClick={() => window.print()}
-                    className="btn-retro flex-1 border-retro-white/30 text-retro-white py-4 font-retro tracking-widest hover:border-retro-white"
-                >
-                    CETAK PROGRAM
-                </button>
-                <button
-                    onClick={() => navigate("/calculator")}
-                    className="btn-retro flex-1 bg-retro-green text-retro-black py-4 font-retro tracking-widest"
-                >
-                    KEMBALI KE KALKULATOR
-                </button>
-           </div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => window.print()}
+              className="btn-retro flex-1 border-retro-white/30 text-retro-white py-4 font-retro tracking-widest hover:border-retro-white"
+            >
+              CETAK PROGRAM
+            </button>
+            <button
+              onClick={() => navigate("/calculator")}
+              className="btn-retro flex-1 bg-retro-green text-retro-black py-4 font-retro tracking-widest"
+            >
+              KEMBALI KE KALKULATOR
+            </button>
+          </div>
         </div>
       )}
     </section>
