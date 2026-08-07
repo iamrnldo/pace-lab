@@ -79,7 +79,7 @@ export default function CreateTrainingProgramPage() {
     const weeks = formData.prepMonths * 4;
     const program = [];
 
-    // MILLEAGE SCIENCE
+    // 1. MILLEAGE SCIENCE
     const mileageMap = {
       "5K": { beginner: 16, intermediate: 24 },
       "10K": { beginner: 25, intermediate: 30 },
@@ -93,7 +93,7 @@ export default function CreateTrainingProgramPage() {
         ? Math.ceil(weeks * 0.3)
         : Math.ceil(weeks * 0.2);
     const competitionWeek = weeks;
-    const preCompetitionWeeks = 3;
+    const preCompetitionWeeks = 2; // Tapering 2 minggu
     const lastSpecificPrepWeek = competitionWeek - preCompetitionWeeks - 1;
 
     const getPace = (label) => {
@@ -105,31 +105,35 @@ export default function CreateTrainingProgramPage() {
     const tPace = getPace("90%");
     const iPace = getPace("100%");
 
-    // Calculate Peak Reference
+    // Calculate Peak Reference (Volume tertinggi di akhir Fase 2)
     const peakCycleNumber = Math.floor((lastSpecificPrepWeek - 1) / 4);
     const peakMileage = startMileage * (1 + peakCycleNumber * 0.1) * 1.2;
 
     for (let w = 1; w <= weeks; w++) {
-      // 1. PHASE DETERMINATION
+      // 2. PHASE DETERMINATION
       let phase = 1;
       if (w === competitionWeek) phase = 4;
       else if (w > lastSpecificPrepWeek) phase = 3;
       else if (w <= foundationWeeks) phase = 1;
       else phase = 2;
 
-      // 2. MILLEAGE LOGIC (Mesocycle 3:1)
+      // 3. MILLEAGE LOGIC (Mesocycle 3:1)
       const weekInCycle = (w - 1) % 4;
       const cycleNumber = Math.floor((w - 1) / 4);
-      let isRecoveryWeek = weekInCycle === 3;
+
+      // Jika minggu akhir Specific Prep bentrok dengan Recovery, paksa jadi Peak Week
+      let isRecoveryWeek =
+        weekInCycle === 3 && w !== lastSpecificPrepWeek && phase < 3;
       let weeklyMileage;
 
       if (phase === 3) {
+        // TAPERING: Penurunan volume 30-70%
         const taperWeekNum = w - lastSpecificPrepWeek;
-        const taperFactors = [0.8, 0.65, 0.5]; // Tapering 20-50%
+        const taperFactors = [0.7, 0.5]; // Minggu 1: Turun 30%, Minggu 2: Turun 50%
         weeklyMileage = peakMileage * taperFactors[taperWeekNum - 1];
         isRecoveryWeek = false;
       } else if (phase === 4) {
-        weeklyMileage = peakMileage * 0.35; // Race week reduction
+        weeklyMileage = peakMileage * 0.35; // Minggu Lomba
         isRecoveryWeek = false;
       } else {
         const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
@@ -139,9 +143,9 @@ export default function CreateTrainingProgramPage() {
         weeklyMileage = cycleStartMileage * effectiveMultiplier;
       }
 
-      // 3. QUALITY SESSION RULES
+      // 4. QUALITY SESSION RULES
       const hasInterval = phase === 2 && !isRecoveryWeek;
-      const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek; // Intensitas terjaga saat Taper
+      const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek;
 
       const longRunMileage = weeklyMileage * 0.3;
       const intervalMileage = hasInterval ? weeklyMileage * 0.12 : 0;
@@ -192,6 +196,7 @@ export default function CreateTrainingProgramPage() {
             };
           }
 
+          // Smart Scheduling (Spacing between Q1 and Q2)
           const trainingDaysInWeek = formData.trainingDays.filter(
             (d) => d !== "Minggu" && d !== "Sabtu",
           );
