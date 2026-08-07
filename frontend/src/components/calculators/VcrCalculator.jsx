@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSaveCalculation } from "../../hooks/useSaveCalculation";
 import clsx from "clsx";
 import { calcVcrProfile } from "../../utils/vcrCalculator";
@@ -12,6 +13,7 @@ export default function VcrCalculator() {
   const [distanceMeters, setDistanceMeters] = useState(9000);
   const [result, setResult] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const navigate = useNavigate();
 
   const save = useSaveCalculation();
 
@@ -180,13 +182,22 @@ export default function VcrCalculator() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsDetailOpen(true)}
-                className="btn-retro w-full border-retro-white/30 px-6 py-4 text-lg font-retro tracking-widest text-retro-white hover:border-retro-white sm:w-auto"
-              >
-                VIEW DETAIL CALCULATION →
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => setIsDetailOpen(true)}
+                  className="btn-retro w-full border-retro-white/30 px-6 py-4 text-lg font-retro tracking-widest text-retro-white hover:border-retro-white"
+                >
+                  VIEW DETAIL CALCULATION →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/create-training-program", { state: { vcrData: result } })}
+                  className="btn-retro w-full border-retro-green/50 bg-retro-green/10 px-6 py-4 text-lg font-retro tracking-widest text-retro-green hover:bg-retro-green hover:text-retro-black"
+                >
+                  CREATE TRAINING PROGRAM →
+                </button>
+              </div>
             </>
           ) : (
             <div className="card-retro flex min-h-[320px] flex-col items-center justify-center p-6 text-center">
