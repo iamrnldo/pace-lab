@@ -57,7 +57,7 @@ export default function CreateTrainingProgramPage() {
             onClick={() => navigate("/calculator")}
             className="btn-retro bg-retro-green px-8 py-3 text-retro-black"
           >
-            KE KALKULATOR
+            GO TO CALCULATOR
           </button>
         </div>
       </section>
@@ -79,7 +79,6 @@ export default function CreateTrainingProgramPage() {
     const weeks = formData.prepMonths * 4;
     const program = [];
 
-    // MILLEAGE SCIENCE DATA
     const mileageMap = {
       "5K": { beginner: 16, intermediate: 24 },
       "10K": { beginner: 25, intermediate: 30 },
@@ -88,8 +87,6 @@ export default function CreateTrainingProgramPage() {
     };
 
     const startMileage = mileageMap[formData.raceEvent]?.[formData.level] || 20;
-
-    // Foundation phase: 30% for beginners
     const foundationWeeks =
       formData.level === "beginner"
         ? Math.ceil(weeks * 0.3)
@@ -110,27 +107,37 @@ export default function CreateTrainingProgramPage() {
       const cycleNumber = Math.floor((w - 1) / 4);
 
       let weeklyMileage;
-      let isRecoveryWeek = weekInCycle === 3;
+      let isRecoveryWeek = weekInCycle === 1; // Minggu ke-2 sebagai Recovery
       const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
 
       if (isRecoveryWeek) {
-        weeklyMileage = cycleStartMileage * 1.2 * 0.7;
+        weeklyMileage = cycleStartMileage * 0.7;
       } else {
-        weeklyMileage = cycleStartMileage * (1 + weekInCycle * 0.1);
+        const buildingMultipliers = [1.0, 0.7, 1.1, 1.2];
+        weeklyMileage = cycleStartMileage * buildingMultipliers[weekInCycle];
       }
 
-      // MILLEAGE ALLOCATION
+      // ALLOCATION RULES
       const longRunMileage = weeklyMileage * 0.3;
       const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
       const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
       const easyMileage =
         weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
 
+      // PHASE LOGIC
+      const competitionWeek = weeks;
+      const preCompetitionWeeks = 3;
+
       let phase = 1;
-      if (w <= foundationWeeks) phase = 1;
-      else if (w <= weeks / 2) phase = 2;
-      else if (w <= (weeks * 3) / 4) phase = 3;
-      else phase = 4;
+      if (w === competitionWeek) {
+        phase = 4; // Competition
+      } else if (w > competitionWeek - 1 - preCompetitionWeeks) {
+        phase = 3; // Pre Competition
+      } else if (w <= foundationWeeks) {
+        phase = 1; // General Preparation
+      } else {
+        phase = 2; // Specific Preparation
+      }
 
       const weekData = {
         week: w,
@@ -144,11 +151,29 @@ export default function CreateTrainingProgramPage() {
           let activity = "Easy Run";
           let pace = ePace;
 
-          const qualityDaysCount =
-            phase > 1 && !isRecoveryWeek ? (phase >= 3 ? 2 : 1) : 0;
-          const easyDaysCount =
-            formData.trainingDays.length - 1 - qualityDaysCount;
-          let distance = (easyMileage / Math.max(1, easyDaysCount)).toFixed(1);
+          // Khusus Minggu Kompetisi (Fase 4)
+          if (phase === 4) {
+            if (
+              day === "Minggu" ||
+              (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))
+            ) {
+              activity = "RACE DAY";
+              pace = "Target Lomba";
+              return { day, activity, pace, distance: formData.raceEvent };
+            }
+            return {
+              day,
+              activity: "Shakeout Run",
+              pace: ePace,
+              distance: (weeklyMileage * 0.1).toFixed(1) + " Km",
+            };
+          }
+
+          let distance = (
+            easyMileage /
+            (formData.trainingDays.length -
+              (phase > 1 && !isRecoveryWeek ? 2 : 1))
+          ).toFixed(1);
 
           if (
             day === "Minggu" ||
@@ -385,7 +410,6 @@ export default function CreateTrainingProgramPage() {
             </button>
           </div>
 
-          {/* Tabbed Weekly Menu */}
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
