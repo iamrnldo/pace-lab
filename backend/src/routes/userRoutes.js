@@ -8,15 +8,12 @@ const authMiddleware = require("../middleware/authMiddleware");
 
 const router = Router();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, "../../uploads/avatars");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
+// Direktori avatar (lokal: backend/uploads, serverless: /tmp)
+const { avatarsDir } = require("../config/uploads");
 
 // Multer config
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
+  destination: (req, file, cb) => cb(null, avatarsDir),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const name = `avatar-${req.user.id}-${Date.now()}${ext}`;

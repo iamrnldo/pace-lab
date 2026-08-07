@@ -3,32 +3,95 @@ const { Pool } = require("pg");
 const fs = require("fs");
 const path = require("path");
 
-const DB_CONFIG = {
-  host: process.env.DB_HOST || "localhost",
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || "postgres",
-  password: process.env.DB_PASSWORD || "postgres123",
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
-};
+const IS_SERVERLESS = Boolean(
+  process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME
+);
 
-const DB_NAME = process.env.DB_NAME || "running_calculator";
+// ── Konfigurasi koneksi ─────────────────────────────────────────────
+// Mendukung DATABASE_URL tunggal (Neon/Supabase/Railway) ATAU variabel
+// DB_* terpisah. DATABASE_URL otomatis mengaktifkan SSL.
+function buildBaseConfig() {
+  if (process.env.DATABASE_URL) {
+    const u = new URL(process.env.DATABASE_URL);
+    return {
+      host: u.hostname,
+      port: Number(u.port) || 5432,
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      database: (u.pathname || "").replace(/^\//, "") || undefined,
+      ssl:
+        process.env.DB_SSL === "false" ? false : { rejectUnauthorized: false },
+    };
+  }
+  return {
+    host: process.env.DB_HOST || "localhost",
+    port: Number(process.env.DB_PORT) || 5432,
+    user: process.env.DB_USER || "postgres",
+    password: process.env.DB_PASSWORD || "postgres123",
+    database: undefined,
+    ssl:
+      process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+  };
+}
+
+const BASE_CONFIG = buildBaseConfig();
+const DB_NAME =
+  process.env.DB_NAME || BASE_CONFIG.database || "running_calculator";
 
 const pool = new Pool({
-  ...DB_CONFIG,
+  host: BASE_CONFIG.host,
+  port: BASE_CONFIG.port,
+  user: BASE_CONFIG.user,
+  password: BASE_CONFIG.password,
+  ssl: BASE_CONFIG.ssl,
   database: DB_NAME,
-  max: 20,
+  max: IS_SERVERLESS ? 5 : 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 pool.on("error", (err) => {
   console.error("Unexpected error on idle client", err);
-  process.exit(-1);
+  // Di serverless (Vercel) JANGAN process.exit — cukup log.
+  if (!IS_SERVERLESS) process.exit(-1);
 });
 
-async function initDatabase() {
-  // Step 1: Create database if not exists
-  const adminPool = new Pool({ ...DB_CONFIG, database: "postgres" });
+// ── Helpers ─────────────────────────────────────────────────────────
+function findSqlFile(name) {
+  const candidates = [
+    // Salinan yang dibundle (Vercel, disiapkan scripts/prepare-db-sql.js)
+    path.join(__dirname, "../db", name),
+    // Layout monorepo saat jalan lokal (backend -> root/database)
+    path.join(__dirname, "../../../database/schemas", name),
+    path.join(__dirname, "../../../../database/schemas", name),
+  ];
+  return candidates.find((p) => fs.existsSync(p));
+}
+
+// schema.sql berisi `CREATE DATABASE ...` yang tidak bisa dijalankan dari
+// koneksi ke database itu sendiri — buang statement tersebut.
+function sanitizeSchema(sql) {
+  return sql.replace(/CREATE DATABASE[^;]*;/gi, "");
+}
+
+async function ensureDatabase() {
+  // 1) Coba langsung ke DB target (umum di Neon/Supabase: DB sudah ada).
+  try {
+    await pool.query("SELECT 1");
+    return;
+  } catch (err) {
+    if (err.code !== "3D000") throw err; // 3D000 = database does not exist
+  }
+
+  // 2) Buat database lewat koneksi admin ke `postgres`.
+  const adminPool = new Pool({
+    host: BASE_CONFIG.host,
+    port: BASE_CONFIG.port,
+    user: BASE_CONFIG.user,
+    password: BASE_CONFIG.password,
+    ssl: BASE_CONFIG.ssl,
+    database: "postgres",
+  });
   try {
     const { rows } = await adminPool.query(
       `SELECT 1 FROM pg_database WHERE datname = $1`,
@@ -37,20 +100,19 @@ async function initDatabase() {
     if (rows.length === 0) {
       await adminPool.query(`CREATE DATABASE ${DB_NAME}`);
       console.log(`✅ Database "${DB_NAME}" created`);
-    } else {
-      console.log(`📦 Database "${DB_NAME}" already exists`);
-    }
-  } catch (err) {
-    if (err.code === "42P04") {
-      console.log(`📦 Database "${DB_NAME}" already exists`);
-    } else {
-      throw err;
     }
   } finally {
     await adminPool.end();
   }
 
-  // Step 2: Run schema if tables don't exist
+  await pool.query("SELECT 1");
+}
+
+async function initDatabase() {
+  // Step 1: pastikan database ada
+  await ensureDatabase();
+
+  // Step 2: jalankan schema jika tabel belum ada
   try {
     const { rows } = await pool.query(
       `SELECT 1 FROM information_schema.tables WHERE table_name = 'users' AND table_schema = 'public'`
@@ -58,11 +120,11 @@ async function initDatabase() {
 
     if (rows.length === 0) {
       console.log("🔧 Running schema...");
-      const schemaPath = path.join(__dirname, "../../../database/schemas/schema.sql");
-      const seedPath = path.join(__dirname, "../../../database/schemas/seed.sql");
+      const schemaPath = findSqlFile("schema.sql");
+      const seedPath = findSqlFile("seed.sql");
 
-      if (fs.existsSync(schemaPath)) {
-        const schema = fs.readFileSync(schemaPath, "utf8");
+      if (schemaPath) {
+        const schema = sanitizeSchema(fs.readFileSync(schemaPath, "utf8"));
         await pool.query(schema);
         console.log("✅ Schema applied");
       } else {
@@ -70,10 +132,12 @@ async function initDatabase() {
         await createMinimalSchema();
       }
 
-      if (fs.existsSync(seedPath)) {
+      if (seedPath) {
         const seed = fs.readFileSync(seedPath, "utf8");
-        await pool.query(seed);
-        console.log("✅ Seed data applied");
+        if (seed.trim()) {
+          await pool.query(seed);
+          console.log("✅ Seed data applied");
+        }
       }
     } else {
       console.log("📊 Tables already exist");
@@ -87,11 +151,23 @@ async function initDatabase() {
     }
   }
 
-  // Step 3: Auto-migrate — pastikan kolom yang dibutuhkan ada
+  // Step 3: auto-migrate — pastikan kolom yang dibutuhkan ada
   await autoMigrate();
 
-  // Step 4: Seed admin
+  // Step 4: seed admin
   await seedAdmin();
+}
+
+// Versi cached untuk serverless: hanya berjalan sekali per warm instance.
+let initPromise = null;
+function ensureDatabaseReady() {
+  if (!initPromise) {
+    initPromise = initDatabase().catch((err) => {
+      initPromise = null; // biarkan request berikutnya retry
+      throw err;
+    });
+  }
+  return initPromise;
 }
 
 async function autoMigrate() {
@@ -117,7 +193,9 @@ async function autoMigrate() {
       );
 
       if (rows.length === 0) {
-        await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+        await pool.query(
+          `ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`
+        );
         console.log(`  ➕ Added column: ${col.name}`);
       }
     }
@@ -161,7 +239,9 @@ async function autoMigrate() {
     `);
 
     // Seed calculator_types jika kosong
-    const { rows: typeCount } = await pool.query(`SELECT COUNT(*) FROM calculator_types`);
+    const { rows: typeCount } = await pool.query(
+      `SELECT COUNT(*) FROM calculator_types`
+    );
     if (parseInt(typeCount[0].count) === 0) {
       await pool.query(`
         INSERT INTO calculator_types (slug, name, description, category, icon, sort_order) VALUES
@@ -205,7 +285,6 @@ async function seedAdmin() {
         [adminEmail, adminName, passwordHash]
       );
       console.log(`✅ Admin created: ${adminEmail}`);
-      console.log(`🔑 Password: ${adminPassword}`);
     } else if (!rows[0].password_hash) {
       // Admin ada tapi belum punya password — update
       const bcrypt = require("bcryptjs");
@@ -216,7 +295,6 @@ async function seedAdmin() {
         [passwordHash, adminEmail]
       );
       console.log(`✅ Admin password set: ${adminEmail}`);
-      console.log(`🔑 Password: ${adminPassword}`);
     } else {
       console.log(`👤 Admin exists: ${adminEmail}`);
     }
@@ -303,4 +381,5 @@ module.exports = {
   getClient: () => pool.connect(),
   pool,
   initDatabase,
+  ensureDatabaseReady,
 };

@@ -3,6 +3,13 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const db = require("./database");
 
+// Jangan crash saat boot kalau Google OAuth belum dikonfigurasi —
+// strategy hanya didaftarkan jika kredensial tersedia.
+const googleOAuthEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+);
+
+if (googleOAuthEnabled) {
 passport.use(
   new GoogleStrategy(
     {
@@ -64,5 +71,11 @@ passport.use(
     }
   )
 );
+} else {
+  console.warn(
+    "⚠️  GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not set — Google login disabled."
+  );
+}
 
 module.exports = passport;
+module.exports.googleOAuthEnabled = googleOAuthEnabled;
