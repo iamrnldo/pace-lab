@@ -79,7 +79,7 @@ export default function CreateTrainingProgramPage() {
     const weeks = formData.prepMonths * 4;
     const program = [];
 
-    // 1. MILLEAGE SCIENCE MAP
+    // MILLEAGE SCIENCE
     const mileageMap = {
       "5K": { beginner: 16, intermediate: 24 },
       "10K": { beginner: 25, intermediate: 30 },
@@ -92,6 +92,9 @@ export default function CreateTrainingProgramPage() {
       formData.level === "beginner"
         ? Math.ceil(weeks * 0.3)
         : Math.ceil(weeks * 0.2);
+    const competitionWeek = weeks;
+    const preCompetitionWeeks = 3;
+    const lastSpecificPrepWeek = competitionWeek - preCompetitionWeeks - 1;
 
     const getPace = (label) => {
       const found = vcrData.intervals.find((i) => i.label === label);
@@ -102,38 +105,53 @@ export default function CreateTrainingProgramPage() {
     const tPace = getPace("90%");
     const iPace = getPace("100%");
 
+    // Calculate Peak Reference
+    const peakCycleNumber = Math.floor((lastSpecificPrepWeek - 1) / 4);
+    const peakMileage = startMileage * (1 + peakCycleNumber * 0.1) * 1.2;
+
     for (let w = 1; w <= weeks; w++) {
-      // 2. MESOCYCLE 3:1 LOGIC (Recovery w4 matches w2 load)
-      const weekInCycle = (w - 1) % 4;
-      const cycleNumber = Math.floor((w - 1) / 4);
-      let isRecoveryWeek = weekInCycle === 3;
-
-      const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
-      const multipliers = [1.0, 1.1, 1.2, 1.1];
-      let baseWeeklyMileage = cycleStartMileage * multipliers[weekInCycle];
-
-      // 3. PHASE DETERMINATION
-      const competitionWeek = weeks;
-      const preCompetitionWeeks = 3;
+      // 1. PHASE DETERMINATION
       let phase = 1;
       if (w === competitionWeek) phase = 4;
-      else if (w > competitionWeek - 1 - preCompetitionWeeks) phase = 3;
+      else if (w > lastSpecificPrepWeek) phase = 3;
       else if (w <= foundationWeeks) phase = 1;
       else phase = 2;
 
-      // 4. QUALITY SESSION RULES
-      const hasInterval = phase === 2 && !isRecoveryWeek;
-      const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek;
+      // 2. MILLEAGE LOGIC (Mesocycle 3:1)
+      const weekInCycle = (w - 1) % 4;
+      const cycleNumber = Math.floor((w - 1) / 4);
+      let isRecoveryWeek = weekInCycle === 3;
+      let weeklyMileage;
 
-      const longRunMileage = baseWeeklyMileage * 0.3;
-      const intervalMileage = hasInterval ? baseWeeklyMileage * 0.12 : 0;
-      const tempoMileage = hasTempo ? baseWeeklyMileage * 0.15 : 0;
+      if (phase === 3) {
+        const taperWeekNum = w - lastSpecificPrepWeek;
+        const taperFactors = [0.8, 0.65, 0.5]; // Tapering 20-50%
+        weeklyMileage = peakMileage * taperFactors[taperWeekNum - 1];
+        isRecoveryWeek = false;
+      } else if (phase === 4) {
+        weeklyMileage = peakMileage * 0.35; // Race week reduction
+        isRecoveryWeek = false;
+      } else {
+        const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
+        const multipliers = [1.0, 1.1, 1.2, 1.1];
+        const effectiveMultiplier =
+          w === lastSpecificPrepWeek ? 1.2 : multipliers[weekInCycle];
+        weeklyMileage = cycleStartMileage * effectiveMultiplier;
+      }
+
+      // 3. QUALITY SESSION RULES
+      const hasInterval = phase === 2 && !isRecoveryWeek;
+      const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek; // Intensitas terjaga saat Taper
+
+      const longRunMileage = weeklyMileage * 0.3;
+      const intervalMileage = hasInterval ? weeklyMileage * 0.12 : 0;
+      const tempoMileage = hasTempo ? weeklyMileage * 0.15 : 0;
       const easyMileage =
-        baseWeeklyMileage - longRunMileage - intervalMileage - tempoMileage;
+        weeklyMileage - longRunMileage - intervalMileage - tempoMileage;
 
       const weekData = {
         week: w,
-        mileage: baseWeeklyMileage.toFixed(1),
+        mileage: weeklyMileage.toFixed(1),
         phase,
         isRecoveryWeek,
         days: DAYS.map((day) => {
@@ -150,7 +168,6 @@ export default function CreateTrainingProgramPage() {
           let pace = ePace;
           let details = "Lari santai, fokus pada form dan pernapasan.";
 
-          // Phase 4: Race Week
           if (phase === 4) {
             if (
               day === "Minggu" ||
@@ -163,19 +180,18 @@ export default function CreateTrainingProgramPage() {
                 activity,
                 pace,
                 distance: formData.raceEvent,
-                details: "Berikan yang terbaik! Fokus pada strategi pace Anda.",
+                details: "BERIKAN YANG TERBAIK! Fokus pada strategi pace Anda.",
               };
             }
             return {
               day,
               activity: "Shakeout Run",
               pace: ePace,
-              distance: (baseWeeklyMileage * 0.08).toFixed(1) + " Km",
+              distance: (weeklyMileage * 0.08).toFixed(1) + " Km",
               details: "Lari sangat ringan untuk menjaga kesegaran otot.",
             };
           }
 
-          // 5. Quality Day Placement (Ensuring spacing)
           const trainingDaysInWeek = formData.trainingDays.filter(
             (d) => d !== "Minggu" && d !== "Sabtu",
           );
@@ -190,38 +206,37 @@ export default function CreateTrainingProgramPage() {
           }
 
           let distance = 0;
-
           if (
             day === "Minggu" ||
             (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))
           ) {
             activity = "Long Run";
             distance = longRunMileage.toFixed(1);
-            details = "Steady pace, membangun daya tahan aerobik.";
+            details =
+              w === lastSpecificPrepWeek
+                ? "PEAK LONGRUN: Jarak maksimal sebelum fase tapering."
+                : "Steady pace, membangun daya tahan aerobik.";
           } else if (day === q1 && (hasInterval || (phase === 3 && hasTempo))) {
             if (hasInterval) {
               activity = "Interval Run";
               pace = iPace;
               const totalDist = parseFloat(intervalMileage);
               distance = totalDist.toFixed(1);
-
-              // Interval Progression
               const phase2Start = foundationWeeks + 1;
-              const phase2End = competitionWeek - 3 - 1;
               const progressRatio =
                 (w - phase2Start + 1) /
-                Math.max(1, phase2End - phase2Start + 1);
-
-              let repDist = 0.4;
-              if (progressRatio <= 0.25) repDist = 0.4;
-              else if (progressRatio <= 0.5) repDist = 0.6;
-              else if (progressRatio <= 0.75) repDist = 0.8;
-              else repDist = 1.0;
-
+                Math.max(1, lastSpecificPrepWeek - phase2Start + 1);
+              let repDist =
+                progressRatio <= 0.25
+                  ? 0.4
+                  : progressRatio <= 0.5
+                    ? 0.6
+                    : progressRatio <= 0.75
+                      ? 0.8
+                      : 1.0;
               const reps = Math.floor((totalDist - 2.0) / repDist);
-              const repLabel = repDist < 1 ? `${repDist * 1000}m` : "1km";
               const restTime = repDist <= 0.6 ? "2m Jog" : "3m Jog";
-              details = `W-up: 1km Easy + Drills | Main: ${reps}x ${repLabel} @ I-Pace (Rest ${restTime}*) | C-down: 1km Easy jog. *Istirahat disesuaikan kondisi atlet.`;
+              details = `W-up: 1km Easy + Drills | Main: ${reps}x ${repDist < 1 ? repDist * 1000 + "m" : "1km"} @ I-Pace (Rest ${restTime}*) | C-down: 1km Easy jog. *Istirahat disesuaikan kondisi atlet.`;
             } else {
               activity = "Tempo Run";
               pace = tPace;
@@ -230,6 +245,10 @@ export default function CreateTrainingProgramPage() {
               const blocks = totalDist > 7 ? 3 : 2;
               const distPerBlock = (totalDist / blocks).toFixed(1);
               details = `W-up: 12m Easy + Strides | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 8m Recovery jog. *Istirahat disesuaikan kondisi atlet.`;
+              if (phase === 3)
+                details =
+                  "(Tapering) Menjaga intensitas dengan volume rendah. " +
+                  details;
             }
           } else if (day === q2 && hasTempo && phase === 2) {
             activity = "Tempo Run";
@@ -247,11 +266,11 @@ export default function CreateTrainingProgramPage() {
                 : phase === 3 && hasTempo
                   ? 1
                   : 0);
-            const easyDaysCount =
-              formData.trainingDays.length - 1 - qualityDaysCount;
-            distance = (easyMileage / Math.max(1, easyDaysCount)).toFixed(1);
+            distance = (
+              easyMileage /
+              Math.max(1, formData.trainingDays.length - 1 - qualityDaysCount)
+            ).toFixed(1);
           }
-
           return { day, activity, pace, distance: distance + " Km", details };
         }),
       };
@@ -287,64 +306,61 @@ export default function CreateTrainingProgramPage() {
                 className="input-retro w-full"
               />
             </div>
-            <div>
-              <Label>Nomor Perlombaan</Label>
-              <select
-                value={formData.raceEvent}
-                onChange={(e) =>
-                  setFormData({ ...formData, raceEvent: e.target.value })
-                }
-                className="input-retro w-full"
-              >
-                <option value="5K">5K</option>
-                <option value="10K">10K</option>
-                <option value="Half Marathon">Half Marathon</option>
-                <option value="Full Marathon">Full Marathon</option>
-              </select>
-            </div>
-            <div>
-              <Label>Level Pelari</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  disabled={formData.raceEvent !== "Full Marathon"}
-                  onClick={() =>
-                    setFormData({ ...formData, level: "beginner" })
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <Label>Nomor Perlombaan</Label>
+                <select
+                  value={formData.raceEvent}
+                  onChange={(e) =>
+                    setFormData({ ...formData, raceEvent: e.target.value })
                   }
-                  className={clsx(
-                    "btn-retro py-2 text-sm transition-all",
-                    formData.level === "beginner"
-                      ? "bg-retro-green text-retro-black"
-                      : "border-retro-white/30 text-retro-white",
-                    formData.raceEvent !== "Full Marathon" &&
-                      "opacity-20 cursor-not-allowed",
-                  )}
+                  className="input-retro w-full"
                 >
-                  BEGINNER
-                </button>
-                <button
-                  type="button"
-                  disabled={formData.raceEvent !== "Full Marathon"}
-                  onClick={() =>
-                    setFormData({ ...formData, level: "intermediate" })
-                  }
-                  className={clsx(
-                    "btn-retro py-2 text-sm transition-all",
-                    formData.level === "intermediate"
-                      ? "bg-retro-green text-retro-black"
-                      : "border-retro-white/30 text-retro-white",
-                    formData.raceEvent !== "Full Marathon" &&
-                      "opacity-20 cursor-not-allowed",
-                  )}
-                >
-                  INTERMEDIATE / ELITE
-                </button>
+                  <option value="5K">5K</option>
+                  <option value="10K">10K</option>
+                  <option value="Half Marathon">Half Marathon</option>
+                  <option value="Full Marathon">Full Marathon</option>
+                </select>
               </div>
-              {formData.raceEvent !== "Full Marathon" && (
-                <p className="mt-2 font-mono text-[9px] italic text-retro-white/30">
-                  *Level hanya tersedia untuk Full Marathon sesuai pedoman.
-                </p>
-              )}
+              <div>
+                <Label>Level Pelari</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    disabled={formData.raceEvent !== "Full Marathon"}
+                    onClick={() =>
+                      setFormData({ ...formData, level: "beginner" })
+                    }
+                    className={clsx(
+                      "btn-retro py-2 text-sm transition-all",
+                      formData.level === "beginner"
+                        ? "bg-retro-green text-retro-black"
+                        : "border-retro-white/30 text-retro-white",
+                      formData.raceEvent !== "Full Marathon" &&
+                        "opacity-20 cursor-not-allowed",
+                    )}
+                  >
+                    BEGINNER
+                  </button>
+                  <button
+                    type="button"
+                    disabled={formData.raceEvent !== "Full Marathon"}
+                    onClick={() =>
+                      setFormData({ ...formData, level: "intermediate" })
+                    }
+                    className={clsx(
+                      "btn-retro py-2 text-sm transition-all",
+                      formData.level === "intermediate"
+                        ? "bg-retro-green text-retro-black"
+                        : "border-retro-white/30 text-retro-white",
+                      formData.raceEvent !== "Full Marathon" &&
+                        "opacity-20 cursor-not-allowed",
+                    )}
+                  >
+                    INTERMEDIATE / ELITE
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -483,7 +499,7 @@ export default function CreateTrainingProgramPage() {
                     </span>
                   </div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left">
+                    <table className="w-full text-left min-w-[800px]">
                       <thead>
                         <tr className="border-b border-retro-gray-light/30">
                           <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
