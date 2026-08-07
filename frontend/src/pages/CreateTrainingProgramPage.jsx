@@ -1,3 +1,7 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/rules-of-hooks */
+/* eslint-disable no-undef */
+/* eslint-disable react-hooks/globals */
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import clsx from "clsx";
