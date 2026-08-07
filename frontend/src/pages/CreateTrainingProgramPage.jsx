@@ -84,12 +84,12 @@ export default function CreateTrainingProgramPage() {
       "5K": { beginner: 16, intermediate: 24 },
       "10K": { beginner: 25, intermediate: 30 },
       "Half Marathon": { beginner: 31, intermediate: 50 },
-      "Full Marathon": { beginner: 50, intermediate: 100 }, // Elite/Intermediate min 100km
+      "Full Marathon": { beginner: 50, intermediate: 100 },
     };
 
     const startMileage = mileageMap[formData.raceEvent]?.[formData.level] || 20;
 
-    // Foundation phase: 30% of prep for beginners
+    // Foundation phase: 30% for beginners
     const foundationWeeks =
       formData.level === "beginner"
         ? Math.ceil(weeks * 0.3)
@@ -106,25 +106,20 @@ export default function CreateTrainingProgramPage() {
 
     for (let w = 1; w <= weeks; w++) {
       // 3:1 MESOCYCLE LOGIC
-      const weekInCycle = (w - 1) % 4; // 0, 1, 2 = building, 3 = recovery
+      const weekInCycle = (w - 1) % 4;
       const cycleNumber = Math.floor((w - 1) / 4);
 
       let weeklyMileage;
       let isRecoveryWeek = weekInCycle === 3;
-
-      // Base mileage increases by 10% every cycle (4 weeks)
-      const cycleBaseMileage = startMileage * (1 + cycleNumber * 0.1);
+      const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
 
       if (isRecoveryWeek) {
-        // Recovery week: 70% of the peak building week in the cycle (week 3)
-        // Week 3 is 1.2 * cycleBaseMileage, so 0.7 * 1.2 = 0.84
-        weeklyMileage = cycleBaseMileage * 1.2 * 0.7;
+        weeklyMileage = cycleStartMileage * 1.2 * 0.7;
       } else {
-        // Building weeks within cycle: 1.0x, 1.1x, 1.2x of cycle base
-        weeklyMileage = cycleBaseMileage * (1 + weekInCycle * 0.1);
+        weeklyMileage = cycleStartMileage * (1 + weekInCycle * 0.1);
       }
 
-      // ALLOCATION RULES (Milleage Science)
+      // MILLEAGE ALLOCATION
       const longRunMileage = weeklyMileage * 0.3;
       const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
       const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
@@ -149,14 +144,12 @@ export default function CreateTrainingProgramPage() {
           let activity = "Easy Run";
           let pace = ePace;
 
-          // Calculate available days for Easy Run (excluding Longrun and Quality sessions)
           const qualityDaysCount =
             phase > 1 && !isRecoveryWeek ? (phase >= 3 ? 2 : 1) : 0;
           const easyDaysCount =
             formData.trainingDays.length - 1 - qualityDaysCount;
           let distance = (easyMileage / Math.max(1, easyDaysCount)).toFixed(1);
 
-          // SUNDAY OR SATURDAY: LONGRUN (30%)
           if (
             day === "Minggu" ||
             (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))
@@ -168,8 +161,6 @@ export default function CreateTrainingProgramPage() {
             const trainingDaysInWeek = formData.trainingDays.filter(
               (d) => d !== "Minggu" && d !== "Sabtu",
             );
-
-            // QUALITY 1: TEMPO (15%) OR INTERVAL (12%)
             if (day === trainingDaysInWeek[0]) {
               if (phase === 2) {
                 activity = "Tempo Run";
@@ -180,17 +171,16 @@ export default function CreateTrainingProgramPage() {
                 pace = iPace;
                 distance = intervalMileage.toFixed(1);
               }
-            }
-            // QUALITY 2: SECOND TEMPO (If training freq is high)
-            else if (
-              day ===
-                trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)] &&
-              phase >= 3 &&
-              trainingDaysInWeek.length > 2
+            } else if (
+              day === trainingDaysInWeek.length > 2
+                ? trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)]
+                : null
             ) {
-              activity = "Tempo Run";
-              pace = tPace;
-              distance = tempoMileage.toFixed(1);
+              if (phase >= 3) {
+                activity = "Tempo Run";
+                pace = tPace;
+                distance = tempoMileage.toFixed(1);
+              }
             }
           }
 
@@ -249,32 +239,46 @@ export default function CreateTrainingProgramPage() {
                 <Label>Level Pelari</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
+                    type="button"
+                    disabled={formData.raceEvent !== "Full Marathon"}
                     onClick={() =>
                       setFormData({ ...formData, level: "beginner" })
                     }
                     className={clsx(
-                      "btn-retro py-2 text-sm",
+                      "btn-retro py-2 text-sm transition-all",
                       formData.level === "beginner"
                         ? "bg-retro-green text-retro-black"
                         : "border-retro-white/30 text-retro-white",
+                      formData.raceEvent !== "Full Marathon" &&
+                        "opacity-20 cursor-not-allowed",
                     )}
                   >
                     BEGINNER
                   </button>
                   <button
+                    type="button"
+                    disabled={formData.raceEvent !== "Full Marathon"}
                     onClick={() =>
                       setFormData({ ...formData, level: "intermediate" })
                     }
                     className={clsx(
-                      "btn-retro py-2 text-sm",
+                      "btn-retro py-2 text-sm transition-all",
                       formData.level === "intermediate"
                         ? "bg-retro-green text-retro-black"
                         : "border-retro-white/30 text-retro-white",
+                      formData.raceEvent !== "Full Marathon" &&
+                        "opacity-20 cursor-not-allowed",
                     )}
                   >
                     INTERMEDIATE / ELITE
                   </button>
                 </div>
+                {formData.raceEvent !== "Full Marathon" && (
+                  <p className="mt-2 font-mono text-[9px] italic text-retro-white/30">
+                    *Level hanya tersedia untuk Full Marathon sesuai pedoman
+                    Milleage Science.
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -381,7 +385,6 @@ export default function CreateTrainingProgramPage() {
             </button>
           </div>
 
-          {/* Tabbed Weekly Menu */}
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
