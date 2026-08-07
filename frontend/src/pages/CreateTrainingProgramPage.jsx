@@ -102,46 +102,51 @@ export default function CreateTrainingProgramPage() {
     const iPace = getPace("100%");
 
     for (let w = 1; w <= weeks; w++) {
-      // 3:1 MESOCYCLE LOGIC (Recovery at Week 4 using Week 2's load)
-      const weekInCycle = (w - 1) % 4; // 0=w1, 1=w2, 2=w3, 3=w4
+      // 1. MESOCYCLE 3:1 LOGIC
+      const weekInCycle = (w - 1) % 4;
       const cycleNumber = Math.floor((w - 1) / 4);
+      let isRecoveryWeek = weekInCycle === 3;
 
-      let weeklyMileage;
-      let isRecoveryWeek = weekInCycle === 3; // Minggu ke-4 sebagai Recovery
-
-      // Base mileage increases by 10% every cycle (4 weeks)
       const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
+      const multipliers = [1.0, 1.1, 1.2, 1.1]; // Recovery = w2 load
+      let baseWeeklyMileage = cycleStartMileage * multipliers[weekInCycle];
 
-      // Multipliers: w1: 1.0x, w2: 1.1x, w3: 1.2x, w4(Rec): 1.1x
-      const multipliers = [1.0, 1.1, 1.2, 1.1];
-      weeklyMileage = cycleStartMileage * multipliers[weekInCycle];
-
-      // ALLOCATION RULES
-      const longRunMileage = weeklyMileage * 0.3;
-      // Meskipun mileage di recovery week (w4) sama dengan w2, kita kurangi intensitasnya
-      const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
-      const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
-      const easyMileage =
-        weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
-
-      // PHASE LOGIC
+      // 2. PHASE DETERMINATION
       const competitionWeek = weeks;
-      const preCompetitionWeeks = 3;
+      const preCompetitionWeeks = 3; // Phase 3 (Tapering)
 
       let phase = 1;
-      if (w === competitionWeek) {
-        phase = 4; // Competition
-      } else if (w > competitionWeek - 1 - preCompetitionWeeks) {
-        phase = 3; // Pre Competition
-      } else if (w <= foundationWeeks) {
-        phase = 1; // General Preparation
-      } else {
-        phase = 2; // Specific Preparation
+      if (w === competitionWeek) phase = 4;
+      else if (w > competitionWeek - 1 - preCompetitionWeeks) phase = 3;
+      else if (w <= foundationWeeks) phase = 1;
+      else phase = 2;
+
+      // 3. TAPERING ADJUSTMENT (Phase 3 & 4)
+      let effectiveWeeklyMileage = baseWeeklyMileage;
+      if (phase === 3) {
+        // Tapering volume: 90% -> 80% -> 70% of base
+        const weeksIntoTaper = w - (competitionWeek - preCompetitionWeeks);
+        effectiveWeeklyMileage = baseWeeklyMileage * (1 - weeksIntoTaper * 0.1);
+      } else if (phase === 4) {
+        effectiveWeeklyMileage = baseWeeklyMileage * 0.5; // Week of race reduction
       }
+
+      // 4. QUALITY SESSION RULES
+      const hasInterval = phase === 2 && !isRecoveryWeek; // Interval ONLY in Phase 2
+      const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek; // Tempo in Phase 2 & 3
+
+      const longRunMileage = effectiveWeeklyMileage * 0.3;
+      const intervalMileage = hasInterval ? effectiveWeeklyMileage * 0.12 : 0;
+      const tempoMileage = hasTempo ? effectiveWeeklyMileage * 0.15 : 0;
+      const easyMileage =
+        effectiveWeeklyMileage -
+        longRunMileage -
+        intervalMileage -
+        tempoMileage;
 
       const weekData = {
         week: w,
-        mileage: weeklyMileage.toFixed(1),
+        mileage: effectiveWeeklyMileage.toFixed(1),
         phase,
         isRecoveryWeek,
         days: DAYS.map((day) => {
@@ -151,7 +156,7 @@ export default function CreateTrainingProgramPage() {
           let activity = "Easy Run";
           let pace = ePace;
 
-          // Khusus Minggu Kompetisi (Fase 4)
+          // Phase 4 (Race Week)
           if (phase === 4) {
             if (
               day === "Minggu" ||
@@ -165,48 +170,60 @@ export default function CreateTrainingProgramPage() {
               day,
               activity: "Shakeout Run",
               pace: ePace,
-              distance: (weeklyMileage * 0.1).toFixed(1) + " Km",
+              distance: (effectiveWeeklyMileage * 0.1).toFixed(1) + " Km",
             };
           }
 
-          let distance = (
-            easyMileage /
-            (formData.trainingDays.length -
-              (phase > 1 && !isRecoveryWeek ? (phase >= 3 ? 2 : 1) : 1))
-          ).toFixed(1);
+          // Quality Day Placement
+          const trainingDaysInWeek = formData.trainingDays.filter(
+            (d) => d !== "Minggu" && d !== "Sabtu",
+          );
+          const q1 = trainingDaysInWeek[0];
+          const q2 =
+            trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)];
 
           if (
             day === "Minggu" ||
             (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))
           ) {
             activity = "Long Run";
-            pace = ePace;
             distance = longRunMileage.toFixed(1);
-          } else if (phase > 1 && !isRecoveryWeek) {
-            const trainingDaysInWeek = formData.trainingDays.filter(
-              (d) => d !== "Minggu" && d !== "Sabtu",
-            );
-            if (day === trainingDaysInWeek[0]) {
-              if (phase === 2) {
-                activity = "Tempo Run";
-                pace = tPace;
-                distance = tempoMileage.toFixed(1);
-              } else if (phase >= 3) {
-                activity = "Interval Run";
-                pace = iPace;
-                distance = intervalMileage.toFixed(1);
-              }
-            } else if (
-              day === trainingDaysInWeek.length > 2
-                ? trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)]
-                : null
-            ) {
-              if (phase >= 3) {
-                activity = "Tempo Run";
-                pace = tPace;
-                distance = tempoMileage.toFixed(1);
-              }
+          } else if (day === q1 && (hasInterval || (phase === 3 && hasTempo))) {
+            if (hasInterval) {
+              activity = "Interval Run";
+              pace = iPace;
+              distance = intervalMileage.toFixed(1);
+            } else {
+              activity = "Tempo Run";
+              pace = tPace;
+              distance = tempoMileage.toFixed(1);
             }
+          } else if (
+            day === q2 &&
+            hasTempo &&
+            phase === 2 &&
+            trainingDaysInWeek.length > 2
+          ) {
+            activity = "Tempo Run";
+            pace = tPace;
+            distance = tempoMileage.toFixed(1);
+          } else {
+            const qualityUsed =
+              (day === q1 && (hasInterval || (phase === 3 && hasTempo))) ||
+              (day === q2 &&
+                hasTempo &&
+                phase === 2 &&
+                trainingDaysInWeek.length > 2);
+            const activeDays = formData.trainingDays.length;
+            const qualityDaysCount =
+              (hasInterval ? 1 : 0) +
+              (hasTempo && phase === 2 && trainingDaysInWeek.length > 2
+                ? 1
+                : phase === 3 && hasTempo
+                  ? 1
+                  : 0);
+            const easyDaysCount = activeDays - 1 - qualityDaysCount;
+            distance = (easyMileage / Math.max(1, easyDaysCount)).toFixed(1);
           }
 
           return { day, activity, pace, distance: distance + " Km" };
@@ -298,12 +315,6 @@ export default function CreateTrainingProgramPage() {
                     INTERMEDIATE / ELITE
                   </button>
                 </div>
-                {formData.raceEvent !== "Full Marathon" && (
-                  <p className="mt-2 font-mono text-[9px] italic text-retro-white/30">
-                    *Level hanya tersedia untuk Full Marathon sesuai pedoman
-                    Milleage Science.
-                  </p>
-                )}
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -410,7 +421,6 @@ export default function CreateTrainingProgramPage() {
             </button>
           </div>
 
-          {/* Tabbed Weekly Menu */}
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
@@ -454,7 +464,7 @@ export default function CreateTrainingProgramPage() {
                               : week.phase === 2
                                 ? "Specific Preparation"
                                 : week.phase === 3
-                                  ? "Pre Competition"
+                                  ? "Pre Competition (Tapering)"
                                   : "Competition"
                           }`}
                     </span>
@@ -494,7 +504,9 @@ export default function CreateTrainingProgramPage() {
                                 className={clsx(
                                   "font-sport text-sm",
                                   d.activity !== "Easy Run" &&
-                                    d.activity !== "Istirahat"
+                                    d.activity !== "Istirahat" &&
+                                    d.activity !== "Taper Run" &&
+                                    d.activity !== "Shakeout Run"
                                     ? "text-retro-green"
                                     : "text-retro-white/80",
                                 )}
