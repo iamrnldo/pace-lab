@@ -79,7 +79,7 @@ export default function CreateTrainingProgramPage() {
     const weeks = formData.prepMonths * 4;
     const program = [];
 
-    // MILLEAGE SCIENCE DATA
+    // 1. MILLEAGE SCIENCE MAP
     const mileageMap = {
       "5K": { beginner: 16, intermediate: 24 },
       "10K": { beginner: 25, intermediate: 30 },
@@ -103,26 +103,25 @@ export default function CreateTrainingProgramPage() {
     const iPace = getPace("100%");
 
     for (let w = 1; w <= weeks; w++) {
-      // 1. MESOCYCLE 3:1 LOGIC (Recovery at Week 4 using Week 2's load)
+      // 2. MESOCYCLE 3:1 LOGIC (Recovery w4 matches w2 load)
       const weekInCycle = (w - 1) % 4;
       const cycleNumber = Math.floor((w - 1) / 4);
       let isRecoveryWeek = weekInCycle === 3;
 
       const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
-      const multipliers = [1.0, 1.1, 1.2, 1.1]; // w4 uses w2's 1.1x load
+      const multipliers = [1.0, 1.1, 1.2, 1.1];
       let baseWeeklyMileage = cycleStartMileage * multipliers[weekInCycle];
 
-      // 2. PHASE DETERMINATION
+      // 3. PHASE DETERMINATION
       const competitionWeek = weeks;
       const preCompetitionWeeks = 3;
-
       let phase = 1;
       if (w === competitionWeek) phase = 4;
       else if (w > competitionWeek - 1 - preCompetitionWeeks) phase = 3;
       else if (w <= foundationWeeks) phase = 1;
       else phase = 2;
 
-      // 3. QUALITY SESSION RULES
+      // 4. QUALITY SESSION RULES
       const hasInterval = phase === 2 && !isRecoveryWeek;
       const hasTempo = (phase === 2 || phase === 3) && !isRecoveryWeek;
 
@@ -149,8 +148,9 @@ export default function CreateTrainingProgramPage() {
 
           let activity = "Easy Run";
           let pace = ePace;
-          let details = "Lari santai, fokus pada pernapasan dan form.";
+          let details = "Lari santai, fokus pada form dan pernapasan.";
 
+          // Phase 4: Race Week
           if (phase === 4) {
             if (
               day === "Minggu" ||
@@ -171,16 +171,24 @@ export default function CreateTrainingProgramPage() {
               activity: "Shakeout Run",
               pace: ePace,
               distance: (baseWeeklyMileage * 0.08).toFixed(1) + " Km",
-              details: "Lari sangat ringan untuk menjaga kesegaran kaki.",
+              details: "Lari sangat ringan untuk menjaga kesegaran otot.",
             };
           }
 
+          // 5. Quality Day Placement (Ensuring spacing)
           const trainingDaysInWeek = formData.trainingDays.filter(
             (d) => d !== "Minggu" && d !== "Sabtu",
           );
           const q1 = trainingDaysInWeek[0];
-          const q2 =
-            trainingDaysInWeek[Math.floor(trainingDaysInWeek.length / 2)];
+          let q2 = null;
+          if (trainingDaysInWeek.length >= 2) {
+            const q1Idx = DAYS.indexOf(q1);
+            q2 =
+              trainingDaysInWeek.find((d) => DAYS.indexOf(d) >= q1Idx + 2) ||
+              trainingDaysInWeek[trainingDaysInWeek.length - 1];
+            if (q2 === q1) q2 = null;
+          }
+
           let distance = 0;
 
           if (
@@ -197,11 +205,12 @@ export default function CreateTrainingProgramPage() {
               const totalDist = parseFloat(intervalMileage);
               distance = totalDist.toFixed(1);
 
-              // Interval Progression Logic
+              // Interval Progression
               const phase2Start = foundationWeeks + 1;
               const phase2End = competitionWeek - 3 - 1;
-              const totalPhase2Weeks = Math.max(1, phase2End - phase2Start + 1);
-              const progressRatio = (w - phase2Start + 1) / totalPhase2Weeks;
+              const progressRatio =
+                (w - phase2Start + 1) /
+                Math.max(1, phase2End - phase2Start + 1);
 
               let repDist = 0.4;
               if (progressRatio <= 0.25) repDist = 0.4;
@@ -212,7 +221,7 @@ export default function CreateTrainingProgramPage() {
               const reps = Math.floor((totalDist - 2.0) / repDist);
               const repLabel = repDist < 1 ? `${repDist * 1000}m` : "1km";
               const restTime = repDist <= 0.6 ? "2m Jog" : "3m Jog";
-              details = `W-up: 1km Easy + Drills | Main: ${reps}x ${repLabel} @ I-Pace (Rest ${restTime}*) | C-down: 1km Easy jog. *Waktu istirahat dapat disesuaikan dengan kondisi atlet.`;
+              details = `W-up: 1km Easy + Drills | Main: ${reps}x ${repLabel} @ I-Pace (Rest ${restTime}*) | C-down: 1km Easy jog. *Istirahat disesuaikan kondisi atlet.`;
             } else {
               activity = "Tempo Run";
               pace = tPace;
@@ -220,23 +229,20 @@ export default function CreateTrainingProgramPage() {
               distance = totalDist.toFixed(1);
               const blocks = totalDist > 7 ? 3 : 2;
               const distPerBlock = (totalDist / blocks).toFixed(1);
-              details = `W-up: 12m Easy + 2x Strides | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 8m Recovery jog. *Waktu istirahat dapat disesuaikan dengan kondisi atlet.`;
+              details = `W-up: 12m Easy + Strides | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 8m Recovery jog. *Istirahat disesuaikan kondisi atlet.`;
             }
-          } else if (
-            day === q2 &&
-            hasTempo &&
-            phase === 2 &&
-            trainingDaysInWeek.length > 2
-          ) {
+          } else if (day === q2 && hasTempo && phase === 2) {
             activity = "Tempo Run";
             pace = tPace;
             const totalDist = parseFloat(tempoMileage);
             distance = totalDist.toFixed(1);
-            details = `W-up: 10m Easy | Main: ${distance}km Continuous @ T-Pace (Sustained effort) | C-down: 5m Easy`;
+            const blocks = totalDist > 7 ? 3 : 2;
+            const distPerBlock = (totalDist / blocks).toFixed(1);
+            details = `W-up: 10m Easy | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 5m Easy. *Istirahat disesuaikan kondisi atlet.`;
           } else {
             const qualityDaysCount =
               (hasInterval ? 1 : 0) +
-              (hasTempo && phase === 2 && trainingDaysInWeek.length > 2
+              (hasTempo && phase === 2 && q2
                 ? 1
                 : phase === 3 && hasTempo
                   ? 1
@@ -267,166 +273,157 @@ export default function CreateTrainingProgramPage() {
       </div>
 
       {!showProgram ? (
-        <>
-          <div className="card-retro p-8 animate-fade-in">
-            <div className="space-y-6">
-              <div>
-                <Label>Nama Perlombaan</Label>
-                <input
-                  type="text"
-                  value={formData.raceName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, raceName: e.target.value })
+        <div className="card-retro p-8 animate-fade-in">
+          <div className="space-y-6">
+            <div>
+              <Label>Nama Perlombaan</Label>
+              <input
+                type="text"
+                value={formData.raceName}
+                onChange={(e) =>
+                  setFormData({ ...formData, raceName: e.target.value })
+                }
+                placeholder="Contoh: Jakarta Marathon"
+                className="input-retro w-full"
+              />
+            </div>
+            <div>
+              <Label>Nomor Perlombaan</Label>
+              <select
+                value={formData.raceEvent}
+                onChange={(e) =>
+                  setFormData({ ...formData, raceEvent: e.target.value })
+                }
+                className="input-retro w-full"
+              >
+                <option value="5K">5K</option>
+                <option value="10K">10K</option>
+                <option value="Half Marathon">Half Marathon</option>
+                <option value="Full Marathon">Full Marathon</option>
+              </select>
+            </div>
+            <div>
+              <Label>Level Pelari</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  disabled={formData.raceEvent !== "Full Marathon"}
+                  onClick={() =>
+                    setFormData({ ...formData, level: "beginner" })
                   }
-                  placeholder="Contoh: Jakarta Marathon"
+                  className={clsx(
+                    "btn-retro py-2 text-sm transition-all",
+                    formData.level === "beginner"
+                      ? "bg-retro-green text-retro-black"
+                      : "border-retro-white/30 text-retro-white",
+                    formData.raceEvent !== "Full Marathon" &&
+                      "opacity-20 cursor-not-allowed",
+                  )}
+                >
+                  BEGINNER
+                </button>
+                <button
+                  type="button"
+                  disabled={formData.raceEvent !== "Full Marathon"}
+                  onClick={() =>
+                    setFormData({ ...formData, level: "intermediate" })
+                  }
+                  className={clsx(
+                    "btn-retro py-2 text-sm transition-all",
+                    formData.level === "intermediate"
+                      ? "bg-retro-green text-retro-black"
+                      : "border-retro-white/30 text-retro-white",
+                    formData.raceEvent !== "Full Marathon" &&
+                      "opacity-20 cursor-not-allowed",
+                  )}
+                >
+                  INTERMEDIATE / ELITE
+                </button>
+              </div>
+              {formData.raceEvent !== "Full Marathon" && (
+                <p className="mt-2 font-mono text-[9px] italic text-retro-white/30">
+                  *Level hanya tersedia untuk Full Marathon sesuai pedoman.
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Durasi (Bulan)</Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={formData.prepMonths}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      prepMonths: parseInt(e.target.value),
+                    })
+                  }
                   className="input-retro w-full"
                 />
               </div>
-              <div>
-                <Label>Nomor Perlombaan</Label>
-                <select
-                  value={formData.raceEvent}
-                  onChange={(e) =>
-                    setFormData({ ...formData, raceEvent: e.target.value })
-                  }
-                  className="input-retro w-full"
-                >
-                  <option value="5K">5K</option>
-                  <option value="10K">10K</option>
-                  <option value="Half Marathon">Half Marathon</option>
-                  <option value="Full Marathon">Full Marathon</option>
-                </select>
-              </div>
-              <div>
-                <Label>Level Pelari</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    disabled={formData.raceEvent !== "Full Marathon"}
-                    onClick={() =>
-                      setFormData({ ...formData, level: "beginner" })
-                    }
-                    className={clsx(
-                      "btn-retro py-2 text-sm transition-all",
-                      formData.level === "beginner"
-                        ? "bg-retro-green text-retro-black"
-                        : "border-retro-white/30 text-retro-white",
-                      formData.raceEvent !== "Full Marathon" &&
-                        "opacity-20 cursor-not-allowed",
-                    )}
-                  >
-                    BEGINNER
-                  </button>
-                  <button
-                    type="button"
-                    disabled={formData.raceEvent !== "Full Marathon"}
-                    onClick={() =>
-                      setFormData({ ...formData, level: "intermediate" })
-                    }
-                    className={clsx(
-                      "btn-retro py-2 text-sm transition-all",
-                      formData.level === "intermediate"
-                        ? "bg-retro-green text-retro-black"
-                        : "border-retro-white/30 text-retro-white",
-                      formData.raceEvent !== "Full Marathon" &&
-                        "opacity-20 cursor-not-allowed",
-                    )}
-                  >
-                    INTERMEDIATE / ELITE
-                  </button>
-                </div>
-                {formData.raceEvent !== "Full Marathon" && (
-                  <p className="mt-2 font-mono text-[9px] italic text-retro-white/30">
-                    *Level hanya tersedia untuk Full Marathon sesuai pedoman
-                    Milleage Science.
-                  </p>
-                )}
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Durasi (Bulan)</Label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={formData.prepMonths}
+              <div className="col-span-2">
+                <Label>Persiapan (Bulan - Ke)</Label>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={formData.startMonth}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        prepMonths: parseInt(e.target.value),
-                      })
+                      setFormData({ ...formData, startMonth: e.target.value })
                     }
-                    className="input-retro w-full"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label>Persiapan (Bulan - Ke)</Label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={formData.startMonth}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startMonth: e.target.value })
-                      }
-                      className="input-retro w-full text-xs"
-                    >
-                      {MONTHS_LIST.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-retro-white/50">-</span>
-                    <select
-                      value={formData.endMonth}
-                      onChange={(e) =>
-                        setFormData({ ...formData, endMonth: e.target.value })
-                      }
-                      className="input-retro w-full text-xs"
-                    >
-                      {MONTHS_LIST.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label>Frekuensi Latihan (Hari apa saja)</Label>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-                  {DAYS.map((day) => (
-                    <button
-                      key={day}
-                      onClick={() => handleDayToggle(day)}
-                      className={clsx(
-                        "px-2 py-3 font-mono text-[10px] border transition-all text-center",
-                        formData.trainingDays.includes(day)
-                          ? "border-retro-green bg-retro-green text-retro-black"
-                          : "border-retro-gray-light text-retro-white/50 hover:border-retro-white hover:text-retro-white",
-                      )}
-                    >
-                      {day.toUpperCase()}
-                    </button>
-                  ))}
+                    className="input-retro w-full text-xs"
+                  >
+                    {MONTHS_LIST.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-retro-white/50">-</span>
+                  <select
+                    value={formData.endMonth}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endMonth: e.target.value })
+                    }
+                    className="input-retro w-full text-xs"
+                  >
+                    {MONTHS_LIST.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
+            <div>
+              <Label>Frekuensi Latihan (Hari apa saja)</Label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                {DAYS.map((day) => (
+                  <button
+                    key={day}
+                    onClick={() => handleDayToggle(day)}
+                    className={clsx(
+                      "px-2 py-3 font-mono text-[10px] border transition-all text-center",
+                      formData.trainingDays.includes(day)
+                        ? "border-retro-green bg-retro-green text-retro-black"
+                        : "border-retro-gray-light text-retro-white/50 hover:border-retro-white hover:text-retro-white",
+                    )}
+                  >
+                    {day.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-
-          <div className="mt-8">
-            <button
-              onClick={() => setShowProgram(true)}
-              disabled={
-                !formData.raceName || formData.trainingDays.length === 0
-              }
-              className="btn-retro w-full bg-retro-green py-4 text-xl font-retro tracking-widest text-retro-black disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              BUAT PROGRAM LATIHAN →
-            </button>
-          </div>
-        </>
+          <button
+            onClick={() => setShowProgram(true)}
+            disabled={!formData.raceName || formData.trainingDays.length === 0}
+            className="btn-retro w-full bg-retro-green py-4 text-xl font-retro tracking-widest text-retro-black mt-8 disabled:opacity-50"
+          >
+            BUAT PROGRAM LATIHAN →
+          </button>
+        </div>
       ) : (
         <div className="space-y-8 animate-fade-in">
           <div className="flex justify-between items-end">
@@ -446,7 +443,6 @@ export default function CreateTrainingProgramPage() {
               UBAH PENGATURAN
             </button>
           </div>
-
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
@@ -463,7 +459,6 @@ export default function CreateTrainingProgramPage() {
               </button>
             ))}
           </div>
-
           <div className="space-y-12">
             {generatedProgram
               .filter((w) => w.week === activeWeek)
@@ -484,15 +479,7 @@ export default function CreateTrainingProgramPage() {
                     <span className="font-mono text-xs text-retro-green px-3 py-1 border border-retro-green/30">
                       {week.isRecoveryWeek
                         ? "MINGGU PEMULIHAN (Recovery)"
-                        : `FASE ${week.phase}: ${
-                            week.phase === 1
-                              ? "General Preparation"
-                              : week.phase === 2
-                                ? "Specific Preparation"
-                                : week.phase === 3
-                                  ? "Pre Competition (Tapering)"
-                                  : "Competition"
-                          }`}
+                        : `FASE ${week.phase}: ${week.phase === 1 ? "General Preparation" : week.phase === 2 ? "Specific Preparation" : week.phase === 3 ? "Pre Competition (Tapering)" : "Competition"}`}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
@@ -559,7 +546,6 @@ export default function CreateTrainingProgramPage() {
                 </div>
               ))}
           </div>
-
           <div className="flex gap-4">
             <button
               onClick={() => window.print()}
