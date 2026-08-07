@@ -385,6 +385,7 @@ export default function CreateTrainingProgramPage() {
             </button>
           </div>
 
+          {/* Tabbed Weekly Menu */}
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
@@ -424,12 +425,12 @@ export default function CreateTrainingProgramPage() {
                         ? "MINGGU PEMULIHAN (Recovery)"
                         : `FASE ${week.phase}: ${
                             week.phase === 1
-                              ? "Fondasi (Base)"
+                              ? "General Preparation"
                               : week.phase === 2
-                                ? "Kualitas Awal"
+                                ? "Specific Preparation"
                                 : week.phase === 3
-                                  ? "Transisi Kualitas"
-                                  : "Kualitas Akhir & Taper"
+                                  ? "Pre Competition"
+                                  : "Competition"
                           }`}
                     </span>
                   </div>
