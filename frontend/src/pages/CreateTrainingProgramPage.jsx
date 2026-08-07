@@ -47,16 +47,17 @@ export default function CreateTrainingProgramPage() {
       <section className="max-w-4xl mx-auto px-4 pt-36 pb-24 text-center">
         <div className="card-retro p-10">
           <h2 className="font-retro text-3xl text-retro-white mb-4">
-            NO VCR DATA FOUND
+            DATA VCR TIDAK DITEMUKAN
           </h2>
           <p className="text-retro-white/50 mb-8 font-sport">
-            Please calculate your VCR first before creating a training program.
+            Silakan hitung VCR Anda terlebih dahulu sebelum membuat program
+            latihan.
           </p>
           <button
             onClick={() => navigate("/calculator")}
             className="btn-retro bg-retro-green px-8 py-3 text-retro-black"
           >
-            GO TO CALCULATOR
+            KE KALKULATOR
           </button>
         </div>
       </section>
@@ -101,12 +102,23 @@ export default function CreateTrainingProgramPage() {
     const iPace = getPace("100%");
 
     for (let w = 1; w <= weeks; w++) {
-      const increaseFactor = Math.floor((w - 1) / 2) * 0.1;
-      const weeklyMileage = baseMileage * (1 + increaseFactor);
+      // 3:1 Mesocycle Logic
+      const weekInCycle = (w - 1) % 4; // 0,1,2 = building, 3 = recovery
+      const cycleNumber = Math.floor((w - 1) / 4);
+
+      let weeklyMileage;
+      let isRecoveryWeek = weekInCycle === 3;
+      const cycleBaseMileage = baseMileage * (1 + cycleNumber * 0.1);
+
+      if (isRecoveryWeek) {
+        weeklyMileage = cycleBaseMileage * 1.2 * 0.7; // 70% dari beban tertinggi
+      } else {
+        weeklyMileage = cycleBaseMileage * (1 + weekInCycle * 0.1);
+      }
 
       const longRunMileage = weeklyMileage * 0.3;
-      const tempoMileage = weeklyMileage * 0.15;
-      const intervalMileage = weeklyMileage * 0.12;
+      const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
+      const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
       const easyMileage =
         weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
 
@@ -120,6 +132,7 @@ export default function CreateTrainingProgramPage() {
         week: w,
         mileage: weeklyMileage.toFixed(1),
         phase,
+        isRecoveryWeek,
         days: DAYS.map((day) => {
           if (!formData.trainingDays.includes(day))
             return { day, activity: "Istirahat", pace: "-", distance: "-" };
@@ -128,7 +141,8 @@ export default function CreateTrainingProgramPage() {
           let pace = ePace;
           let distance = (
             easyMileage /
-            (formData.trainingDays.length - (phase > 1 ? 2 : 1))
+            (formData.trainingDays.length -
+              (phase > 1 && !isRecoveryWeek ? 2 : 1))
           ).toFixed(1);
 
           if (
@@ -138,7 +152,7 @@ export default function CreateTrainingProgramPage() {
             activity = "Long Run";
             pace = ePace;
             distance = longRunMileage.toFixed(1);
-          } else if (phase > 1) {
+          } else if (phase > 1 && !isRecoveryWeek) {
             const trainingDaysInWeek = formData.trainingDays.filter(
               (d) => d !== "Minggu" && d !== "Sabtu",
             );
@@ -381,14 +395,17 @@ export default function CreateTrainingProgramPage() {
                       </p>
                     </div>
                     <span className="font-mono text-xs text-retro-green px-3 py-1 border border-retro-green/30">
-                      FASE {week.phase}:{" "}
-                      {week.phase === 1
-                        ? "Fondasi (Base)"
-                        : week.phase === 2
-                          ? "Kualitas Awal"
-                          : week.phase === 3
-                            ? "Transisi Kualitas"
-                            : "Kualitas Akhir & Taper"}
+                      {week.isRecoveryWeek
+                        ? "MINGGU PEMULIHAN (Recovery)"
+                        : `FASE ${week.phase}: ${
+                            week.phase === 1
+                              ? "Fondasi (Base)"
+                              : week.phase === 2
+                                ? "Kualitas Awal"
+                                : week.phase === 3
+                                  ? "Transisi Kualitas"
+                                  : "Kualitas Akhir & Taper"
+                          }`}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
