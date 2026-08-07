@@ -102,41 +102,41 @@ export default function CreateTrainingProgramPage() {
     const iPace = getPace("100%");
 
     for (let w = 1; w <= weeks; w++) {
-      // 3:1 MESOCYCLE LOGIC (Recovery Week at Week 2)
+      // 3:1 MESOCYCLE LOGIC (Recovery at Week 4 using Week 2's load)
       const weekInCycle = (w - 1) % 4; // 0=w1, 1=w2, 2=w3, 3=w4
       const cycleNumber = Math.floor((w - 1) / 4);
 
       let weeklyMileage;
-      let isRecoveryWeek = weekInCycle === 1; // Minggu ke-2 sebagai Recovery
+      let isRecoveryWeek = weekInCycle === 3; // Minggu ke-4 sebagai Recovery
+
+      // Base mileage increases by 10% every cycle (4 weeks)
       const cycleStartMileage = startMileage * (1 + cycleNumber * 0.1);
 
-      if (isRecoveryWeek) {
-        // Recovery week: 85% dari beban dasar untuk transisi yang halus
-        weeklyMileage = cycleStartMileage * 0.85;
-      } else {
-        // Multipliers: W1=1.0, W3=1.1, W4=1.2
-        const multipliers = [1.0, 0.85, 1.1, 1.2];
-        weeklyMileage = cycleStartMileage * multipliers[weekInCycle];
-      }
+      // Multipliers: w1: 1.0x, w2: 1.1x, w3: 1.2x, w4(Rec): 1.1x
+      const multipliers = [1.0, 1.1, 1.2, 1.1];
+      weeklyMileage = cycleStartMileage * multipliers[weekInCycle];
 
+      // ALLOCATION RULES
       const longRunMileage = weeklyMileage * 0.3;
+      // Meskipun mileage di recovery week (w4) sama dengan w2, kita kurangi intensitasnya
       const tempoMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.15;
       const intervalMileage = isRecoveryWeek ? 0 : weeklyMileage * 0.12;
       const easyMileage =
         weeklyMileage - longRunMileage - tempoMileage - intervalMileage;
 
+      // PHASE LOGIC
       const competitionWeek = weeks;
       const preCompetitionWeeks = 3;
 
       let phase = 1;
       if (w === competitionWeek) {
-        phase = 4;
+        phase = 4; // Competition
       } else if (w > competitionWeek - 1 - preCompetitionWeeks) {
-        phase = 3;
+        phase = 3; // Pre Competition
       } else if (w <= foundationWeeks) {
-        phase = 1;
+        phase = 1; // General Preparation
       } else {
-        phase = 2;
+        phase = 2; // Specific Preparation
       }
 
       const weekData = {
@@ -151,6 +151,7 @@ export default function CreateTrainingProgramPage() {
           let activity = "Easy Run";
           let pace = ePace;
 
+          // Khusus Minggu Kompetisi (Fase 4)
           if (phase === 4) {
             if (
               day === "Minggu" ||
@@ -171,7 +172,7 @@ export default function CreateTrainingProgramPage() {
           let distance = (
             easyMileage /
             (formData.trainingDays.length -
-              (phase > 1 && !isRecoveryWeek ? 2 : 1))
+              (phase > 1 && !isRecoveryWeek ? (phase >= 3 ? 2 : 1) : 1))
           ).toFixed(1);
 
           if (
@@ -409,6 +410,7 @@ export default function CreateTrainingProgramPage() {
             </button>
           </div>
 
+          {/* Tabbed Weekly Menu */}
           <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
             {generatedProgram.map((week) => (
               <button
