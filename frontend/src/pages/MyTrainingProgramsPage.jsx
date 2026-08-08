@@ -16,56 +16,240 @@ export default function MyTrainingProgramsPage() {
   useEffect(() => { fetchPrograms(); }, []);
 
   const fetchPrograms = async () => {
+    setIsLoading(true);
     try {
-      const res = await api.get("/training-program");
-      setPrograms(res.data.data);
-    } catch (e) { toast.error("Failed to load programs."); } finally { setIsLoading(false); }
+      const response = await api.get("/training-program");
+      setPrograms(response.data.data);
+    } catch (error) {
+      console.error("Fetch error:", error);
+      toast.error("Failed to load training programs.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Hapus program ini secara permanen?")) return;
     try {
       await api.delete(`/training-program/${id}`);
-      setPrograms(programs.filter(p => p.id !== id));
       toast.success("Program deleted.");
-    } catch (e) { toast.error("Error deleting."); }
+      setPrograms(programs.filter((p) => p.id !== id));
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete program.");
+    }
+  };
+
+  const openDetail = (program) => {
+    setSelectedProgram(program);
+    setActiveWeek(1);
+    setIsDetailOpen(true);
   };
 
   return (
     <section className="max-w-6xl mx-auto px-4 pt-36 pb-24">
-      <h1 className="font-retro text-5xl text-retro-white mb-10 tracking-tight">MY PROGRAMS<span className="text-retro-green animate-blink">_</span></h1>
-      {isLoading ? <div className="text-center py-20 text-retro-green font-retro text-2xl">LOADING...</div> : programs.length === 0 ? (
-        <div className="card-retro p-10 text-center"><p className="mb-6 text-retro-white/40 font-retro text-xl">NO PROGRAMS SAVED YET.</p><button onClick={() => navigate("/calculator")} className="btn-retro bg-retro-green px-8 py-3 text-retro-black font-retro">CREATE NEW PROGRAM</button></div>
+      <div className="mb-10 animate-slide-up">
+        <span className="font-mono text-retro-green text-xs tracking-[0.3em]">
+          // USER DASHBOARD
+        </span>
+        <h1 className="font-retro text-5xl md:text-7xl text-retro-white mt-1 leading-none">
+          MY PROGRAMS<span className="text-retro-green animate-blink">_</span>
+        </h1>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin h-10 w-10 border-4 border-retro-green border-t-transparent rounded-full"></div>
+        </div>
+      ) : programs.length === 0 ? (
+        <div className="card-retro p-10 text-center">
+          <p className="font-retro text-2xl text-retro-white/40 mb-6">NO PROGRAMS SAVED YET</p>
+          <button
+            onClick={() => navigate("/calculator")}
+            className="btn-retro bg-retro-green px-8 py-3 text-retro-black"
+          >
+            CREATE YOUR FIRST PROGRAM
+          </button>
+        </div>
       ) : (
-        <div className="grid md:grid-cols-3 gap-6">
-          {programs.map(p => (
-            <div key={p.id} className="card-retro p-6 flex flex-col h-full border border-retro-gray-light/20">
-              <span className="text-[10px] font-mono text-retro-green border border-retro-green/40 px-2 py-1 self-start mb-4 uppercase tracking-widest">{p.status}</span>
-              <h3 className="font-retro text-2xl text-retro-white mb-2 uppercase">{p.name}</h3>
-              <p className="text-xs text-retro-white/50 mb-6 font-mono">{p.race_event} · {p.level.toUpperCase()} · {p.prep_months} MONTHS</p>
-              <div className="mt-auto flex gap-2 pt-6 border-t border-retro-white/10">
-                <button onClick={() => { setSelectedProgram(p); setActiveWeek(1); setIsDetailOpen(true); }} className="btn-retro flex-1 text-[10px] border border-retro-white/30 text-retro-white py-2 tracking-widest">VIEW</button>
-                <button onClick={() => handleDelete(p.id)} className="btn-retro flex-1 text-[10px] border border-red-500/50 text-red-500 py-2 tracking-widest hover:bg-red-500 hover:text-white">DELETE</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {programs.map((program) => (
+            <div key={program.id} className="card-retro p-6 flex flex-col h-full">
+              <div className="flex justify-between items-start mb-4">
+                <span className={clsx(
+                    "font-mono text-[10px] px-2 py-1 uppercase tracking-widest border",
+                    program.status === 'active' ? "border-retro-green text-retro-green" : "border-retro-white/30 text-retro-white/30"
+                )}>
+                  {program.status}
+                </span>
+                <span className="font-mono text-[10px] text-retro-white/30 italic">
+                  {new Date(program.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <h3 className="font-retro text-2xl text-retro-white mb-2 uppercase">{program.name}</h3>
+              <p className="font-mono text-xs text-retro-white/50 mb-6">
+                {program.race_event} · {program.level.toUpperCase()} · {program.prep_months} MONTHS
+              </p>
+              
+              <div className="mt-auto pt-6 flex gap-3 border-t border-retro-gray-light/20">
+                <button
+                  onClick={() => openDetail(program)}
+                  className="btn-retro flex-1 border-retro-white/30 text-retro-white py-2 text-xs tracking-widest hover:border-retro-white"
+                >
+                  VIEW DETAIL
+                </button>
+                <button
+                  onClick={() => handleDelete(program.id)}
+                  className="btn-retro flex-1 border-red-500/50 text-red-500 py-2 text-xs tracking-widest hover:bg-red-500 hover:text-white"
+                >
+                  DELETE
+                </button>
               </div>
             </div>
           ))}
         </div>
       )}
-      <Modal isOpen={isDetailOpen} onClose={() => setIsDetailOpen(false)} title={selectedProgram?.name.toUpperCase()}>
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        title={selectedProgram?.name.toUpperCase()}
+      >
         {selectedProgram && (
-          <div className="space-y-6">
-             <div className="flex gap-2 overflow-x-auto border-b border-retro-gray-light/20 pb-2">
-                {selectedProgram.program_data.map(w => <button key={w.week} onClick={() => setActiveWeek(w.week)} className={clsx("px-3 py-1 border text-xs font-retro transition-all", activeWeek === w.week ? "bg-retro-green text-retro-black border-retro-green" : "text-retro-white/40 border-transparent")}>W{w.week}</button>)}
-             </div>
-             {selectedProgram.program_data.filter(w => w.week === activeWeek).map(week => (
-                <div key={week.week} className="space-y-4">
-                  <div className="flex justify-between items-center"><h4 className="font-retro text-lg text-retro-white uppercase">WEEK {week.week}</h4><span className="text-retro-green text-xs font-mono">{week.mileage} Km</span></div>
-                  <table className="w-full text-left text-xs">
-                    <thead><tr className="border-b border-retro-white/10 text-retro-white/30"><th className="pb-2">Day</th><th className="pb-2">Activity</th><th className="pb-2 text-right">Distance</th></tr></thead>
-                    <tbody>{week.days.map((d, i) => <tr key={i} className="border-b border-retro-gray-light/5 last:border-0"><td className="py-3 text-retro-white font-retro">{d.day}</td><td className="py-3 text-retro-green">{d.activity}</td><td className="py-3 text-retro-white text-right font-mono">{d.distance}</td></tr>)}</tbody>
-                  </table>
-                </div>
-             ))}
+          <div className="space-y-8 animate-fade-in">
+            <div className="flex justify-between items-end">
+              <div>
+                <h2 className="font-retro text-2xl text-retro-green">
+                  {selectedProgram.name.toUpperCase()}
+                </h2>
+                <p className="font-mono text-xs text-retro-white/60">
+                  {selectedProgram.race_event} · {selectedProgram.prep_months} Bulan
+                </p>
+              </div>
+            </div>
+
+            <div className="mb-8 flex gap-0 overflow-x-auto border-b-2 border-retro-gray-light">
+              {selectedProgram.program_data.map((week) => (
+                <button
+                  key={week.week}
+                  onClick={() => setActiveWeek(week.week)}
+                  className={clsx(
+                    "font-retro whitespace-nowrap border-b-2 -mb-0.5 px-5 py-3 text-xs tracking-widest transition-all duration-150",
+                    activeWeek === week.week
+                      ? "border-retro-green bg-retro-green text-retro-black"
+                      : "border-transparent text-retro-white/50 hover:bg-retro-gray-mid hover:text-retro-white"
+                  )}
+                >
+                  MINGGU {week.week}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-12">
+              {selectedProgram.program_data
+                .filter((w) => w.week === activeWeek)
+                .map((week) => (
+                  <div
+                    key={week.week}
+                    className="card-retro overflow-hidden animate-fade-in"
+                  >
+                    <div className="bg-retro-gray-mid/50 px-6 py-4 flex justify-between items-center border-b border-retro-gray-light">
+                      <div>
+                        <span className="font-retro text-2xl text-retro-white">
+                          MINGGU {week.week}
+                        </span>
+                        <p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">
+                          Total Mileage: {week.mileage} Km
+                        </p>
+                      </div>
+                      <span className="font-mono text-xs text-retro-green px-3 py-1 border border-retro-green/30 text-right">
+                        {week.isRecoveryWeek
+                          ? "MINGGU PEMULIHAN (Recovery)"
+                          : `FASE ${week.phase}: ${
+                              week.phase === 1
+                                ? "General Preparation"
+                                : week.phase === 2
+                                ? "Specific Preparation"
+                                : week.phase === 3
+                                ? "Pre Competition (Tapering)"
+                                : "Competition"
+                            }`}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left min-w-[800px]">
+                        <thead>
+                          <tr className="border-b border-retro-gray-light/30">
+                            <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                              Hari
+                            </th>
+                            <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                              Aktivitas
+                            </th>
+                            <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                              Jarak
+                            </th>
+                            <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                              Pace
+                            </th>
+                            <th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+                              Detail Program
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {week.days.map((d, idx) => (
+                            <tr
+                              key={idx}
+                              className={clsx(
+                                "border-b border-retro-gray-light/10 last:border-0",
+                                d.activity === "Istirahat" ? "opacity-30" : ""
+                              )}
+                            >
+                              <td className="px-6 py-4 font-retro text-retro-white">
+                                {d.day}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span
+                                  className={clsx(
+                                    "font-sport text-sm",
+                                    d.activity !== "Easy Run" &&
+                                      d.activity !== "Istirahat" &&
+                                      d.activity !== "Shakeout Run"
+                                      ? "text-retro-green"
+                                      : "text-retro-white/80"
+                                  )}
+                                >
+                                  {d.activity}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 font-mono text-sm text-retro-white">
+                                {d.distance}
+                              </td>
+                              <td className="px-6 py-4 font-mono text-sm text-retro-white">
+                                {d.pace}
+                              </td>
+                              <td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic">
+                                {d.details}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => window.print()}
+                className="btn-retro flex-1 border border-retro-white/30 text-retro-white py-4 font-retro tracking-widest hover:border-retro-white"
+              >
+                CETAK PROGRAM
+              </button>
+            </div>
           </div>
         )}
       </Modal>

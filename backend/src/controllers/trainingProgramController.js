@@ -1,32 +1,63 @@
+// src/controllers/trainingProgramController.js
 const TrainingProgram = require("../models/TrainingProgram");
-const responseHelper = require("../utils/responseHelper");
 
 const trainingProgramController = {
   async create(req, res) {
     try {
       const data = { ...req.body, user_id: req.user.id };
       const program = await TrainingProgram.create(data);
-      return responseHelper.success(res, "Program saved!", program, 201);
+      res.status(201).json({ 
+        success: true, 
+        message: "Training program saved successfully", 
+        data: program 
+      });
     } catch (error) {
-      return responseHelper.error(res, "Failed to save program");
+      console.error("Create Training Program Error:", error);
+      res.status(500).json({ success: false, error: "Failed to save training program" });
     }
   },
 
   async getAll(req, res) {
     try {
       const programs = await TrainingProgram.findByUserId(req.user.id);
-      return responseHelper.success(res, "Programs retrieved", programs);
+      res.json({ 
+        success: true, 
+        message: "Training programs retrieved", 
+        data: programs 
+      });
     } catch (error) {
-      return responseHelper.error(res, "Failed to retrieve programs");
+      console.error("Get All Training Programs Error:", error);
+      res.status(500).json({ success: false, error: "Failed to retrieve training programs" });
+    }
+  },
+
+  async getById(req, res) {
+    try {
+      const program = await TrainingProgram.findById(req.params.id, req.user.id);
+      if (!program) {
+        return res.status(404).json({ success: false, error: "Training program not found" });
+      }
+      res.json({ 
+        success: true, 
+        message: "Training program retrieved", 
+        data: program 
+      });
+    } catch (error) {
+      console.error("Get Training Program Error:", error);
+      res.status(500).json({ success: false, error: "Failed to retrieve training program" });
     }
   },
 
   async delete(req, res) {
     try {
-      await TrainingProgram.delete(req.params.id, req.user.id);
-      return responseHelper.success(res, "Program deleted");
+      const deleted = await TrainingProgram.delete(req.params.id, req.user.id);
+      if (!deleted) {
+        return res.status(404).json({ success: false, error: "Training program not found" });
+      }
+      res.json({ success: true, message: "Training program deleted successfully" });
     } catch (error) {
-      return responseHelper.error(res, "Delete failed");
+      console.error("Delete Training Program Error:", error);
+      res.status(500).json({ success: false, error: "Failed to delete training program" });
     }
   }
 };
