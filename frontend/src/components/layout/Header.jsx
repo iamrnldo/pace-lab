@@ -18,6 +18,7 @@ export default function Header() {
     ? [
         { label: "Calculator", path: "/calculator" },
         { label: "Dashboard", path: "/dashboard" },
+        { label: "My Programs", path: "/my-training-programs" }, // MENU BARU DISINI
         { label: "Profile", path: "/profile" },
         { label: "How It Works", path: "/#how-it-works" },
       ]
