@@ -19,7 +19,7 @@ export default function MyTrainingProgramsPage() {
     try {
       const res = await api.get("/training-program");
       setPrograms(res.data.data);
-    } catch (e) { toast.error("Failed to load training programs."); } finally { setIsLoading(false); }
+    } catch (e) { toast.error("Failed to load programs."); } finally { setIsLoading(false); }
   };
 
   const handleDelete = async (id) => {
@@ -33,18 +33,18 @@ export default function MyTrainingProgramsPage() {
 
   return (
     <section className="max-w-6xl mx-auto px-4 pt-36 pb-24">
-      <h1 className="font-retro text-5xl text-retro-white mb-10">MY PROGRAMS<span className="text-retro-green animate-blink">_</span></h1>
+      <h1 className="font-retro text-5xl text-retro-white mb-10 tracking-tight">MY PROGRAMS<span className="text-retro-green animate-blink">_</span></h1>
       {isLoading ? <div className="text-center py-20 text-retro-green font-retro text-2xl">LOADING...</div> : programs.length === 0 ? (
         <div className="card-retro p-10 text-center"><p className="mb-6 text-retro-white/40 font-retro text-xl">NO PROGRAMS SAVED YET.</p><button onClick={() => navigate("/calculator")} className="btn-retro bg-retro-green px-8 py-3 text-retro-black font-retro">CREATE NEW PROGRAM</button></div>
       ) : (
         <div className="grid md:grid-cols-3 gap-6">
           {programs.map(p => (
-            <div key={p.id} className="card-retro p-6 flex flex-col h-full">
+            <div key={p.id} className="card-retro p-6 flex flex-col h-full border border-retro-gray-light/20">
               <span className="text-[10px] font-mono text-retro-green border border-retro-green/40 px-2 py-1 self-start mb-4 uppercase tracking-widest">{p.status}</span>
               <h3 className="font-retro text-2xl text-retro-white mb-2 uppercase">{p.name}</h3>
               <p className="text-xs text-retro-white/50 mb-6 font-mono">{p.race_event} · {p.level.toUpperCase()} · {p.prep_months} MONTHS</p>
               <div className="mt-auto flex gap-2 pt-6 border-t border-retro-white/10">
-                <button onClick={() => { setSelectedProgram(p); setActiveWeek(1); setIsDetailOpen(true); }} className="btn-retro flex-1 text-[10px] border border-retro-white/30 text-retro-white py-2 tracking-widest hover:border-retro-white">VIEW</button>
+                <button onClick={() => { setSelectedProgram(p); setActiveWeek(1); setIsDetailOpen(true); }} className="btn-retro flex-1 text-[10px] border border-retro-white/30 text-retro-white py-2 tracking-widest">VIEW</button>
                 <button onClick={() => handleDelete(p.id)} className="btn-retro flex-1 text-[10px] border border-red-500/50 text-red-500 py-2 tracking-widest hover:bg-red-500 hover:text-white">DELETE</button>
               </div>
             </div>
@@ -59,7 +59,7 @@ export default function MyTrainingProgramsPage() {
              </div>
              {selectedProgram.program_data.filter(w => w.week === activeWeek).map(week => (
                 <div key={week.week} className="space-y-4">
-                  <div className="flex justify-between items-center"><h4 className="font-retro text-lg text-retro-white">WEEK {week.week}</h4><span className="text-retro-green text-xs font-mono">{week.mileage} Km</span></div>
+                  <div className="flex justify-between items-center"><h4 className="font-retro text-lg text-retro-white uppercase">WEEK {week.week}</h4><span className="text-retro-green text-xs font-mono">{week.mileage} Km</span></div>
                   <table className="w-full text-left text-xs">
                     <thead><tr className="border-b border-retro-white/10 text-retro-white/30"><th className="pb-2">Day</th><th className="pb-2">Activity</th><th className="pb-2 text-right">Distance</th></tr></thead>
                     <tbody>{week.days.map((d, i) => <tr key={i} className="border-b border-retro-gray-light/5 last:border-0"><td className="py-3 text-retro-white font-retro">{d.day}</td><td className="py-3 text-retro-green">{d.activity}</td><td className="py-3 text-retro-white text-right font-mono">{d.distance}</td></tr>)}</tbody>
