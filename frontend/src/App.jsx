@@ -12,6 +12,7 @@ import LoginPage from "./pages/LoginPage";
 import ProfilePage from "./pages/ProfilePage";
 import DashboardPage from "./pages/DashboardPage";
 import CreateTrainingProgramPage from "./pages/CreateTrainingProgramPage";
+import MyTrainingProgramsPage from "./pages/MyTrainingProgramsPage"; // 1. PASTIKAN IMPORT INI ADA
 import NotFoundPage from "./pages/NotFoundPage";
 import AdminPage from "./pages/AdminPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
@@ -47,9 +48,8 @@ export default function App() {
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
-          <Route path="*" element={<NotFoundPage />} />
 
-          {/* Calculator — protected, harus login */}
+          {/* Calculator — protected */}
           <Route
             path="calculator"
             element={
@@ -79,6 +79,16 @@ export default function App() {
             }
           />
 
+          {/* 2. TAMBAHKAN RUTE MY TRAINING PROGRAMS DISINI */}
+          <Route
+            path="my-training-programs"
+            element={
+              <AuthGuard>
+                <MyTrainingProgramsPage />
+              </AuthGuard>
+            }
+          />
+
           {/* Profile — protected */}
           <Route
             path="profile"
@@ -88,6 +98,9 @@ export default function App() {
               </AuthGuard>
             }
           />
+
+          {/* 3. PINDAHKAN NOT FOUND KE PALING BAWAH DI DALAM LAYOUT */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         {/* Admin Routes */}
