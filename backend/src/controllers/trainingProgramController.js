@@ -4,6 +4,7 @@ const ExcelJS = require("exceljs");
 
 const getPhaseName = (week) => {
   if (week.isRecoveryWeek) return "Recovery Week";
+  if (week.productPhase) return week.productPhase;
   return {
     1: "General Preparation",
     2: "Specific Preparation",

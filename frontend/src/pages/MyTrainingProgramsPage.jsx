@@ -221,7 +221,7 @@ export default function MyTrainingProgramsPage() {
                               key={idx}
                               className={clsx(
                                 "border-b border-retro-gray-light/10 last:border-0",
-                                d.activity === "Istirahat" ? "opacity-30" : ""
+                                d.activity === "Istirahat" ? "bg-retro-gray-mid/20" : ""
                               )}
                             >
                               <td className="px-6 py-4 font-retro text-retro-white">

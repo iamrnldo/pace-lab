@@ -1,5 +1,6 @@
 export const TRAINING_TYPES = {
   "Easy Run": "E",
+  "Easy Run + Strides": "E",
   "Marathon Pace": "M",
   "Tempo Run": "T",
   "Interval Run": "I",

@@ -4,7 +4,8 @@ import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
 import { getTrainingType } from "../utils/trainingTypes";
-import { getMileageTier, RECOVERY_BY_TYPE } from "../utils/workoutLibrary";
+import { buildStructuredSession, ensureWorkoutMinimums, getMileageTier, getRecoveryGuidance, getWorkoutRecommendation } from "../utils/workoutLibrary";
+import { getMesocycle, getPeriodization, getPostRaceRecoveryPlan, getPostRaceRecoverySchedule, getRecoveryWeekProfile, getSafeQualitySchedule, getTaperMultiplier, TRAINING_BACKGROUNDS } from "../utils/trainingPeriodization";
 import ExportModal from "../components/training/ExportModal";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
@@ -20,6 +21,23 @@ const Label = ({ children }) => (
   </label>
 );
 
+/**
+ * Rest tetap merupakan bagian terencana dari program. Detail ini sengaja
+ * disimpan di program_data agar tampil konsisten di preview, program tersimpan,
+ * serta ekspor PDF/Excel.
+ */
+const getRestDayDetails = ({ isStrengthDay, phase, isRecoveryWeek }) => {
+  if (phase === 4) {
+    return "REST & RACE READINESS\nTidak ada latihan lari atau strength berat. Prioritaskan tidur, hidrasi, makan seperti biasa, dan siapkan perlengkapan lomba. Jalan santai 10–15 menit hanya bila tubuh terasa lebih nyaman bergerak.";
+  }
+
+  if (isStrengthDay) {
+    return `EASY DAY + STRENGTH TRAINING${isRecoveryWeek ? " (volume ringan)" : ""}\nTujuan: membangun stabilitas tanpa menambah kelelahan lari.\n• Pemanasan: 5–10 menit jalan santai atau mobility pinggul/pergelangan kaki.\n• Strength: 2–3 set × 8–12 repetisi: squat atau split squat, glute bridge, calf raise, plank, dan dead bug.\n• Intensitas: ringan–sedang; sisakan 2–3 repetisi, jangan sampai gagal.\n• Pendinginan: mobility lembut 5 menit. Hentikan atau kurangi bila kaki masih berat dari sesi kualitas/long run.`;
+  }
+
+  return `REST DAY + ACTIVE RECOVERY\nTidak ada lari terjadwal. Fokus pada adaptasi tubuh setelah latihan.\n• Pilihan: jalan santai 20–30 menit atau mobility ringan 10 menit bila terasa enak.\n• Recovery: tidur cukup, hidrasi, dan makan seimbang dengan protein serta karbohidrat.\n• Hindari: interval, long run, strength berat, atau aktivitas baru yang membuat pegal.\n• Jika ada nyeri tajam, nyeri yang mengubah pola lari, atau lelah berlebih: istirahat total dan evaluasi kondisi.`;
+};
+
 export default function CreateTrainingProgramPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -29,6 +47,7 @@ export default function CreateTrainingProgramPage() {
     raceName: "",
     raceEvent: "5K",
     level: "beginner",
+    trainingBackground: "consistent",
     trainingDays: ["Selasa", "Kamis", "Sabtu", "Minggu"],
     startDate: toDateInput(new Date()),
     endDate: toDateInput(new Date(new Date().setMonth(new Date().getMonth() + 4))),
@@ -92,23 +111,23 @@ export default function CreateTrainingProgramPage() {
     };
 
     const baseMileage = mileageMap[formData.raceEvent]?.[formData.level] || 20;
-    const foundationWeeks = formData.level === "beginner" ? Math.ceil(weeks * 0.3) : Math.ceil(weeks * 0.2);
-    const competitionWeek = weeks;
-    const preCompetitionWeeks = 2; // Tapering 2 minggu
+    const phasePlan = getPeriodization({ raceEvent: formData.raceEvent, weeks, trainingBackground: formData.trainingBackground });
+    const foundationWeeks = phasePlan.filter((item) => item.phase === 1).length;
+    const taperWeeks = phasePlan.filter((item) => item.isTaper).length;
+    const lastSpecificPrepWeek = Math.max(1, phasePlan.reduce((last, item, index) => (!item.isTaper && item.phase <= 2 ? index + 1 : last), 1));
     const is5K = formData.raceEvent === "5K";
     const isShortPreparation = is5K && dateDuration.months <= 2;
     const isBeginner = formData.level === "beginner";
     const shakeoutDay5K = formData.trainingDays.includes("Sabtu") ? "Sabtu" : formData.trainingDays.filter((d) => d !== "Minggu").slice(-1)[0];
     const tenKShakeoutDays = formData.trainingDays.filter((d) => d !== "Minggu").slice(-2);
     const halfMarathonShakeoutDays = formData.trainingDays.filter((d) => d !== "Minggu").slice(-2);
-    const lastSpecificPrepWeek = competitionWeek - preCompetitionWeeks - 1;
 
     const getPace = (label) => {
       const found = vcrData.intervals.find((i) => i.label === label);
       return found ? found.pacePerKm : vcrData.basePacePerKm;
     };
 
-    const baseEPace = getPace("70%"), baseTPace = getPace("90%"), baseIPace = getPace("100%");
+    const baseEPace = getPace("70%"), baseMPace = getPace("80%"), baseTPace = getPace("90%"), baseIPace = getPace("100%");
 
     // Pace progression: setiap 2 minggu target pace meningkat sekitar 1%.
     // Pace dibuat sedikit lebih cepat (waktu/km berkurang), dengan batas aman 10%.
@@ -159,29 +178,34 @@ export default function CreateTrainingProgramPage() {
     const startMileage = Math.min(baseMileage * 0.6, peakMileage * 0.6);
 
     for (let w = 1; w <= weeks; w++) {
+      const phaseInfo = phasePlan[w - 1];
+      const phase = phaseInfo.phase;
+      const isTaper = phaseInfo.isTaper;
+      const mesocycle = getMesocycle({ productPhase: phaseInfo.productPhase, raceEvent: formData.raceEvent, week: w, totalWeeks: weeks });
       const isIntermediate = formData.level === "intermediate";
       const isIntermediateDistance = ["10K", "Half Marathon"].includes(formData.raceEvent) && isIntermediate;
       const mileageTier = getMileageTier(formData.raceEvent, formData.level, peakMileage);
+      const workoutRecommendation = getWorkoutRecommendation({ raceEvent: formData.raceEvent, level: formData.level, mileageTier, phase, week: w });
+      const qualitySchedule = getSafeQualitySchedule(formData.trainingDays);
+      const allowPrimaryQuality = Boolean(qualitySchedule.q1);
+      const allowSecondaryQuality = workoutRecommendation.recommendedQualitySessions > 1 && mesocycle.maxQualitySessions > 1 && qualitySchedule.hasSafeSecondary;
       const tierQualityFactor = { low: 0.75, medium: 0.9, high: 1 }[mileageTier];
       const qualityFactor = (isIntermediate ? 1 : 0.8) * tierQualityFactor;
       const ePace = intensifyPace(progressivePace(baseEPace, w), isIntermediateDistance ? 0.03 : 0);
+      const mPace = intensifyPace(progressivePace(baseMPace, w), isIntermediateDistance ? 0.02 : 0);
       const tPace = intensifyPace(progressivePace(baseTPace, w), isIntermediateDistance ? 0.05 : 0);
       const iPace = intensifyPace(progressivePace(baseIPace, w), isIntermediateDistance ? 0.08 : 0);
-      // 2. PHASE DETERMINATION
-      let phase = (w === competitionWeek) ? 4 : (w > lastSpecificPrepWeek) ? 3 : (w <= foundationWeeks) ? 1 : 2;
-
       // 3. MILLEAGE LOGIC (Mesocycle 3:1)
       const weekInCycle = (w - 1) % 4;
-      const cycleNumber = Math.floor((w - 1) / 4);
-      let isRecoveryWeek = (weekInCycle === 3 && w !== lastSpecificPrepWeek && phase < 3);
+      const defaultRecoveryWeek = weekInCycle === 3 && w !== lastSpecificPrepWeek && phase < 3;
+      let isRecoveryWeek = typeof mesocycle.isRecovery === "boolean" ? mesocycle.isRecovery : defaultRecoveryWeek;
+      const recoveryProfile = getRecoveryWeekProfile({ raceEvent: formData.raceEvent, level: formData.level, mileageTier });
+      const effectiveQualityFactor = qualityFactor * mesocycle.qualityMultiplier * (isRecoveryWeek ? recoveryProfile.qualityMultiplier : 1);
       let weeklyMileage;
 
-      if (phase === 3) {
-          const taperWeekNum = w - lastSpecificPrepWeek;
-          weeklyMileage = peakMileage * (taperWeekNum === 1 ? 0.7 : 0.5);
-          isRecoveryWeek = false;
-      } else if (phase === 4) {
-          weeklyMileage = peakMileage * 0.35;
+      if (isTaper) {
+          const taperIndex = phasePlan.slice(0, w).filter((item) => item.isTaper).length - 1;
+          weeklyMileage = peakMileage * getTaperMultiplier({ raceEvent: formData.raceEvent, taperIndex, taperWeeks });
           isRecoveryWeek = false;
       } else {
           // Naik bertahap dari mileage awal menuju peak mileage.
@@ -190,6 +214,7 @@ export default function CreateTrainingProgramPage() {
           const plannedMileage = startMileage + (peakMileage - startMileage) * buildProgress;
           const cycleMultiplier = [1.0, 1.05, 1.1, 0.9][weekInCycle];
           weeklyMileage = plannedMileage * cycleMultiplier;
+          if (isRecoveryWeek) weeklyMileage *= recoveryProfile.mileageMultiplier;
           if (w === lastSpecificPrepWeek) weeklyMileage = peakMileage;
       }
 
@@ -200,13 +225,28 @@ export default function CreateTrainingProgramPage() {
         ? (w === lastSpecificPrepWeek ? 0.40 : 0.35 + Math.min(0.05, (w / Math.max(1, lastSpecificPrepWeek)) * 0.05))
         : phase === 1 ? 0.30 : phase === 3 ? 0.30 : 0.30;
       // HM tetap dibatasi maksimal 18 km sesuai batas yang ditetapkan.
-      const longRunMileage = Math.min(weeklyMileage * longRunRatio, longRunCaps[formData.raceEvent] || weeklyMileage * longRunRatio);
+      const longRunMileage = Math.min(
+        weeklyMileage * (phase === 1 ? Math.min(longRunRatio, 0.25) : longRunRatio),
+        longRunCaps[formData.raceEvent] || weeklyMileage * longRunRatio,
+      ) * mesocycle.longRunMultiplier;
       const beginnerShortTempoWindow = !is5K || !isBeginner || !isShortPreparation || w > weeks - 4;
       const allowInterval = !is5K || !isBeginner || !isShortPreparation;
       const allowTempo = beginnerShortTempoWindow;
-      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? weeklyMileage * 0.12 * qualityFactor : 0;
-      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? weeklyMileage * 0.15 * qualityFactor : 0;
+      const primaryType = workoutRecommendation.primarySession.type;
+      const secondaryType = workoutRecommendation.secondarySession.type;
+      const intervalCap = primaryType === "R" ? weeklyMileage * 0.05 : Math.min(weeklyMileage * 0.08, 10);
+      const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * 0.08, 10) : Math.min(weeklyMileage * 0.10, 24);
+      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * 0.12 * effectiveQualityFactor, intervalCap) : 0;
+      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(weeklyMileage * 0.15 * effectiveQualityFactor, tempoCap) : 0;
       let easyMileage = weeklyMileage - longRunMileage - intervalMileage - tempoMileage;
+      if (!allowPrimaryQuality) {
+        easyMileage += intervalMileage;
+        intervalMileage = 0;
+      }
+      if (!allowSecondaryQuality && (phase === 2 || !allowPrimaryQuality)) {
+        easyMileage += tempoMileage;
+        tempoMileage = 0;
+      }
       // Jangan membuat sesi kualitas di bawah 1 km; pindahkan volumenya ke sesi lain.
       if (intervalMileage > 0 && intervalMileage < 1) {
         tempoMileage >= 1 ? (tempoMileage += intervalMileage) : (easyMileage += intervalMileage);
@@ -242,6 +282,12 @@ export default function CreateTrainingProgramPage() {
         week: w,
         mileage: weeklyMileage.toFixed(1),
         phase,
+        productPhase: phaseInfo.productPhase,
+        isTaper,
+        trainingBackground: formData.trainingBackground,
+        qualitySchedule: { q1: qualitySchedule.q1, q2: qualitySchedule.q2, note: qualitySchedule.reason },
+        mesocycle,
+        recoveryNote: isRecoveryWeek ? recoveryProfile.note : null,
         isRecoveryWeek,
         startDate: formData.startDate,
         endDate: formData.endDate,
@@ -252,32 +298,52 @@ export default function CreateTrainingProgramPage() {
           const day = DAYS[(calendarDate.getDay() + 6) % 7];
           if (date < formData.startDate) return { day, date, activity: "Belum Mulai", pace: "-", distance: "-", details: "Program belum dimulai pada tanggal ini." };
           if (date > formData.endDate) return { day, date, activity: "Di luar periode", pace: "-", distance: "-", details: "Tanggal berada di luar periode program." };
-          if (!formData.trainingDays.includes(day)) return { day, date, activity: "Istirahat", pace: "-", distance: "-", details: day === strengthDay ? "Catatan mingguan: lakukan ST (strength training) ringan, fokus core, glutes, dan stabilitas." : "-" };
+          if (date === formData.endDate) return { day, date, activity: "RACE DAY", pace: "Target Lomba", distance: formData.raceEvent, details: `RACE DAY — mulai terkendali, ikuti strategi pace, dan berikan yang terbaik.\n\nRecovery pasca-race: ${getPostRaceRecoveryPlan(formData.raceEvent)}` };
+          if (!formData.trainingDays.includes(day)) {
+            return {
+              day, date, activity: "Istirahat", pace: "-", distance: "-",
+              details: getRestDayDetails({ isStrengthDay: day === strengthDay, phase, isRecoveryWeek }),
+            };
+          }
 
           let activity = "Easy Run", pace = ePace, details = "Lari santai, fokus pada form dan pernapasan.";
           
-          if (phase === 4) {
-            if (date === formData.endDate) {
-              return { day, date, activity: "RACE DAY", pace: "Target Lomba", distance: formData.raceEvent, details: "BERIKAN YANG TERBAIK!" };
+          const daysToRace = Math.round((new Date(`${formData.endDate}T00:00:00`) - calendarDate) / 86400000);
+          // Competition week follows race-specific Daniels guidance rather than
+          // reducing every pre-race session to a shakeout run.
+          if (daysToRace >= 1 && daysToRace <= 6) {
+            const easyDistance = Math.max(2, Math.min(Number(longRunMileage.toFixed(1)) * 0.35, 8)).toFixed(1);
+            const isShortRace = ["5K", "10K"].includes(formData.raceEvent);
+
+            if (isShortRace && daysToRace === 5) {
+              return { day, date, activity: "Tempo Run", pace: tPace, distance: "3.0 Km", details: `RACE TUNE-UP 5K/10K
+Warm-up: 10–15 menit Easy
+Program inti: 2 × 5 menit @ T-Pace (${tPace}/km), recovery 2 menit jog ringan.
+Cool-Down: 10 menit Easy.
+Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race.` };
             }
-            const isShakeoutDay = is5K ? day === shakeoutDay5K : formData.raceEvent === "10K" ? tenKShakeoutDays.includes(day) : formData.raceEvent === "Half Marathon" ? halfMarathonShakeoutDays.includes(day) : true;
-            if ((is5K || formData.raceEvent === "10K" || formData.raceEvent === "Half Marathon") && !isShakeoutDay) {
-              return { day, date, activity: "Istirahat", pace: "-", distance: "-", details: day === strengthDay ? "Catatan mingguan: lakukan ST (strength training) ringan, fokus core, glutes, dan stabilitas." : "-" };
+            if (isShortRace && [3, 2].includes(daysToRace)) {
+              return { day, date, activity: "Easy Run + Strides", pace: ePace, distance: `${easyDistance} Km`, details: "Easy day pre-race. Lari sangat nyaman; setelahnya 4–6 strides × 15–20 detik dengan recovery penuh. Bukan sprint dan hentikan bila kaki terasa berat." };
             }
-            const shakeoutDistance = is5K ? 5 * 0.4 : formData.raceEvent === "10K" ? (10 * 0.7) / 2 : formData.raceEvent === "Half Marathon" ? (21.1 * 0.7) / 2 : weeklyMileage * 0.08;
-            const shakeoutDetails = is5K
-              ? `Shakeout Run 40% dari jarak lomba (${shakeoutDistance.toFixed(1)} km), sangat ringan menjaga kesegaran otot.`
-              : formData.raceEvent === "10K" || formData.raceEvent === "Half Marathon"
-                ? `Shakeout Run hari ${day}: 70% total jarak lomba dibagi 2 hari (${shakeoutDistance.toFixed(1)} km), sangat ringan.`
-                : "Lari sangat ringan menjaga kesegaran otot.";
-            return { day, date, activity: "Shakeout Run", pace: ePace, distance: shakeoutDistance.toFixed(1) + " Km", details: shakeoutDetails };
+
+            if (formData.raceEvent === "Half Marathon") {
+              if (daysToRace === 6) return { day, date, activity: "Long Run", pace: ePace, distance: `${(Number(longRunMileage.toFixed(1)) * (2 / 3)).toFixed(1)} Km`, details: "PRERACE HM — 2/3 dari Long Run normal pada Easy effort. Referensi Daniels 15K–30K prerace week: Race −6 days = 2/3 normal L Run." };
+              if (daysToRace === 3) return { day, date, activity: "Tempo Run", pace: tPace, distance: "3.0 Km", details: `PRERACE HM — 3 × 1 km @ T-Pace (${tPace}/km), recovery 2 menit jog ringan. Referensi Daniels: Race −3 days = 3 × 1 T dengan 2 menit recovery.` };
+              if ([5, 4, 2].includes(daysToRace)) return { day, date, activity: "Easy Run", pace: ePace, distance: `${easyDistance} Km`, details: "Easy day prerace Half Marathon. Jaga langkah santai dan akhiri saat tubuh terasa segar." };
+            }
+
+            if (formData.raceEvent === "Full Marathon") {
+              if (daysToRace === 6) return { day, date, activity: "Long Run", pace: ePace, distance: "60–90 menit", details: "MARATHON RACE WEEK — Long Run Easy pendek dan terkontrol; jangan mengejar jarak. Terinspirasi minggu terakhir program marathon Daniels yang masih mempertahankan L Run Easy, tetapi lebih pendek." };
+              if (daysToRace === 4) return { day, date, activity: "Tempo Run", pace: tPace, distance: "20 menit", details: `MARATHON RACE WEEK — 20 menit @ T-Pace (${tPace}/km) setelah pemanasan Easy, lalu cool-down. Jaga stimulus tanpa menambah fatigue.` };
+              if ([5, 3, 2].includes(daysToRace)) return { day, date, activity: "Easy Run", pace: ePace, distance: `${easyDistance} Km`, details: "Easy day marathon prerace: lari rileks di rute datar, tanpa strides atau latihan baru." };
+            }
+
+            if (daysToRace === 1) return { day, date, activity: "Shakeout Run", pace: ePace, distance: "20–30 menit", details: "SHAKEOUT PRE-RACE — sangat ringan untuk menjaga kaki tetap segar. Tidak ada pace target, interval, atau strength berat." };
+            return { day, date, activity: "Easy Run", pace: ePace, distance: `${easyDistance} Km`, details: "Easy day pre-race. Fokus pada kesegaran, hidrasi, dan tidur; jangan mengejar mileage." };
           }
 
-          // Quality Day Placement (Ensuring spacing)
-          const trainingDaysInWeek = formData.trainingDays.filter((d) => d !== "Minggu" && d !== "Sabtu");
-          const q1 = trainingDaysInWeek[0];
-          let q2 = (trainingDaysInWeek.length >= 2) ? (trainingDaysInWeek.find(d => DAYS.indexOf(d) >= DAYS.indexOf(q1) + 2) || trainingDaysInWeek[trainingDaysInWeek.length - 1]) : null;
-          if (q2 === q1) q2 = null;
+          // P0: Q2 hanya tersedia jika ada minimal satu Easy/Rest day di antara Q1 dan Q2.
+          const { q1, q2 } = qualitySchedule;
 
           let distance = 0;
           if (day === "Minggu" || (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))) {
@@ -287,119 +353,97 @@ export default function CreateTrainingProgramPage() {
             const longRunMinutes = (longRunTimeByRace[formData.raceEvent] || 40) + ((w - 1) * 5);
             if (timeBasedLongRun) pace = "-";
             distance = timeBasedLongRun ? `${longRunMinutes} menit` : longRunMileage.toFixed(1);
+            const hasMarathonBlocks = (isIntermediate || mileageTier === "high") && ["Half Marathon", "Full Marathon"].includes(formData.raceEvent) && phase === 2 && w % 2 === 0;
+            const blockDistance = Math.max(1, Number(longRunMileage.toFixed(1)) * 0.2).toFixed(1);
             details = timeBasedLongRun
               ? `Long Run berbasis waktu: ${longRunMinutes} menit Easy effort. Fokus durasi, bukan mengejar jarak atau pace.`
-              : (w === lastSpecificPrepWeek) ? "PEAK LONGRUN: Jarak maksimal sebelum tapering." : "Steady pace, membangun daya tahan aerobik.";
+              : hasMarathonBlocks
+                ? `Long Run race-specific: Easy effort dengan 2 × ${blockDistance} km @ M-Pace (${mPace}/km). Antarblok lakukan ${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}`
+                : (w === lastSpecificPrepWeek) ? "PEAK LONGRUN: Jarak maksimal sebelum tapering." : "Steady pace, membangun daya tahan aerobik.";
           } else if (day === q1 && (intervalMileage > 0 || (phase === 3 && tempoMileage > 0))) {
             if (intervalMileage > 0) {
-              activity = "Interval Run"; pace = iPace; distance = intervalMileage.toFixed(1);
-              const phase2Start = foundationWeeks + 1;
-              const progressRatio = (w - phase2Start + 1) / Math.max(1, lastSpecificPrepWeek - phase2Start + 1);
-              let repDist = progressRatio <= 0.25 ? 0.4 : progressRatio <= 0.5 ? 0.6 : progressRatio <= 0.75 ? 0.8 : 1.0;
-              const reps = Math.floor((distance - 2.0) / repDist);
+              const primarySession = workoutRecommendation.primarySession;
+              if (primarySession?.type === "R") {
+                activity = "Repetition Run"; pace = iPace; distance = intervalMileage.toFixed(1);
+                const { repDistance, maxReps, focus } = workoutRecommendation.repetition;
+                const reps = Math.max(4, Math.min(maxReps, Math.round((Number(distance) * 1000) / repDistance)));
+                const total = (reps * repDistance) / 1000;
+                details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${reps} × ${repDistance}m @ R-Pace (${iPace}/km)\nFokus: ${focus}.\n${getRecoveryGuidance({ paceType: "R", level: formData.level, phase, mileageTier })}\nTotal repetition sekitar ${total.toFixed(1)} km (maksimal 5% mileage mingguan)\n\nCool-Down: 10 menit Easy jog.`;
+              } else if (primarySession?.type === "T") {
+                activity = "Tempo Run"; pace = tPace; distance = intervalMileage.toFixed(1);
+                const threshold = workoutRecommendation.threshold;
+                details = `Warm-up: 12 menit Easy jog\nProgram inti: ${threshold.label} @ T-Pace (${tPace}/km)\nFokus: ${primarySession.focus}.\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
+              } else {
+                activity = "Interval Run"; pace = iPace; distance = intervalMileage.toFixed(1);
+              const defaultReps = { "5K": [400, 600, 800], "10K": [800, 1000, 1200, 1600], "Half Marathon": [1000, 1200, 1600], "Full Marathon": [800, 1000, 1200] };
+              const availableReps = primarySession?.reps || defaultReps[formData.raceEvent] || defaultReps["5K"];
+              const intervalWeek = Math.max(0, w - foundationWeeks - 1);
+              const repDistance = availableReps[intervalWeek % availableReps.length];
               const targetMeters = Math.round(Number(distance) * 1000);
-              // Interval progression: jarak naik setiap 2 minggu, mulai dari 400 m.
-              // Pola dibuat bertahap agar volume dan stimulus meningkat tanpa langsung melompat ke 1 km.
-              const workoutPatterns = {
-                "5K": [
-                  { reps: [400], rest: "90 detik", pace: "I-Pace" },
-                  { reps: [600], rest: "2 menit", pace: "I-Pace" },
-                  { reps: [800], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1000], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [400, 800], rest: "90 detik", pace: "progresif" },
-                  { reps: [200, 400, 600, 800, 600, 400, 200], rest: "90 detik", pace: "meningkat bertahap" },
-                ],
-                "10K": [
-                  { reps: [400], rest: "90 detik", pace: "I-Pace" },
-                  { reps: [600], rest: "2 menit", pace: "I-Pace" },
-                  { reps: [800], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1000], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1200], rest: "2 menit", pace: "10K Pace" },
-                  { reps: [1600], rest: "3 menit", pace: "10K Pace" },
-                  { reps: [1000, 2000, 1000], rest: "3 menit", pace: "progresif" },
-                ],
-                "Half Marathon": [
-                  { reps: [400], rest: "90 detik", pace: "I-Pace" },
-                  { reps: [600], rest: "2 menit", pace: "I-Pace" },
-                  { reps: [800], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1000], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1200], rest: "2 menit", pace: "10K Pace" },
-                  { reps: [1600], rest: "3 menit", pace: "10K Pace" },
-                  { reps: [2000], rest: "3 menit", pace: "Half Marathon Pace" },
-                  { reps: [3000, 2000, 1000], rest: "3 menit", pace: "progresif" },
-                ],
-                "Full Marathon": [
-                  { reps: [400], rest: "90 detik", pace: "I-Pace" },
-                  { reps: [600], rest: "2 menit", pace: "I-Pace" },
-                  { reps: [800], rest: "2 menit", pace: "5K Pace" },
-                  { reps: [1000], rest: "2 menit", pace: "10K Pace" },
-                  { reps: [1600], rest: "3 menit", pace: "10K Pace" },
-                  { reps: [2000], rest: "3 menit", pace: "Half Marathon Pace" },
-                  { reps: [3000], rest: "4 menit", pace: "Half Marathon Pace" },
-                  { reps: [4000, 3000, 2000], rest: "4 menit", pace: "Marathon Pace" },
-                ],
-              };
-              const patterns = workoutPatterns[formData.raceEvent] || workoutPatterns["5K"];
-              // Progression interval dimulai ulang dari 400 m saat memasuki fase specific preparation.
-              // Jadi awal fase baru tidak langsung melompat ke 800 m atau 1000 m.
-              const intervalWeek = phase === 2 ? w - foundationWeeks : w;
-              const pattern = patterns[Math.floor(Math.max(0, intervalWeek - 1) / 2) % patterns.length];
-              // Cari kombinasi repetisi terdekat di atas target agar jarak tidak melonjak.
-              // Contoh 3,8 km akan menjadi 600m x5 + 400m x2 = 3,8 km.
-              const intervalDistances = [400, 600, 800, 1000, 1200, 1600, 2000];
-              let best = null;
-              const maxRepeats = Math.ceil(targetMeters / 400) + 2;
-              for (let a = 0; a <= maxRepeats; a += 1) {
-                for (let b = 0; b <= maxRepeats; b += 1) {
-                  for (let c = 0; c <= maxRepeats; c += 1) {
-                    for (let d = 0; d <= maxRepeats; d += 1) {
-                      const counts = [a, b, c, d];
-                      const total = counts.reduce((sum, count, index) => sum + count * intervalDistances[index], 0);
-                      if (total < targetMeters || total === 0) continue;
-                      const overshoot = total - targetMeters;
-                      const reps = counts.reduce((sum, count) => sum + count, 0);
-                      if (!best || overshoot < best.overshoot || (overshoot === best.overshoot && reps < best.reps)) {
-                        best = { counts, total, overshoot, reps };
-                      }
-                    }
-                  }
-                }
+              const reps = Math.max(2, Math.ceil(targetMeters / repDistance));
+              const totalMeters = reps * repDistance;
+              pace = iPace;
+              details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${reps} × ${repDistance}m @ I-Pace (${iPace}/km)\nFokus: ${primarySession?.focus || "aerobic power terkontrol"}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nTotal interval sekitar ${(totalMeters / 1000).toFixed(1)} km (maksimal 8% mileage mingguan atau 10 km)\n\nCool-Down: 10 menit Easy jog.`;
               }
-              const parts = best.counts.map((count, index) => {
-                if (!count) return null;
-                const distance = intervalDistances[index];
-                // Repetisi pendek sedikit lebih cepat; repetisi panjang memakai pace yang lebih terkendali.
-                const targetPace = distance <= 800
-                  ? (formData.raceEvent === "10K" && isBeginner ? tPace : iPace)
-                  : tPace;
-                return `${distance}m x${count} @ ${targetPace}/km`;
-              }).filter(Boolean);
-              const mainSet = parts.join(" + ");
-              pace = parts.length > 1 ? "Mixed Pace" : progressivePace(baseIPace, w);
-              details = `Warm-up: Easy jog 5 mins\nDynamic stretching + running drills\n\nProgram inti: ${mainSet}\nRecovery: ${RECOVERY_BY_TYPE.I}\nTotal interval sekitar ${(best.total / 1000).toFixed(1)} km\n\nCool-Down: 10 mins easy jog\nStatic stretching\n*Istirahat disesuaikan kondisi atlet.`;
             } else {
               activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
-              const blocks = distance > 7 ? 3 : 2; const distPerBlock = (distance / blocks).toFixed(1);
-              details = `W-up: 12m Easy | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 8m Recovery jog. *Istirahat disesuaikan kondisi atlet.`;
+              const threshold = workoutRecommendation.threshold;
+              details = `W-up: 12m Easy | Main: ${threshold.label} @ T-Pace (${tPace}/km) | Recovery: ${threshold.recovery} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | C-down: 8m Recovery jog.`;
               if (phase === 3) details = "(Tapering) Menjaga intensitas. " + details;
             }
-          } else if (day === q2 && tempoMileage > 0 && (phase === 2 || phase === 3) && (isIntermediate || w % 2 === 0)) {
-             activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
-             const blocks = distance > 7 ? 3 : 2; const distPerBlock = (distance / blocks).toFixed(1);
-             details = `Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*).`;
+          } else if (day === q2 && tempoMileage > 0 && (phase === 2 || phase === 3) && allowSecondaryQuality) {
+             const secondarySession = workoutRecommendation.secondarySession;
+             distance = tempoMileage.toFixed(1);
+             if (secondarySession?.type === "M") {
+               activity = "Marathon Pace"; pace = mPace;
+               const mPlan = workoutRecommendation.marathonPace;
+               details = `Warm-up: 12 menit Easy jog\nProgram inti: ${mPlan.blocks.map((block) => `${block} km`).join(" + ")} @ M-Pace (${mPace}/km)\nFokus: ${mPlan.focus}. Recovery antarblok: ${mPlan.recovery}.\n${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
+             } else if (secondarySession?.type === "I") {
+               activity = "Interval Run"; pace = iPace;
+               const intervalDistances = secondarySession.reps || [800, 1000];
+               const repDistance = intervalDistances[(w - 1) % intervalDistances.length];
+               const reps = Math.max(2, Math.ceil((Number(distance) * 1000) / repDistance));
+               details = `Warm-up: 12 menit Easy jog + drills\nProgram inti: ${reps} × ${repDistance}m @ I-Pace (${iPace}/km)\nFokus: ${secondarySession.focus}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nTotal interval sekitar ${((reps * repDistance) / 1000).toFixed(1)} km (maksimal 8% mileage mingguan atau 10 km)\nCool-Down: 10 menit Easy jog.`;
+             } else {
+               activity = "Tempo Run"; pace = tPace;
+               const threshold = workoutRecommendation.threshold;
+               details = `Main: ${threshold.label} @ T-Pace (${tPace}/km)\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}`;
+             }
           } else {
             const qualityUsed = (day === q1 && (intervalMileage > 0 || (phase === 3 && tempoMileage > 0))) || (day === q2 && tempoMileage > 0 && phase === 2);
-            const qualityDaysCount = (intervalMileage > 0 ? 1 : 0) + (tempoMileage > 0 && phase === 2 && q2 ? 1 : (phase === 3 && tempoMileage > 0 ? 1 : 0));
+            const qualityDaysCount = (intervalMileage > 0 ? 1 : 0) + (tempoMileage > 0 && allowSecondaryQuality && q2 ? 1 : 0);
             const easyRunCaps = { "5K": 6.0, "10K": 8.0, "Half Marathon": 12.0, "Full Marathon": 16.0 };
             const easyRunCap = easyRunCaps[formData.raceEvent] || 8.0;
             const easyRunDistance = easyMileage / Math.max(1, formData.trainingDays.length - 1 - qualityDaysCount);
             distance = Math.min(easyRunDistance, easyRunCap, longRunMileage).toFixed(1);
           }
-          return { day, date, activity, pace, distance: distance + " Km", details };
+          const validatedWorkout = ensureWorkoutMinimums({ activity, distance, details });
+          return { day, date, activity, pace, distance: validatedWorkout.distance + " Km", details: validatedWorkout.details };
         }),
       });
     }
-    return program;
+    // Kalender pemulihan ditambahkan setelah Race Day tanpa mengubah endDate lomba.
+    const recoveryDays = getPostRaceRecoverySchedule(formData.raceEvent);
+    recoveryDays.forEach((recovery, index) => {
+      const recoveryDate = new Date(`${formData.endDate}T00:00:00`);
+      recoveryDate.setDate(recoveryDate.getDate() + index + 1);
+      const recoveryWeekIndex = weeks + Math.floor(index / 7);
+      const weekNumber = recoveryWeekIndex + 1;
+      let recoveryWeek = program.find((item) => item.week === weekNumber);
+      if (!recoveryWeek) {
+        recoveryWeek = { week: weekNumber, mileage: "Recovery", phase: 5, productPhase: "Post-Race Recovery", mesocycle: { name: "Post-Race Recovery", objective: "pulih sebelum kembali ke latihan terstruktur" }, isRecoveryWeek: true, isPostRaceRecovery: true, days: [] };
+        program.push(recoveryWeek);
+      }
+      recoveryWeek.days.push({ day: DAYS[(recoveryDate.getDay() + 6) % 7], date: toDateInput(recoveryDate), ...recovery });
+    });
+
+    return program.map((week) => ({
+      ...week,
+      days: week.days.map((day) => ({
+        ...day,
+        structuredSession: buildStructuredSession({ activity: day.activity, pace: day.pace, distance: day.distance, details: day.details, qSession: day.day === week.qualitySchedule?.q1 ? "Q1" : day.day === week.qualitySchedule?.q2 ? "Q2" : null }),
+      })),
+    }));
   }, [showProgram, vcrData, formData, dateDuration]);
 
   const handleSave = async () => {
@@ -408,7 +452,7 @@ export default function CreateTrainingProgramPage() {
       await api.post("/training-program", {
         name: formData.raceName, race_event: formData.raceEvent, level: formData.level,
         prep_months: dateDuration.months, prep_days: dateDuration.days, start_month: formData.startDate, end_month: formData.endDate,
-        training_days: formData.trainingDays, program_data: generatedProgram,
+        training_days: formData.trainingDays, training_background: formData.trainingBackground, program_data: generatedProgram,
       });
       toast.success("Program Berhasil Disimpan!");
       navigate("/my-training-programs");
@@ -437,7 +481,8 @@ export default function CreateTrainingProgramPage() {
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div><Label>Kondisi Latihan 4–6 Minggu Terakhir</Label><select value={formData.trainingBackground} onChange={(e) => setFormData({ ...formData, trainingBackground: e.target.value })} className="input-retro w-full">{TRAINING_BACKGROUNDS.map((background) => <option key={background.value} value={background.value}>{background.label}</option>)}</select><p className="mt-2 font-mono text-[10px] text-retro-white/40">Menentukan panjang fase base sebelum sesi spesifik dimulai.</p></div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div><Label>Tanggal Mulai</Label><input type="date" value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} className="input-retro w-full" /></div>
               <div><Label>Tanggal Selesai</Label><input type="date" value={formData.endDate} min={formData.startDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} className="input-retro w-full" /></div>
               <div><Label>Durasi (Bulan)</Label><input type="text" readOnly value={dateDuration.months ? `${dateDuration.months} bulan` : "-"} className="input-retro w-full opacity-80" /></div>
@@ -464,12 +509,12 @@ export default function CreateTrainingProgramPage() {
             <div key={week.week} className="card-retro overflow-hidden p-6 animate-fade-in">
               <div className="flex justify-between items-center mb-6">
                 <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Mileage: {week.mileage} Km</p><p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
-                <span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? "RECOVERY" : `FASE ${week.phase}: ${week.phase === 1 ? 'General Prep' : week.phase === 2 ? 'Specific Prep' : week.phase === 3 ? 'Pre Competition' : 'Competition'}`}</span>
+                <div className="text-right"><span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? `RECOVERY · ${week.mesocycle?.name || ""}` : `${week.productPhase || (week.phase === 1 ? 'General Preparation' : week.phase === 2 ? 'Specific Preparation' : week.phase === 3 ? 'Pre Competition' : 'Competition')}`}</span>{week.mesocycle && <p className="mt-2 font-mono text-[9px] text-retro-white/40">{week.mesocycle.name}: {week.mesocycle.objective}</p>}{week.recoveryNote && <p className="mt-1 font-mono text-[9px] text-retro-white/40">{week.recoveryNote}</p>}</div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[800px]">
                     <thead><tr className="border-b border-retro-gray-light/30"><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Hari</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Tanggal</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Aktivitas</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Jarak</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Pace</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Detail Program</th></tr></thead>
-                    <tbody>{week.days.map((d, idx) => (<tr key={idx} className={clsx("border-b border-retro-gray-light/10 last:border-0", d.activity === "Istirahat" ? "opacity-30" : "")}><td className="px-6 py-4 font-retro text-retro-white">{d.day}</td><td className="px-6 py-4 font-mono text-xs text-retro-white/70">{d.date ? new Date(`${d.date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td><td className="px-6 py-4"><span className={clsx("font-sport text-sm", d.activity !== "Easy Run" && d.activity !== "Istirahat" && d.activity !== "Shakeout Run" ? "text-retro-green" : "text-retro-white/80")}>{d.activity} {getTrainingType(d.activity) && <span className="ml-2 border border-retro-green/30 px-1 text-[9px] text-retro-green">{getTrainingType(d.activity)}</span>}</span></td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.distance}</td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td><td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">{d.details}</td></tr>))}</tbody>
+                    <tbody>{week.days.map((d, idx) => (<tr key={idx} className={clsx("border-b border-retro-gray-light/10 last:border-0", d.activity === "Istirahat" ? "bg-retro-gray-mid/20" : "")}><td className="px-6 py-4 font-retro text-retro-white">{d.day}</td><td className="px-6 py-4 font-mono text-xs text-retro-white/70">{d.date ? new Date(`${d.date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td><td className="px-6 py-4"><span className={clsx("font-sport text-sm", d.activity !== "Easy Run" && d.activity !== "Istirahat" && d.activity !== "Shakeout Run" ? "text-retro-green" : "text-retro-white/80")}>{d.activity} {getTrainingType(d.activity) && <span className="ml-2 border border-retro-green/30 px-1 text-[9px] text-retro-green">{getTrainingType(d.activity)}</span>}</span></td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.distance}</td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td><td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">{d.details}</td></tr>))}</tbody>
                 </table>
               </div>
             </div>
