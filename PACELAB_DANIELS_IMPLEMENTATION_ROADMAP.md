@@ -79,7 +79,8 @@ Contoh target struktur:
 ## Status
 
 ```text
-[ ] Belum diterapkan
+[SKIP SEMENTARA — SESUAI KEPUTUSAN PRODUK]
+
 ```
 
 ## Target
@@ -112,7 +113,7 @@ Generator masih menggunakan hasil VCR dan beberapa persentase percepatan.
 ## Status
 
 ```text
-[~] Sebagian sudah diterapkan
+[~] Sebagian sudah diterapkan — 5K, 10K, dan Half Marathon diperbarui
 ```
 
 ## Sudah ada
@@ -817,12 +818,48 @@ backend/src/controllers/trainingProgramController.js
 ```text
 Analisis referensi: SELESAI
 Penerapan prinsip umum: SEBAGIAN SUDAH ADA
-Penerapan Daniels E/M/T/I/R: BELUM SELESAI
+Penerapan label E/M/T/I/R pada UI: SEBAGIAN SUDAH ADA
+Penerapan Daniels E/M/T/I/R sebagai pace engine: BELUM SELESAI
 Penerapan VDOT: BELUM SELESAI
 Penerapan Q1/Q2: BELUM SELESAI
 Penerapan workout library: BELUM SELESAI
-Penerapan Intermediate khusus: BELUM SELESAI
+Penerapan Intermediate khusus: SEBAGIAN SUDAH ADA
 Penerapan structured program_data: BELUM SELESAI
+Penerapan tanggal start/end dan calendar week: SUDAH DITERAPKAN
+Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 ```
+
+## Changelog Terbaru
+
+### 2026-08-10
+
+- VDOT Daniels di-skip sementara sesuai keputusan produk.
+- Perbedaan Beginner dan Intermediate diterapkan untuk 5K, 10K, dan Half Marathon.
+- Intermediate mendapatkan quality load penuh; Beginner menggunakan sekitar 80% quality load.
+- Intermediate dapat menjalankan dua quality sessions (Q1/Q2) dalam fase build.
+- Beginner menjalankan Q2 secara bergantian agar recovery lebih longgar.
+- Aturan khusus 5K beginner singkat tetap dipertahankan.
+
+- Menambahkan label tipe latihan pada Create Training Program dan My Training Programs:
+  - E — Easy
+  - M — Marathon Pace
+  - T — Threshold
+  - I — Interval
+  - R — Repetition
+  - H — Hard
+  - L — Long Run
+  - Q — Quality Session
+- Label tidak mengubah perhitungan Interval Targets atau pace VCR.
+- Menambahkan utilitas `frontend/src/utils/trainingTypes.js`.
+- Menambahkan dukungan tanggal aktual pada program dan export PDF/Excel.
+- Status Daniels tetap dipisahkan antara label UI dan pace engine; label UI sudah ada, tetapi sistem E/M/T/I/R penuh belum selesai.
+- Menambahkan `frontend/src/utils/workoutLibrary.js` berisi tier mileage rendah/menengah/tinggi, library workout per race/level, dan aturan recovery R/I/T/M.
+- Generator sekarang menggunakan tier mileage untuk menyesuaikan quality load.
+- VDOT tetap di-skip sementara.
+- R Training khusus Intermediate tetap di-skip sesuai keputusan produk.
+- Menambahkan dokumen pengembangan workout Beginner berdasarkan Q-session Daniels untuk 5K, 10K, Half Marathon, dan Full Marathon.
+- Template Beginner sudah dirancang, tetapi belum sepenuhnya dihubungkan ke generator utama.
+- Long Run berbasis waktu untuk Beginner General Preparation sudah diterapkan di generator.
+- Interval Targets VCR sekarang menampilkan legenda E/M/T/I/R/H/L/Q dan kategori praktis E/T/I/R-H tanpa mengubah perhitungan target.
 
 > Jangan mengklaim implementasi Daniels sudah lengkap sebelum status di atas diperbarui menjadi `SELESAI`.

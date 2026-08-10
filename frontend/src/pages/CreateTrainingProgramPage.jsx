@@ -3,6 +3,8 @@ import { useState, useMemo } from "react";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
+import { getTrainingType } from "../utils/trainingTypes";
+import { getMileageTier, RECOVERY_BY_TYPE } from "../utils/workoutLibrary";
 import ExportModal from "../components/training/ExportModal";
 
 const DAYS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
@@ -157,7 +159,11 @@ export default function CreateTrainingProgramPage() {
     const startMileage = Math.min(baseMileage * 0.6, peakMileage * 0.6);
 
     for (let w = 1; w <= weeks; w++) {
-      const isIntermediateDistance = ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent) && formData.level === "intermediate";
+      const isIntermediate = formData.level === "intermediate";
+      const isIntermediateDistance = ["10K", "Half Marathon"].includes(formData.raceEvent) && isIntermediate;
+      const mileageTier = getMileageTier(formData.raceEvent, formData.level, peakMileage);
+      const tierQualityFactor = { low: 0.75, medium: 0.9, high: 1 }[mileageTier];
+      const qualityFactor = (isIntermediate ? 1 : 0.8) * tierQualityFactor;
       const ePace = intensifyPace(progressivePace(baseEPace, w), isIntermediateDistance ? 0.03 : 0);
       const tPace = intensifyPace(progressivePace(baseTPace, w), isIntermediateDistance ? 0.05 : 0);
       const iPace = intensifyPace(progressivePace(baseIPace, w), isIntermediateDistance ? 0.08 : 0);
@@ -198,8 +204,8 @@ export default function CreateTrainingProgramPage() {
       const beginnerShortTempoWindow = !is5K || !isBeginner || !isShortPreparation || w > weeks - 4;
       const allowInterval = !is5K || !isBeginner || !isShortPreparation;
       const allowTempo = beginnerShortTempoWindow;
-      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? weeklyMileage * 0.12 : 0;
-      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? weeklyMileage * 0.15 : 0;
+      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? weeklyMileage * 0.12 * qualityFactor : 0;
+      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? weeklyMileage * 0.15 * qualityFactor : 0;
       let easyMileage = weeklyMileage - longRunMileage - intervalMileage - tempoMileage;
       // Jangan membuat sesi kualitas di bawah 1 km; pindahkan volumenya ke sesi lain.
       if (intervalMileage > 0 && intervalMileage < 1) {
@@ -275,8 +281,15 @@ export default function CreateTrainingProgramPage() {
 
           let distance = 0;
           if (day === "Minggu" || (day === "Sabtu" && !formData.trainingDays.includes("Minggu"))) {
-            activity = "Long Run"; distance = longRunMileage.toFixed(1);
-            details = (w === lastSpecificPrepWeek) ? "PEAK LONGRUN: Jarak maksimal sebelum tapering." : "Steady pace, membangun daya tahan aerobik.";
+            activity = "Long Run";
+            const timeBasedLongRun = isBeginner && phase === 1 && w <= 2;
+            const longRunTimeByRace = { "5K": 40, "10K": 45, "Half Marathon": 50, "Full Marathon": 60 };
+            const longRunMinutes = (longRunTimeByRace[formData.raceEvent] || 40) + ((w - 1) * 5);
+            if (timeBasedLongRun) pace = "-";
+            distance = timeBasedLongRun ? `${longRunMinutes} menit` : longRunMileage.toFixed(1);
+            details = timeBasedLongRun
+              ? `Long Run berbasis waktu: ${longRunMinutes} menit Easy effort. Fokus durasi, bukan mengejar jarak atau pace.`
+              : (w === lastSpecificPrepWeek) ? "PEAK LONGRUN: Jarak maksimal sebelum tapering." : "Steady pace, membangun daya tahan aerobik.";
           } else if (day === q1 && (intervalMileage > 0 || (phase === 3 && tempoMileage > 0))) {
             if (intervalMileage > 0) {
               activity = "Interval Run"; pace = iPace; distance = intervalMileage.toFixed(1);
@@ -363,14 +376,14 @@ export default function CreateTrainingProgramPage() {
               }).filter(Boolean);
               const mainSet = parts.join(" + ");
               pace = parts.length > 1 ? "Mixed Pace" : progressivePace(baseIPace, w);
-              details = `Warm-up: Easy jog 5 mins\nDynamic stretching + running drills\n\nProgram inti: ${mainSet}\nRecovery: ${pattern.rest}\nTotal interval sekitar ${(best.total / 1000).toFixed(1)} km\n\nCool-Down: 10 mins easy jog\nStatic stretching\n*Istirahat disesuaikan kondisi atlet.`;
+              details = `Warm-up: Easy jog 5 mins\nDynamic stretching + running drills\n\nProgram inti: ${mainSet}\nRecovery: ${RECOVERY_BY_TYPE.I}\nTotal interval sekitar ${(best.total / 1000).toFixed(1)} km\n\nCool-Down: 10 mins easy jog\nStatic stretching\n*Istirahat disesuaikan kondisi atlet.`;
             } else {
               activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
               const blocks = distance > 7 ? 3 : 2; const distPerBlock = (distance / blocks).toFixed(1);
               details = `W-up: 12m Easy | Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*) | C-down: 8m Recovery jog. *Istirahat disesuaikan kondisi atlet.`;
               if (phase === 3) details = "(Tapering) Menjaga intensitas. " + details;
             }
-          } else if (day === q2 && tempoMileage > 0 && (phase === 2 || phase === 3)) {
+          } else if (day === q2 && tempoMileage > 0 && (phase === 2 || phase === 3) && (isIntermediate || w % 2 === 0)) {
              activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
              const blocks = distance > 7 ? 3 : 2; const distPerBlock = (distance / blocks).toFixed(1);
              details = `Main: ${blocks}x ${distPerBlock}km @ T-Pace (Rest 2m*).`;
@@ -456,7 +469,7 @@ export default function CreateTrainingProgramPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[800px]">
                     <thead><tr className="border-b border-retro-gray-light/30"><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Hari</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Tanggal</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Aktivitas</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Jarak</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Pace</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Detail Program</th></tr></thead>
-                    <tbody>{week.days.map((d, idx) => (<tr key={idx} className={clsx("border-b border-retro-gray-light/10 last:border-0", d.activity === "Istirahat" ? "opacity-30" : "")}><td className="px-6 py-4 font-retro text-retro-white">{d.day}</td><td className="px-6 py-4 font-mono text-xs text-retro-white/70">{d.date ? new Date(`${d.date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td><td className="px-6 py-4"><span className={clsx("font-sport text-sm", d.activity !== "Easy Run" && d.activity !== "Istirahat" && d.activity !== "Shakeout Run" ? "text-retro-green" : "text-retro-white/80")}>{d.activity}</span></td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.distance}</td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td><td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">{d.details}</td></tr>))}</tbody>
+                    <tbody>{week.days.map((d, idx) => (<tr key={idx} className={clsx("border-b border-retro-gray-light/10 last:border-0", d.activity === "Istirahat" ? "opacity-30" : "")}><td className="px-6 py-4 font-retro text-retro-white">{d.day}</td><td className="px-6 py-4 font-mono text-xs text-retro-white/70">{d.date ? new Date(`${d.date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td><td className="px-6 py-4"><span className={clsx("font-sport text-sm", d.activity !== "Easy Run" && d.activity !== "Istirahat" && d.activity !== "Shakeout Run" ? "text-retro-green" : "text-retro-white/80")}>{d.activity} {getTrainingType(d.activity) && <span className="ml-2 border border-retro-green/30 px-1 text-[9px] text-retro-green">{getTrainingType(d.activity)}</span>}</span></td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.distance}</td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td><td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">{d.details}</td></tr>))}</tbody>
                 </table>
               </div>
             </div>

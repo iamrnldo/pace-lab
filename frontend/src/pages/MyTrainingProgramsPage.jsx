@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
+import { getTrainingType } from "../utils/trainingTypes";
 import Modal from "../components/ui/Modal";
 import ExportModal from "../components/training/ExportModal";
 
@@ -237,7 +238,7 @@ export default function MyTrainingProgramsPage() {
                                       : "text-retro-white/80"
                                   )}
                                 >
-                                  {d.activity}
+                                  {d.activity} {getTrainingType(d.activity) && <span className="ml-2 border border-retro-green/30 px-1 text-[9px] text-retro-green">{getTrainingType(d.activity)}</span>}
                                 </span>
                               </td>
                               <td className="px-6 py-4 font-mono text-sm text-retro-white">

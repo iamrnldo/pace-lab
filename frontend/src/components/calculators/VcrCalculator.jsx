@@ -267,14 +267,17 @@ export default function VcrCalculator() {
             </div>
 
             <div className="card-retro p-5">
-              <p className="mb-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
+              <p className="mb-2 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">
                 Interval Targets
+              </p>
+              <p className="mb-4 font-mono text-[10px] text-retro-white/45">
+                Patokan pace: <span className="text-retro-green">E</span> Easy · <span className="text-retro-green">M</span> Marathon · <span className="text-retro-green">T</span> Threshold · <span className="text-retro-green">I</span> Interval · <span className="text-retro-green">R</span> Repetition · <span className="text-retro-green">H</span> Hard · <span className="text-retro-green">L</span> Long Run · <span className="text-retro-green">Q</span> Quality
               </p>
               <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse text-left">
                   <thead>
                     <tr className="border-b border-retro-gray-light/30 text-retro-white/45">
-                      {["%", "VCR", "Pace /km", "1000 m", "400 m", "200 m"].map(
+                      {["%", "Type", "VCR", "Pace /km", "1000 m", "400 m", "200 m"].map(
                         (heading) => (
                           <th
                             key={heading}
@@ -294,6 +297,9 @@ export default function VcrCalculator() {
                       >
                         <td className="px-2 py-2 pl-0 font-retro text-retro-green">
                           {item.label}
+                        </td>
+                        <td className="px-2 py-2 font-mono text-xs text-retro-green">
+                          {Number(item.label.replace("%", "")) >= 110 ? "R/H" : Number(item.label.replace("%", "")) >= 100 ? "I" : Number(item.label.replace("%", "")) >= 90 ? "T" : "E"}
                         </td>
                         <td className="px-2 py-2 font-mono text-sm text-retro-white tabular-nums">
                           {item.vcrMs.toFixed(2)}
