@@ -4,6 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
 import Modal from "../components/ui/Modal";
+import ExportModal from "../components/training/ExportModal";
 
 export default function MyTrainingProgramsPage() {
   const navigate = useNavigate();
@@ -12,6 +13,19 @@ export default function MyTrainingProgramsPage() {
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [activeWeek, setActiveWeek] = useState(1);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+
+  const handleStatusChange = async () => {
+    if (!selectedProgram) return;
+    const nextStatus = selectedProgram.status === "done" ? "progress" : "done";
+    try {
+      const response = await api.patch(`/training-program/${selectedProgram.id}/status`, { status: nextStatus });
+      const updated = response.data.data;
+      setSelectedProgram(updated);
+      setPrograms((items) => items.map((item) => item.id === updated.id ? updated : item));
+      toast.success(`Status diubah menjadi ${nextStatus === "done" ? "Selesai" : "Progres"}.`);
+    } catch (error) { toast.error("Gagal mengubah status program."); }
+  };
 
   useEffect(() => { fetchPrograms(); }, []);
 
@@ -78,7 +92,9 @@ export default function MyTrainingProgramsPage() {
               <div className="flex justify-between items-start mb-4">
                 <span className={clsx(
                     "font-mono text-[10px] px-2 py-1 uppercase tracking-widest border",
-                    program.status === 'active' ? "border-retro-green text-retro-green" : "border-retro-white/30 text-retro-white/30"
+                    program.status === 'done'
+                      ? "border-retro-green bg-retro-green text-retro-black"
+                      : "border-orange-400 bg-orange-400 text-retro-black"
                 )}>
                   {program.status}
                 </span>
@@ -88,7 +104,7 @@ export default function MyTrainingProgramsPage() {
               </div>
               <h3 className="font-retro text-2xl text-retro-white mb-2 uppercase">{program.name}</h3>
               <p className="font-mono text-xs text-retro-white/50 mb-6">
-                {program.race_event} · {program.level.toUpperCase()} · {program.prep_months} MONTHS
+                {program.race_event} · {program.level.toUpperCase()} · {program.prep_months} MONTHS · {program.prep_days || "-"} DAYS
               </p>
               
               <div className="mt-auto pt-6 flex gap-3 border-t border-retro-gray-light/20">
@@ -230,7 +246,7 @@ export default function MyTrainingProgramsPage() {
                               <td className="px-6 py-4 font-mono text-sm text-retro-white">
                                 {d.pace}
                               </td>
-                              <td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic">
+                              <td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">
                                 {d.details}
                               </td>
                             </tr>
@@ -244,15 +260,18 @@ export default function MyTrainingProgramsPage() {
 
             <div className="flex gap-4">
               <button
-                onClick={() => window.print()}
-                className="btn-retro flex-1 border border-retro-white/30 text-retro-white py-4 font-retro tracking-widest hover:border-retro-white"
-              >
-                CETAK PROGRAM
-              </button>
+                onClick={handleStatusChange}
+                className="btn-retro flex-1 border border-retro-blue/60 text-retro-blue py-4 font-retro tracking-widest hover:bg-retro-blue hover:text-retro-white"
+              > {selectedProgram.status === "done" ? "UBAH KE PROGRES" : "CHANGE STATUS → SELESAI"} </button>
+              <button
+                onClick={() => setIsExportOpen(true)}
+                className="btn-retro flex-1 border border-retro-green/60 text-retro-green py-4 font-retro tracking-widest hover:bg-retro-green hover:text-retro-black"
+              > CETAK PROGRAM </button>
             </div>
           </div>
         )}
       </Modal>
+      <ExportModal isOpen={isExportOpen} onClose={() => setIsExportOpen(false)} program={selectedProgram} />
     </section>
   );
 }

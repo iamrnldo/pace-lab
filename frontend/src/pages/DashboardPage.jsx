@@ -1,5 +1,6 @@
 // src/pages/DashboardPage.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
 import api from "../services/api";
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState(null);
   const [page, setPage] = useState(1);
   const [selectedItem, setSelectedItem] = useState(null);
+  const navigate = useNavigate();
 
   const { data: statsData } = useQuery({
     queryKey: ["calc-stats"],
@@ -135,6 +137,7 @@ export default function DashboardPage() {
               history={history}
               isLoading={isLoading}
               onSelect={setSelectedItem}
+              onCreateTrainingProgram={(vcrData) => navigate("/create-training-program", { state: { vcrData } })}
             />
 
             {totalPages > 1 && (

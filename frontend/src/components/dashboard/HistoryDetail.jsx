@@ -25,70 +25,17 @@ function formatDateTime(dateStr) {
 
 // ── VCR Detail ──
 function VcrDetail({ input, result }) {
-  return (
-    <div className="space-y-4">
-      <div className="card-retro p-5">
-        <h3 className="font-retro text-lg text-retro-green tracking-wider mb-3">
-          <i className="fa-solid fa-keyboard mr-2 text-retro-white" /> INPUT
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="font-mono text-[10px] text-retro-white/40 uppercase">Test Duration</p>
-            <p className="font-retro text-xl text-retro-white">{input.test_minutes} min</p>
-          </div>
-          <div>
-            <p className="font-mono text-[10px] text-retro-white/40 uppercase">Distance</p>
-            <p className="font-retro text-xl text-retro-white">{input.distance_meters} m</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="card-retro p-5 border-retro-green/40">
-        <h3 className="font-retro text-lg text-retro-green tracking-wider mb-3">
-          <i className="fa-solid fa-chart-line mr-2 text-retro-white" /> RESULT
-        </h3>
-        <div className="font-retro text-5xl text-retro-green mb-2">
-          {result.vcrMs?.toFixed(2)}
-        </div>
-        <p className="font-mono text-sm text-retro-white/40">
-          m/s · {result.vcrKmh?.toFixed(2)} km/h · {result.basePacePerKm}/km
-        </p>
-      </div>
-
-      {result.trainingZones?.length > 0 && (
-        <div className="card-retro p-5">
-          <h3 className="font-retro text-lg text-retro-green tracking-wider mb-3">
-            <i className="fa-solid fa-route mr-2 text-retro-white" /> PACE TRAINING ZONE
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {result.trainingZones.map((z) => (
-              <div key={z.label} className="border border-retro-gray-light/30 p-3">
-                <p className="font-mono text-[10px] text-retro-white/40 uppercase">{z.label}</p>
-                <p className="font-retro text-lg text-retro-white">{z.pace}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {result.intervalTargets?.length > 0 && (
-        <div className="card-retro p-5">
-          <h3 className="font-retro text-lg text-retro-green tracking-wider mb-3">
-            <i className="fa-solid fa-stopwatch mr-2 text-retro-white" /> INTERVAL TARGETS
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {result.intervalTargets.map((z) => (
-              <div key={z.label} className="border border-retro-gray-light/30 p-3">
-                <p className="font-mono text-[10px] text-retro-white/40 uppercase">{z.label}</p>
-                <p className="font-retro text-lg text-retro-white">{z.pace}</p>
-                {z.time && <p className="font-mono text-xs text-retro-white/30">{z.time}</p>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  const intervals = result.intervals || [];
+  const middle = result.middleDistanceTargets || [];
+  const long = result.longDistanceTargets || [];
+  return <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="card-retro p-5"><p className="font-mono text-[11px] uppercase text-retro-white/40">VCR</p><p className="mt-3 font-retro text-5xl text-retro-green">{result.vcrMs?.toFixed(2)}</p><p className="mt-2 font-mono text-xs text-retro-white/35">m/s · {result.vcrKmh?.toFixed(2)} km/h</p></div>
+      <div className="card-retro p-5 lg:col-span-2"><p className="mb-3 font-mono text-[11px] uppercase text-retro-white/40">SUMMARY</p><div className="grid grid-cols-2 gap-3">{[["Duration", `${result.testMinutes ?? input.test_minutes} min`],["Distance", `${(result.distanceMeters ?? input.distance_meters)?.toLocaleString()} m`],["Base Pace", `${result.basePacePerKm}/km`],["VCR 100%", `${result.vcrMs?.toFixed(2)} m/s`]].map(([l,v])=><div key={l} className="border border-retro-gray-light/25 p-3"><p className="font-mono text-[10px] uppercase text-retro-white/35">{l}</p><p className="mt-2 font-retro text-xl text-retro-white">{v}</p></div>)}</div></div>
     </div>
-  );
+    <div className="card-retro p-5 overflow-x-auto"><p className="mb-4 font-mono text-[11px] uppercase text-retro-white/40">INTERVAL TARGETS</p><table className="min-w-full text-left"><thead><tr>{["%","VCR","Pace /km","1000 m","400 m","200 m"].map(h=><th key={h} className="px-2 py-2 font-mono text-[11px] text-retro-white/45">{h}</th>)}</tr></thead><tbody>{intervals.map(i=><tr key={i.label} className="border-t border-retro-gray-light/15"><td className="px-2 py-2 font-retro text-retro-green">{i.label}</td><td className="px-2 py-2">{i.vcrMs?.toFixed(2)}</td><td className="px-2 py-2 font-retro">{i.pacePerKm}</td><td className="px-2 py-2">{i.time1000}</td><td className="px-2 py-2">{i.time400}</td><td className="px-2 py-2">{i.time200}</td></tr>)}</tbody></table></div>
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">{[["MIDDLE DISTANCE TARGETS", middle],["LONG DISTANCE TARGETS", long]].map(([title,items])=><div key={title} className="card-retro p-5"><p className="mb-4 font-mono text-[11px] uppercase text-retro-white/40">{title}</p>{items.map(t=><div key={t.label} className="flex items-center justify-between border-b border-retro-gray-light/20 py-2 last:border-0"><div><p className="font-retro text-retro-white">{t.label}</p><p className="font-mono text-[10px] text-retro-white/35">{Math.round((t.multiplier || 0)*100)}% · {t.pacePerKm}/km</p></div><p className="font-retro text-xl text-retro-white">{t.totalTime}</p></div>)}</div>)}</div>
+  </div>;
 }
 
 // ── Race Detail ──

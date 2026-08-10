@@ -7,7 +7,7 @@ const User = {
       `SELECT id, google_id, email, name, avatar_url, role, 
               age, weight_kg, height_cm, gender, 
               max_heart_rate, resting_hr,
-              unit_preference, timezone,
+              unit_preference, community_name, community_origin, timezone,
               is_active, is_verified, last_login_at,
               created_at, updated_at
        FROM users WHERE id = $1`,

@@ -1,26 +1,28 @@
 // src/components/layout/Header.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [time, setTime] = useState(new Date());
+  const headerRef = useRef(null);
   const auth = useAuth();
   const user = auth?.user;
   const logout = auth?.logout;
   const navigate = useNavigate();
+  const { language, changeLanguage, t } = useLanguage();
 
   // Nav items — berubah sesuai login status
   const NAV = user
     ? [
-        { label: "Calculator", path: "/calculator" },
-        { label: "Dashboard", path: "/dashboard" },
-        { label: "My Programs", path: "/my-training-programs" }, // MENU BARU DISINI
-        { label: "Profile", path: "/profile" },
-        { label: "How It Works", path: "/#how-it-works" },
+        { label: t("calculator"), path: "/calculator" },
+        { label: t("dashboard"), path: "/dashboard" },
+        { label: t("myPrograms"), path: "/my-training-programs" },
+        { label: t("howItWorks"), path: "/#how-it-works" },
       ]
     : [{ label: "How It Works", path: "/#how-it-works" }];
 
@@ -35,6 +37,20 @@ export default function Header() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (headerRef.current && !headerRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, []);
+
   const handleLogout = async () => {
     if (logout) await logout();
     navigate("/");
@@ -43,6 +59,7 @@ export default function Header() {
 
   return (
     <header
+      ref={headerRef}
       className={clsx(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         scrolled
@@ -120,47 +137,27 @@ export default function Header() {
 
         {/* CTA button — berubah sesuai login */}
         <div className="hidden md:flex items-center gap-3">
+          <select
+            value={language}
+            onChange={(e) => changeLanguage(e.target.value)}
+            aria-label="Select language"
+            className="bg-retro-black border border-retro-green/40 text-retro-green px-2 py-2 font-mono text-[10px] tracking-widest cursor-pointer"
+          >
+            <option value="en">ENGLISH</option>
+            <option value="id">BAHASA INDONESIA</option>
+          </select>
           {user ? (
-            <>
-              {/* User info */}
-              <div className="flex items-center gap-2 mr-2">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url.startsWith("http") ? user.avatar_url : `${import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:5000"}${user.avatar_url}`}
-                    alt=""
-                    className="w-7 h-7 border border-retro-green/50 object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 border border-retro-green/50 flex items-center justify-center bg-retro-gray">
-                    <span className="font-retro text-xs text-retro-green">
-                      {user.name?.charAt(0)?.toUpperCase() || "?"}
-                    </span>
-                  </div>
-                )}
-                <span className="font-sport text-sm text-retro-white/60 tracking-wider hidden lg:inline">
-                  {user.name?.split(" ")[0]}
-                </span>
-              </div>
-
-              {/* START → calculator */}
-              <Link to="/calculator">
-                <button
-                  className="btn-retro bg-retro-green text-retro-black font-retro
-                    tracking-widest px-6 py-2.5 text-base
-                    hover:bg-retro-green-dark transition-colors"
-                >
-                  START →
-                </button>
-              </Link>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                className="font-mono text-[11px] text-retro-white/30 hover:text-red-400 tracking-widest transition-colors"
-              >
-                LOGOUT
+            <div className="relative">
+              <button onClick={() => setMenuOpen((v) => !v)} className="flex items-center gap-3 border border-retro-green/40 px-3 py-2 hover:bg-retro-green/10 transition-colors" aria-expanded={menuOpen}>
+                {user.avatar_url ? <img src={user.avatar_url.startsWith("http") ? user.avatar_url : `${import.meta.env.VITE_API_BASE_URL?.replace("/api/v1", "") || "http://localhost:5000"}${user.avatar_url}`} alt="" className="w-8 h-8 border border-retro-green/50 object-cover" /> : <div className="w-8 h-8 border border-retro-green/50 flex items-center justify-center"><span className="font-retro text-xs text-retro-green">{user.name?.charAt(0)?.toUpperCase() || "?"}</span></div>}
+                <span className="font-sport text-sm text-retro-white tracking-wider">{user.name || "USER"}</span>
+                <span className="text-retro-green">▾</span>
               </button>
-            </>
+              {menuOpen && <div className="absolute right-0 top-full mt-2 w-48 border border-retro-green/40 bg-retro-black shadow-lg p-2 z-50">
+                <Link to="/profile" onClick={() => setMenuOpen(false)} className="block px-3 py-3 font-retro text-sm tracking-widest text-retro-white hover:bg-retro-green hover:text-retro-black">PROFILE</Link>
+                <button onClick={handleLogout} className="w-full text-left px-3 py-3 font-retro text-sm tracking-widest text-red-400 hover:bg-red-500 hover:text-white">LOGOUT</button>
+              </div>}
+            </div>
           ) : (
             /* Not logged in → SIGN IN */
             <Link to="/login">
@@ -210,6 +207,10 @@ export default function Header() {
         )}
       >
         <nav className="flex flex-col p-4 gap-1 bg-retro-black/95">
+          <select value={language} onChange={(e) => changeLanguage(e.target.value)} className="bg-retro-black border border-retro-green/40 text-retro-green px-3 py-3 font-mono text-xs tracking-widest mb-2">
+            <option value="en">ENGLISH LANGUAGE</option>
+            <option value="id">BAHASA INDONESIA</option>
+          </select>
           {NAV.map(({ label, path }) => (
             <Link
               key={path}
@@ -225,6 +226,9 @@ export default function Header() {
 
           {user ? (
             <>
+              <Link to="/profile" onClick={() => setMenuOpen(false)} className="font-retro text-xl tracking-widest text-retro-white/70 hover:text-retro-green py-3 border-b border-retro-gray-light/20">
+                PROFILE
+              </Link>
               <Link to="/calculator" onClick={() => setMenuOpen(false)}>
                 <button
                   className="btn-retro bg-retro-green text-retro-black font-retro

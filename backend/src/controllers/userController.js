@@ -15,6 +15,8 @@ const userController = {
         max_heart_rate,
         resting_hr,
         unit_preference,
+        community_name,
+        community_origin,
       } = req.body;
 
       const fields = [];
@@ -28,7 +30,8 @@ const userController = {
       if (gender !== undefined) { fields.push(`gender = $${idx++}`); params.push(gender || null); }
       if (max_heart_rate !== undefined) { fields.push(`max_heart_rate = $${idx++}`); params.push(max_heart_rate || null); }
       if (resting_hr !== undefined) { fields.push(`resting_hr = $${idx++}`); params.push(resting_hr || null); }
-      if (unit_preference !== undefined) { fields.push(`unit_preference = $${idx++}`); params.push(unit_preference); }
+      if (community_name !== undefined) { fields.push(`community_name = $${idx++}`); params.push(community_name || null); }
+      if (community_origin !== undefined) { fields.push(`community_origin = $${idx++}`); params.push(community_origin || null); }
 
       if (fields.length === 0) {
         return res.status(400).json({ error: "No fields to update" });
@@ -40,7 +43,9 @@ const userController = {
          RETURNING id, email, name, avatar_url, role,
                    age, weight_kg, height_cm, gender,
                    max_heart_rate, resting_hr,
-                   unit_preference, timezone,
+                   unit_preference,
+        community_name,
+        community_origin, timezone,
                    is_active, is_verified, last_login_at,
                    created_at, updated_at`,
         params
@@ -76,7 +81,9 @@ const userController = {
          RETURNING id, email, name, avatar_url, role,
                    age, weight_kg, height_cm, gender,
                    max_heart_rate, resting_hr,
-                   unit_preference, timezone,
+                   unit_preference,
+        community_name,
+        community_origin, timezone,
                    is_active, is_verified, last_login_at,
                    created_at, updated_at`,
         [avatarUrl, req.user.id]

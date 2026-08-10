@@ -20,9 +20,8 @@ export default function ProfilePage() {
     weight_kg: user?.weight_kg || "",
     height_cm: user?.height_cm || "",
     gender: user?.gender || "",
-    max_heart_rate: user?.max_heart_rate || "",
-    resting_hr: user?.resting_hr || "",
-    unit_preference: user?.unit_preference || "metric",
+    community_name: user?.community_name || "",
+    community_origin: user?.community_origin || "",
   });
 
   const updateMutation = useMutation({
@@ -291,50 +290,9 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Row: Max HR + Resting HR */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      MAX HEART RATE
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.max_heart_rate}
-                      onChange={(e) => setFormData((f) => ({ ...f, max_heart_rate: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="190"
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      RESTING HR
-                    </label>
-                    <input
-                      type="number"
-                      value={formData.resting_hr}
-                      onChange={(e) => setFormData((f) => ({ ...f, resting_hr: e.target.value }))}
-                      disabled={!isEditing}
-                      placeholder="60"
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                  </div>
-                </div>
-
-                {/* Unit Preference */}
-                <div>
-                  <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                    UNIT PREFERENCE
-                  </label>
-                  <select
-                    value={formData.unit_preference}
-                    onChange={(e) => setFormData((f) => ({ ...f, unit_preference: e.target.value }))}
-                    disabled={!isEditing}
-                    className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="metric">Metric (km, kg)</option>
-                    <option value="imperial">Imperial (mi, lbs)</option>
-                  </select>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">NAMA KOMUNITAS</label><input value={formData.community_name} onChange={(e) => setFormData((f) => ({ ...f, community_name: e.target.value }))} disabled={!isEditing} placeholder="Pace Lab Community" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
+                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">ASAL KOMUNITAS</label><input value={formData.community_origin} onChange={(e) => setFormData((f) => ({ ...f, community_origin: e.target.value }))} disabled={!isEditing} placeholder="Surabaya, Indonesia" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
                 </div>
 
                 {/* Actions */}
@@ -357,10 +315,9 @@ export default function ProfilePage() {
                           weight_kg: user?.weight_kg || "",
                           height_cm: user?.height_cm || "",
                           gender: user?.gender || "",
-                          max_heart_rate: user?.max_heart_rate || "",
-                          resting_hr: user?.resting_hr || "",
-                          unit_preference: user?.unit_preference || "metric",
-                        });
+    community_name: user?.community_name || "",
+    community_origin: user?.community_origin || "",
+                                                                                          });
                       }}
                       className="btn-retro px-6 py-2.5 font-sport tracking-wider text-sm"
                     >

@@ -44,7 +44,7 @@ function getCalcSummary(item) {
   }
 }
 
-export default function HistoryList({ history, isLoading, onSelect }) {
+export default function HistoryList({ history, isLoading, onSelect, onCreateTrainingProgram }) {
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -102,6 +102,22 @@ export default function HistoryList({ history, isLoading, onSelect }) {
                 <span className="font-mono text-[11px] text-retro-white/25 hidden sm:inline">
                   {formatDateTime(item.created_at)}
                 </span>
+                {item.calculator_type === "vcr-calculator" ? (
+                  <>
+                  <button
+                    onClick={(event) => { event.stopPropagation(); onSelect(item); }}
+                    className="btn-retro px-3 py-1.5 text-[10px] text-retro-green border-retro-green/40 whitespace-nowrap"
+                  >
+                    VIEW DETAIL CALCULATION
+                  </button>
+                  <button
+                    onClick={(event) => { event.stopPropagation(); onCreateTrainingProgram(item.result_data); }}
+                    className="btn-retro px-3 py-1.5 text-[10px] text-retro-black bg-retro-green whitespace-nowrap"
+                  >
+                    CREATE TRAINING PROGRAM
+                  </button>
+                  </>
+                ) : null}
                 <i className="fa-solid fa-chevron-right text-xs text-retro-white/20 group-hover:text-retro-green transition-colors" />
               </div>
             </div>

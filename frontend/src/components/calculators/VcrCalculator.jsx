@@ -5,11 +5,11 @@ import clsx from "clsx";
 import { calcVcrProfile } from "../../utils/vcrCalculator";
 import Modal from "../ui/Modal";
 
-const TEST_PRESETS = [15, 30, 45, 60];
+const TEST_PRESETS = [30, 60];
 const DISTANCE_PRESETS = [3000, 5000, 9000, 12000];
 
 export default function VcrCalculator() {
-  const [testMinutes, setTestMinutes] = useState(45);
+  const [testMinutes, setTestMinutes] = useState(30);
   const [distanceMeters, setDistanceMeters] = useState(9000);
   const [result, setResult] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

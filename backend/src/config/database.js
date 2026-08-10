@@ -151,11 +151,18 @@ async function autoMigrate() {
       { name: "gender", type: "VARCHAR(10)" },
       { name: "max_heart_rate", type: "SMALLINT" },
       { name: "resting_hr", type: "SMALLINT" },
+      { name: "prep_days", type: "SMALLINT" },
+      { name: "community_name", type: "VARCHAR(150)" },
+      { name: "community_origin", type: "VARCHAR(150)" },
     ];
 
     for (const col of columnsToAdd) {
       await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
     }
+
+    await pool.query(`ALTER TABLE training_programs ADD COLUMN IF NOT EXISTS prep_days SMALLINT`);
+    await pool.query(`ALTER TABLE training_programs ALTER COLUMN status SET DEFAULT 'progress'`);
+    await pool.query(`UPDATE training_programs SET status = 'progress' WHERE status = 'active'`);
 
     // 2. calculator_types
     await pool.query(`
@@ -201,11 +208,12 @@ async function autoMigrate() {
         race_event      VARCHAR(50) NOT NULL,
         level           VARCHAR(20) NOT NULL,
         prep_months     SMALLINT NOT NULL,
+        prep_days       SMALLINT,
         start_month     VARCHAR(20) NOT NULL,
         end_month       VARCHAR(20) NOT NULL,
         training_days   JSONB NOT NULL,
         program_data    JSONB NOT NULL,
-        status          VARCHAR(20) DEFAULT 'active',
+        status          VARCHAR(20) DEFAULT 'progress',
         created_at      TIMESTAMPTZ DEFAULT NOW(),
         updated_at      TIMESTAMPTZ DEFAULT NOW()
       );
