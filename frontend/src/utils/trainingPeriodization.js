@@ -73,12 +73,38 @@ export function getRecoveryWeekProfile({ raceEvent, level, mileageTier }) {
   };
 }
 
-export function getMesocycle({ productPhase, raceEvent, week, totalWeeks }) {
+export function getMesocycle({ productPhase, raceEvent, week, totalWeeks, trainingBackground, level }) {
+  const continuingProgram = trainingBackground === "structured";
+  const beginnerContinuing = continuingProgram && level === "beginner";
+  // A continuing Beginner has training consistency, but does not automatically
+  // receive an Intermediate race-specific load. Daniels' novice/endurance
+  // guidance prioritizes E/L/T progression before frequent I work.
+  if (beginnerContinuing && ["10K", "Half Marathon", "Full Marathon"].includes(raceEvent)) {
+    const taperStart = Math.max(10, totalWeeks - 1);
+    const recovery = week % 4 === 0 && week < taperStart;
+    if (week <= 3) {
+      const names = { "10K": "10K Threshold Re-entry", "Half Marathon": "HM Endurance & Threshold", "Full Marathon": "Marathon Durability" };
+      const objectives = { "10K": "T terkontrol, E/L konsisten; belum ada I rutin", "Half Marathon": "E/L dan T ringan; belum ada I", "Full Marathon": "E/L, strength, dan T maintenance; belum ada I" };
+      return { name: names[raceEvent], objective: objectives[raceEvent], qualityMultiplier: 0.65, longRunMultiplier: 0.9, maxQualitySessions: 1, isRecovery: false };
+    }
+    if (week < taperStart - 1) {
+      const names = { "10K": "10K Controlled Development", "Half Marathon": "HM Beginner Specific", "Full Marathon": "Marathon Beginner Specific" };
+      const objectives = { "10K": "T sebagai quality utama; I hanya setelah readiness terpisah", "Half Marathon": "T utama; M Pace hanya pada tier tinggi dan terkontrol", "Full Marathon": "E/L/M bertahap; T maintenance, tanpa I rutin" };
+      return { name: names[raceEvent], objective: objectives[raceEvent], qualityMultiplier: recovery ? 0.6 : 0.8, longRunMultiplier: recovery ? 0.75 : 0.95, maxQualitySessions: recovery ? 0 : 1, isRecovery: recovery };
+    }
+    return { name: "Taper / Competition", objective: "volume turun; tidak menambah fatigue", qualityMultiplier: 0.55, longRunMultiplier: 0.65, maxQualitySessions: 1, isRecovery: false };
+  }
+
   // 5K/10K follow explicit distance-specific progression. Recovery is a
   // sub-week of Base, not a replacement for the following development block.
   if (["5K", "10K"].includes(raceEvent)) {
     const taperStart = Math.max(10, totalWeeks - 1);
     const is5K = raceEvent === "5K";
+    if (continuingProgram) {
+      if (week <= taperStart - 2) return { name: is5K ? "5K Race-Specific" : "10K Race-Specific", objective: is5K ? "I/R/T sejak awal program lanjutan" : "I/T sejak awal program lanjutan", qualityMultiplier: 1, longRunMultiplier: 1, maxQualitySessions: 2, isRecovery: week % 4 === 0 };
+      if (week < taperStart) return { name: "Sharpening", objective: "volume turun sedikit; pertahankan stimulus utama", qualityMultiplier: 0.75, longRunMultiplier: 0.8, maxQualitySessions: 1, isRecovery: false };
+      return { name: "Taper / Competition", objective: "volume turun signifikan; race freshness diprioritaskan", qualityMultiplier: 0.6, longRunMultiplier: 0.65, maxQualitySessions: 1, isRecovery: false };
+    }
     if (week <= 4) return { name: "Base & Durability", objective: "E + L + strength + strides ringan", qualityMultiplier: 0, longRunMultiplier: 0.85, maxQualitySessions: 0, isRecovery: week === 4 };
     if (week <= 7) return { name: is5K ? "R & Threshold Development" : "Threshold & Interval Development", objective: is5K ? "R terkontrol, T, dan economy" : "T utama dengan I bertahap", qualityMultiplier: 0.85, longRunMultiplier: 0.95, maxQualitySessions: 1, isRecovery: false };
     if (week <= taperStart - 2) return { name: is5K ? "5K Race-Specific" : "10K Race-Specific", objective: is5K ? "I/R/T sesuai 5K race demand" : "I/T sesuai 10K race demand", qualityMultiplier: 1, longRunMultiplier: 1, maxQualitySessions: 2, isRecovery: false };
@@ -90,6 +116,11 @@ export function getMesocycle({ productPhase, raceEvent, week, totalWeeks }) {
   // of Base, not a replacement for the following Threshold block.
   if (raceEvent === "Half Marathon") {
     const taperStart = Math.max(10, totalWeeks - 1);
+    if (continuingProgram) {
+      if (week <= taperStart - 2) return { name: "HM Race-Specific", objective: "T primary; M/I secondary bergantian; L dengan M blocks", qualityMultiplier: 1, longRunMultiplier: 1, maxQualitySessions: 2, isRecovery: week % 4 === 0 };
+      if (week < taperStart) return { name: "Sharpening", objective: "volume turun sedikit; T/M lebih pendek", qualityMultiplier: 0.75, longRunMultiplier: 0.8, maxQualitySessions: 1, isRecovery: false };
+      return { name: "Taper / Competition", objective: "volume turun signifikan; tidak menambah fatigue", qualityMultiplier: 0.6, longRunMultiplier: 0.65, maxQualitySessions: 1, isRecovery: false };
+    }
     if (week <= 4) return {
       name: "Base & Durability", objective: "E + L + strength; T sangat terbatas", qualityMultiplier: 0, longRunMultiplier: 0.85, maxQualitySessions: 0, isRecovery: week === 4,
     };
@@ -109,6 +140,11 @@ export function getMesocycle({ productPhase, raceEvent, week, totalWeeks }) {
 
   if (raceEvent === "Full Marathon") {
     const taperStart = Math.max(10, totalWeeks - 1);
+    if (continuingProgram) {
+      if (week <= taperStart - 2) return { name: "Marathon Race-Specific", objective: "M Pace utama, L dengan M blocks, T/I maintenance", qualityMultiplier: 1, longRunMultiplier: 1, maxQualitySessions: 2, isRecovery: week % 4 === 0 };
+      if (week < taperStart) return { name: "Marathon Sharpening", objective: "kurangi volume; M/T lebih pendek", qualityMultiplier: 0.7, longRunMultiplier: 0.75, maxQualitySessions: 1, isRecovery: false };
+      return { name: "Taper / Competition", objective: "volume turun signifikan; simpan energi untuk Marathon", qualityMultiplier: 0.6, longRunMultiplier: 0.65, maxQualitySessions: 1, isRecovery: false };
+    }
     if (week <= 4) return { name: "Base & Durability", objective: "E + L + strength; bangun durability sebelum M Pace", qualityMultiplier: 0, longRunMultiplier: 0.85, maxQualitySessions: 0, isRecovery: week === 4 };
     if (week <= 7) return { name: "Marathon Endurance Development", objective: "L bertambah bertahap, T maintenance, dan M Pace pendek", qualityMultiplier: 0.8, longRunMultiplier: 0.95, maxQualitySessions: 1, isRecovery: false };
     if (week <= taperStart - 2) return { name: "Marathon Race-Specific", objective: "M Pace utama, L dengan M blocks, T/I maintenance", qualityMultiplier: 1, longRunMultiplier: 1, maxQualitySessions: 2, isRecovery: false };

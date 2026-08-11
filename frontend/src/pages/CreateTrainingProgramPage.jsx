@@ -181,7 +181,7 @@ export default function CreateTrainingProgramPage() {
       const phaseInfo = phasePlan[w - 1];
       const phase = phaseInfo.phase;
       const isTaper = phaseInfo.isTaper;
-      const mesocycle = getMesocycle({ productPhase: phaseInfo.productPhase, raceEvent: formData.raceEvent, week: w, totalWeeks: weeks });
+      const mesocycle = getMesocycle({ productPhase: phaseInfo.productPhase, raceEvent: formData.raceEvent, week: w, totalWeeks: weeks, trainingBackground: formData.trainingBackground, level: formData.level });
       const isIntermediate = formData.level === "intermediate";
       const isIntermediateDistance = ["10K", "Half Marathon"].includes(formData.raceEvent) && isIntermediate;
       const mileageTier = getMileageTier(formData.raceEvent, formData.level, peakMileage);
