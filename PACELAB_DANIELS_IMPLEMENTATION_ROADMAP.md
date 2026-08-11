@@ -1022,6 +1022,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #46 — Rolling mileage baseline:** high mileage kini harus diperoleh dari riwayat tiga minggu terakhir, bukan peak target atau satu workout. Build memakai ceiling dari minggu sebelumnya (+10%) dan rolling baseline (+5%); recovery ditahan pada pengurangan 10–20% dari minggu build sebelumnya.
 - **Perubahan #47 — Meaningful quality floor structured Intermediate:** untuk 10K/HM/FM dengan background `Sedang mengikuti program` dan level Intermediate, peak/start mileage memiliki floor 30/35/50 km agar kualitas tidak berupa fragmen <2 km. T/I/R/M tetap diskalakan ke budget yang sudah dibangun dari minggu awal hingga race, bukan menaikkan mileage mendadak.
 - **Perubahan #48 — Meaningful quality floor Beginner vs Intermediate:** memperluas floor mileage untuk Beginner yang `Sedang mengikuti program` pada 10K/HM/FM menjadi 25/30/45 km, dengan main set minimal 2 km. Intermediate tetap dibedakan dengan floor 30/35/50 km serta main set minimum 2.5 km (10K) atau 3 km (HM/FM), dua Q bila aman, dan I/M yang lebih kompleks.
+- **Perubahan #49 — Daniels percentage quality calculation:** T/I/R/M kini memakai budget dari weekly mileage dan jenis stimulus: T 10%, I 8% (maks. 10 km), R 5%, M 10% allocation. Detail dan jarak main set disinkronkan—contoh 62.9 km dengan T pace 5:33 menghasilkan sekitar 35 menit / 6.3 km T, bukan 3.6 km. Tier tetap menentukan kompleksitas/jumlah Q, bukan memangkas persentase stimulus terpilih.
 
 ### 2026-08-10
 

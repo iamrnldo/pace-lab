@@ -213,8 +213,9 @@ export default function CreateTrainingProgramPage() {
       const qualitySchedule = getSafeQualitySchedule(formData.trainingDays);
       const allowPrimaryQuality = Boolean(qualitySchedule.q1);
       const allowSecondaryQuality = workoutRecommendation.recommendedQualitySessions > 1 && mesocycle.maxQualitySessions > 1 && qualitySchedule.hasSafeSecondary;
-      const tierQualityFactor = { low: 0.75, medium: 0.9, high: 1 }[mileageTier];
-      const qualityFactor = (isIntermediate ? 1 : 0.8) * tierQualityFactor;
+      // Tier selects workout complexity and number of Q sessions. Volume of a
+      // selected Daniels quality type is calculated from its own percentage.
+      const qualityFactor = isIntermediate ? 1 : 0.8;
       const ePace = intensifyPace(progressivePace(baseEPace, w), isIntermediateDistance ? 0.03 : 0);
       const mPace = intensifyPace(progressivePace(baseMPace, w), isIntermediateDistance ? 0.02 : 0);
       const tPace = intensifyPace(progressivePace(baseTPace, w), isIntermediateDistance ? 0.05 : 0);
@@ -289,22 +290,23 @@ export default function CreateTrainingProgramPage() {
           ? (["Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 3 : 2.5)
           : 2)
         : 1;
-      const intervalCap = primaryType === "R" ? weeklyMileage * 0.05 : Math.min(weeklyMileage * 0.08, 10);
-      const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * 0.08, 10) : Math.min(weeklyMileage * 0.10, 24);
-      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * 0.12 * effectiveQualityFactor, intervalCap) : 0;
-      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(weeklyMileage * 0.15 * effectiveQualityFactor, tempoCap) : 0;
+      const danielsVolumeFraction = { T: 0.10, I: 0.08, R: 0.05, M: 0.10 };
+      const primaryQualityFraction = danielsVolumeFraction[primaryType] || 0.08;
+      const secondaryQualityFraction = danielsVolumeFraction[secondaryType] || 0.10;
+      const intervalCap = primaryType === "I" ? Math.min(weeklyMileage * primaryQualityFraction, 10) : weeklyMileage * primaryQualityFraction;
+      const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * secondaryQualityFraction, 10) : Math.min(weeklyMileage * secondaryQualityFraction, 24);
+      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * primaryQualityFraction * mesocycle.qualityMultiplier, intervalCap) : 0;
+      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(weeklyMileage * secondaryQualityFraction * mesocycle.qualityMultiplier, tempoCap) : 0;
       // Weekly mileage is the source of truth. Quality prescriptions are
       // scaled to the available weekly budget instead of inflating the week.
       let appliedThreshold = workoutRecommendation.threshold;
       let appliedMarathonBlocks = workoutRecommendation.marathonPace.blocks;
       const fitThresholdToBudget = (budgetKm) => {
         const distanceKm = Math.min(thresholdPrescriptionDistance, Math.max(0, budgetKm));
-        const totalMinutes = Math.max(0, Math.floor((distanceKm * paceToSeconds(tPace)) / 60));
-        const blocks = totalMinutes >= 12 && appliedThreshold.blocks > 1 ? appliedThreshold.blocks : 1;
-        const minutes = blocks ? Math.max(1, Math.floor(totalMinutes / blocks)) : 0;
+        const totalMinutes = Math.max(0, Math.round((distanceKm * paceToSeconds(tPace)) / 60));
         return {
-          distanceKm: (blocks * minutes * 60) / paceToSeconds(tPace),
-          workout: { ...appliedThreshold, blocks, minutes, label: blocks > 1 ? `${blocks} × ${minutes} menit T (disesuaikan volume minggu ini)` : `${minutes} menit T kontinu (disesuaikan volume minggu ini)` },
+          distanceKm: (totalMinutes * 60) / paceToSeconds(tPace),
+          workout: { ...appliedThreshold, blocks: 1, minutes: totalMinutes, label: `${totalMinutes} menit T kontinu (sesuai ${Math.round((distanceKm / weeklyMileage) * 100)}% mileage mingguan)` },
         };
       };
       const fitMarathonBlocksToBudget = (budgetKm) => {
