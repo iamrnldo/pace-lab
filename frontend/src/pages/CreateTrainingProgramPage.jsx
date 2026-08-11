@@ -184,17 +184,19 @@ export default function CreateTrainingProgramPage() {
     const calculatedPeakMileage = peakMin + (peakMax - peakMin) * durationProgress;
     // Mileage awal general preparation harus berada di bawah peak.
     // Peak 5K 16–24 km hanya dicapai di akhir Specific Preparation.
-    const structuredIntermediate = formData.trainingBackground === "structured" && formData.level === "intermediate";
-    const structuredIntermediateMinimumMileage = { "10K": 30, "Half Marathon": 35, "Full Marathon": 50 };
-    // A continuing Intermediate must have enough peak volume to support the
-    // minimum meaningful quality session; do not start above the target peak.
-    const peakMileage = structuredIntermediate
-      ? Math.max(calculatedPeakMileage, structuredIntermediateMinimumMileage[formData.raceEvent] || 0)
+    const structuredRaceRunner = formData.trainingBackground === "structured" && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent);
+    const structuredMileageFloors = {
+      beginner: { "10K": 25, "Half Marathon": 30, "Full Marathon": 45 },
+      intermediate: { "10K": 30, "Half Marathon": 35, "Full Marathon": 50 },
+    };
+    const structuredMileageFloor = structuredMileageFloors[formData.level]?.[formData.raceEvent] || 0;
+    // Continuing runners begin from a volume capable of supporting a real
+    // quality main set. Intermediate earns a higher floor than Beginner.
+    const peakMileage = structuredRaceRunner
+      ? Math.max(calculatedPeakMileage, structuredMileageFloor)
       : calculatedPeakMileage;
-    // A continuing Intermediate starts from a mileage floor that can support
-    // meaningful 10K/HM/FM T/I/M sessions, rather than 1 km quality fragments.
-    const startMileage = structuredIntermediate
-      ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredIntermediateMinimumMileage[formData.raceEvent] || 0)
+    const startMileage = structuredRaceRunner
+      ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredMileageFloor)
       : Math.min(baseMileage * 0.6, peakMileage * 0.6);
     let previousWeeklyMileage = null;
     const recentWeeklyMileages = [];
@@ -282,7 +284,11 @@ export default function CreateTrainingProgramPage() {
         const repetitions = Math.floor((Number(targetKm) * 1000) / repDistance);
         return { repDistance, repetitions, distanceKm: (repetitions * repDistance) / 1000 };
       };
-      const minimumQualityDistance = structuredIntermediate && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 2 : 1;
+      const minimumQualityDistance = structuredRaceRunner
+        ? (formData.level === "intermediate"
+          ? (["Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 3 : 2.5)
+          : 2)
+        : 1;
       const intervalCap = primaryType === "R" ? weeklyMileage * 0.05 : Math.min(weeklyMileage * 0.08, 10);
       const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * 0.08, 10) : Math.min(weeklyMileage * 0.10, 24);
       let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * 0.12 * effectiveQualityFactor, intervalCap) : 0;
@@ -580,7 +586,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
               <div><Label>Level Pelari</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <button type="button" onClick={() => setFormData({ ...formData, level: "beginner" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "beginner" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>BEGINNER</button>
-                  <button type="button" onClick={() => setFormData({ ...formData, level: "intermediate" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "intermediate" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>INTERMEDIATE</button>
+                  <button type="button" onClick={() => setFormData({ ...formData, level: "intermediate" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "intermediate" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>INTERMEDIATE / ELITE</button>
                 </div>
               </div>
             </div>
