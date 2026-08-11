@@ -185,6 +185,8 @@ export default function CreateTrainingProgramPage() {
     // Mileage awal general preparation harus berada di bawah peak.
     // Peak 5K 16–24 km hanya dicapai di akhir Specific Preparation.
     const startMileage = Math.min(baseMileage * 0.6, peakMileage * 0.6);
+    let previousWeeklyMileage = null;
+    const recentWeeklyMileages = [];
 
     for (let w = 1; w <= weeks; w++) {
       const phaseInfo = phasePlan[w - 1];
@@ -225,10 +227,25 @@ export default function CreateTrainingProgramPage() {
           // Peak tercapai tepat di minggu terakhir Specific Preparation.
           const buildProgress = Math.min(1, w / Math.max(1, lastSpecificPrepWeek));
           const plannedMileage = startMileage + (peakMileage - startMileage) * buildProgress;
-          const cycleMultiplier = [1.0, 1.05, 1.1, 0.9][weekInCycle];
-          weeklyMileage = plannedMileage * cycleMultiplier;
-          if (isRecoveryWeek) weeklyMileage *= recoveryProfile.mileageMultiplier;
+          const cycleMultiplier = [1.0, 1.05, 1.1, 1.0][weekInCycle];
+          weeklyMileage = plannedMileage * (isRecoveryWeek ? recoveryProfile.mileageMultiplier : cycleMultiplier);
+          // Do not let a recovery week drop more than 20% from the actual
+          // preceding week. This uses the final prescribed mileage, not a raw plan.
+          const rollingMileageBaseline = recentWeeklyMileages.length
+            ? recentWeeklyMileages.reduce((sum, mileage) => sum + mileage, 0) / recentWeeklyMileages.length
+            : null;
+          if (isRecoveryWeek && previousWeeklyMileage) {
+            // A deload remains below the last build week but cannot collapse:
+            // target a 10–20% reduction from the actual recent workload.
+            weeklyMileage = Math.min(Math.max(weeklyMileage, previousWeeklyMileage * 0.8), previousWeeklyMileage * 0.9);
+          }
           if (w === lastSpecificPrepWeek) weeklyMileage = peakMileage;
+          if (previousWeeklyMileage && !isRecoveryWeek) {
+            // High mileage is earned from recent history, never granted by a
+            // single quality workout. Use last week plus a 3-week baseline.
+            const earnedMileageCeiling = Math.max(previousWeeklyMileage * 1.1, (rollingMileageBaseline || previousWeeklyMileage) * 1.05);
+            weeklyMileage = Math.min(weeklyMileage, earnedMileageCeiling);
+          }
       }
 
       const longRunCaps = { "5K": 7, "10K": 9, "Half Marathon": 18, "Full Marathon": 35 };
@@ -251,50 +268,64 @@ export default function CreateTrainingProgramPage() {
       const getRoundedIntervalMainSet = (targetKm, repsOptions) => {
         const options = repsOptions?.length ? repsOptions : (defaultIntervalReps[formData.raceEvent] || defaultIntervalReps["5K"]);
         const repDistance = options[Math.max(0, w - foundationWeeks - 1) % options.length];
-        const repetitions = Math.max(2, Math.ceil((Number(targetKm) * 1000) / repDistance));
+        const repetitions = Math.floor((Number(targetKm) * 1000) / repDistance);
         return { repDistance, repetitions, distanceKm: (repetitions * repDistance) / 1000 };
       };
       const intervalCap = primaryType === "R" ? weeklyMileage * 0.05 : Math.min(weeklyMileage * 0.08, 10);
       const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * 0.08, 10) : Math.min(weeklyMileage * 0.10, 24);
       let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * 0.12 * effectiveQualityFactor, intervalCap) : 0;
       let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(weeklyMileage * 0.15 * effectiveQualityFactor, tempoCap) : 0;
-      // Jarak kolom adalah main set nyata. Sesuaikan mileage mingguan agar
-      // prescription berbasis waktu/repetisi tidak under-report terhadap header.
-      const raiseWeeklyMileageForMainSet = (currentDistance, actualDistance, maxFraction = null) => {
-        const addedDistance = Math.max(0, actualDistance - currentDistance);
-        return maxFraction
-          ? Math.max(weeklyMileage + addedDistance, actualDistance / maxFraction)
-          : weeklyMileage + addedDistance;
+      // Weekly mileage is the source of truth. Quality prescriptions are
+      // scaled to the available weekly budget instead of inflating the week.
+      let appliedThreshold = workoutRecommendation.threshold;
+      let appliedMarathonBlocks = workoutRecommendation.marathonPace.blocks;
+      const fitThresholdToBudget = (budgetKm) => {
+        const distanceKm = Math.min(thresholdPrescriptionDistance, Math.max(0, budgetKm));
+        const totalMinutes = Math.max(0, Math.floor((distanceKm * paceToSeconds(tPace)) / 60));
+        const blocks = totalMinutes >= 12 && appliedThreshold.blocks > 1 ? appliedThreshold.blocks : 1;
+        const minutes = blocks ? Math.max(1, Math.floor(totalMinutes / blocks)) : 0;
+        return {
+          distanceKm: (blocks * minutes * 60) / paceToSeconds(tPace),
+          workout: { ...appliedThreshold, blocks, minutes, label: blocks > 1 ? `${blocks} × ${minutes} menit T (disesuaikan volume minggu ini)` : `${minutes} menit T kontinu (disesuaikan volume minggu ini)` },
+        };
+      };
+      const fitMarathonBlocksToBudget = (budgetKm) => {
+        let remaining = Math.max(0, budgetKm);
+        const blocks = [];
+        workoutRecommendation.marathonPace.blocks.forEach((block) => {
+          if (remaining <= 0) return;
+          const fittedBlock = Math.min(block, remaining);
+          if (fittedBlock >= 0.5) blocks.push(Number(fittedBlock.toFixed(1)));
+          remaining -= fittedBlock;
+        });
+        return blocks.length ? blocks : [Number(Math.max(0.5, budgetKm).toFixed(1))];
       };
       if (primaryType === "T" && intervalMileage > 0) {
-        weeklyMileage = raiseWeeklyMileageForMainSet(intervalMileage, thresholdPrescriptionDistance, 0.10);
-        intervalMileage = Math.max(intervalMileage, thresholdPrescriptionDistance);
+        const fitted = fitThresholdToBudget(Math.min(intervalMileage, weeklyMileage * 0.10));
+        intervalMileage = fitted.distanceKm;
+        appliedThreshold = fitted.workout;
       }
       if (primaryType === "I" && intervalMileage > 0) {
-        const mainSet = getRoundedIntervalMainSet(intervalMileage, workoutRecommendation.primarySession.reps);
-        weeklyMileage = raiseWeeklyMileageForMainSet(intervalMileage, mainSet.distanceKm, 0.08);
+        const mainSet = getRoundedIntervalMainSet(Math.min(intervalMileage, weeklyMileage * 0.08), workoutRecommendation.primarySession.reps);
         intervalMileage = mainSet.distanceKm;
       }
       if (primaryType === "R" && intervalMileage > 0) {
         const rPlan = workoutRecommendation.repetition;
-        const repetitions = Math.max(4, Math.min(rPlan.maxReps, Math.round((Number(intervalMileage) * 1000) / rPlan.repDistance)));
-        const actualDistance = (repetitions * rPlan.repDistance) / 1000;
-        weeklyMileage = raiseWeeklyMileageForMainSet(intervalMileage, actualDistance, 0.05);
-        intervalMileage = actualDistance;
+        const repetitions = Math.min(rPlan.maxReps, Math.floor((Number(intervalMileage) * 1000) / rPlan.repDistance));
+        intervalMileage = repetitions > 0 ? (repetitions * rPlan.repDistance) / 1000 : 0;
       }
       if (secondaryType === "T" && allowSecondaryQuality && tempoMileage > 0) {
-        weeklyMileage = raiseWeeklyMileageForMainSet(tempoMileage, thresholdPrescriptionDistance, 0.10);
-        tempoMileage = Math.max(tempoMileage, thresholdPrescriptionDistance);
+        const fitted = fitThresholdToBudget(Math.min(tempoMileage, weeklyMileage * 0.10));
+        tempoMileage = fitted.distanceKm;
+        appliedThreshold = fitted.workout;
       }
       if (secondaryType === "I" && allowSecondaryQuality && tempoMileage > 0) {
-        const mainSet = getRoundedIntervalMainSet(tempoMileage, workoutRecommendation.secondarySession.reps);
-        weeklyMileage = raiseWeeklyMileageForMainSet(tempoMileage, mainSet.distanceKm, 0.08);
+        const mainSet = getRoundedIntervalMainSet(Math.min(tempoMileage, weeklyMileage * 0.08), workoutRecommendation.secondarySession.reps);
         tempoMileage = mainSet.distanceKm;
       }
       if (secondaryType === "M" && allowSecondaryQuality && tempoMileage > 0) {
-        const mMainDistance = workoutRecommendation.marathonPace.blocks.reduce((sum, block) => sum + block, 0);
-        weeklyMileage = raiseWeeklyMileageForMainSet(tempoMileage, mMainDistance);
-        tempoMileage = Math.max(tempoMileage, mMainDistance);
+        appliedMarathonBlocks = fitMarathonBlocksToBudget(tempoMileage);
+        tempoMileage = appliedMarathonBlocks.reduce((sum, block) => sum + block, 0);
       }
       let easyMileage = weeklyMileage - longRunMileage - intervalMileage - tempoMileage;
       if (!allowPrimaryQuality) {
@@ -429,7 +460,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
                 details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${reps} × ${repDistance}m @ R-Pace (${iPace}/km)\nFokus: ${focus}.\n${getRecoveryGuidance({ paceType: "R", level: formData.level, phase, mileageTier })}\nTotal repetition sekitar ${total.toFixed(1)} km (maksimal 5% mileage mingguan)\n\nCool-Down: 10 menit Easy jog.`;
               } else if (primarySession?.type === "T") {
                 activity = "Tempo Run"; pace = tPace; distance = intervalMileage.toFixed(1);
-                const threshold = workoutRecommendation.threshold;
+                const threshold = appliedThreshold;
                 details = `Warm-up: 12 menit Easy jog\nProgram inti: ${threshold.label} @ T-Pace (${tPace}/km)\nFokus: ${primarySession.focus}.\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
               } else {
                 activity = "Interval Run"; pace = iPace; distance = intervalMileage.toFixed(1);
@@ -445,7 +476,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
               }
             } else {
               activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
-              const threshold = workoutRecommendation.threshold;
+              const threshold = appliedThreshold;
               details = `W-up: 12m Easy | Main: ${threshold.label} @ T-Pace (${tPace}/km) | Recovery: ${threshold.recovery} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | C-down: 8m Recovery jog.`;
               if (phase === 3) details = "(Tapering) Menjaga intensitas. " + details;
             }
@@ -455,7 +486,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
              if (secondarySession?.type === "M") {
                activity = "Marathon Pace"; pace = mPace;
                const mPlan = workoutRecommendation.marathonPace;
-               details = `Warm-up: 12 menit Easy jog\nProgram inti: ${mPlan.blocks.map((block) => `${block} km`).join(" + ")} @ M-Pace (${mPace}/km)\nFokus: ${mPlan.focus}. Recovery antarblok: ${mPlan.recovery}.\n${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
+               details = `Warm-up: 12 menit Easy jog\nProgram inti: ${appliedMarathonBlocks.map((block) => `${block} km`).join(" + ")} @ M-Pace (${mPace}/km)\nFokus: ${mPlan.focus}. Recovery antarblok: ${mPlan.recovery}.\n${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
              } else if (secondarySession?.type === "I") {
                activity = "Interval Run"; pace = iPace;
                const mainSet = getRoundedIntervalMainSet(Number(distance), secondarySession.reps);
@@ -463,7 +494,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
                details = `Warm-up: 12 menit Easy jog + drills\nProgram inti: ${reps} × ${repDistance}m @ I-Pace (${iPace}/km)\nFokus: ${secondarySession.focus}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nTotal interval sekitar ${((reps * repDistance) / 1000).toFixed(1)} km (maksimal 8% mileage mingguan atau 10 km)\nCool-Down: 10 menit Easy jog.`;
              } else {
                activity = "Tempo Run"; pace = tPace;
-               const threshold = workoutRecommendation.threshold;
+               const threshold = appliedThreshold;
                details = `Main: ${threshold.label} @ T-Pace (${tPace}/km)\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}`;
              }
           } else {
@@ -478,6 +509,9 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
           return { day, date, activity, pace, distance: validatedWorkout.distance + " Km", details: validatedWorkout.details };
         }),
       });
+      previousWeeklyMileage = weeklyMileage;
+      recentWeeklyMileages.push(weeklyMileage);
+      if (recentWeeklyMileages.length > 3) recentWeeklyMileages.shift();
     }
     // Kalender pemulihan ditambahkan setelah Race Day tanpa mengubah endDate lomba.
     const recoveryDays = getPostRaceRecoverySchedule(formData.raceEvent);

@@ -64,8 +64,9 @@ export function getPeriodization({ raceEvent, weeks, trainingBackground }) {
 export function getRecoveryWeekProfile({ raceEvent, level, mileageTier }) {
   const beginner = level === "beginner";
   const enduranceRace = ["Half Marathon", "Full Marathon"].includes(raceEvent);
-  const mileageMultiplier = beginner ? 0.75 : enduranceRace ? 0.8 : 0.85;
-  const qualityMultiplier = mileageTier === "high" ? 0.65 : beginner ? 0.7 : 0.75;
+  // Recovery is a deload, not a second compounded cut on top of the old 0.90 cycle.
+  const mileageMultiplier = beginner ? 0.85 : enduranceRace ? 0.88 : 0.9;
+  const qualityMultiplier = mileageTier === "high" ? 0.75 : beginner ? 0.75 : 0.8;
   return {
     mileageMultiplier,
     qualityMultiplier,
