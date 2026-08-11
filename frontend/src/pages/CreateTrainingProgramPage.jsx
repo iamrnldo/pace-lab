@@ -248,17 +248,29 @@ export default function CreateTrainingProgramPage() {
           const rollingMileageBaseline = recentWeeklyMileages.length
             ? recentWeeklyMileages.reduce((sum, mileage) => sum + mileage, 0) / recentWeeklyMileages.length
             : null;
+          // Source-informed hybrid: Marathon builds more conservatively than
+          // 10K, while HM sits between them. Volume is kept stable; recovery
+          // reduces quality first and only slightly lowers total mileage.
+          const buildRates = { "5K": 0.05, "10K": 0.05, "Half Marathon": 0.05, "Full Marathon": 0.04 };
+          const recoveryReductions = { "5K": 0.10, "10K": 0.08, "Half Marathon": 0.07, "Full Marathon": 0.05 };
+          const buildRate = buildRates[formData.raceEvent] || 0.05;
+          const recoveryReduction = recoveryReductions[formData.raceEvent] || 0.08;
           if (isRecoveryWeek && previousWeeklyMileage) {
-            // A deload remains below the last build week but cannot collapse:
-            // target a 10–20% reduction from the actual recent workload.
-            weeklyMileage = Math.min(Math.max(weeklyMileage, previousWeeklyMileage * 0.8), previousWeeklyMileage * 0.9);
+            // Keep a recovery week 2–10% below the preceding build week,
+            // rather than creating an abrupt mileage collapse.
+            weeklyMileage = Math.min(
+              Math.max(weeklyMileage, previousWeeklyMileage * (1 - recoveryReduction)),
+              previousWeeklyMileage * 0.98,
+            );
           }
           if (w === lastSpecificPrepWeek) weeklyMileage = peakMileage;
           if (previousWeeklyMileage && !isRecoveryWeek) {
-            // High mileage is earned from recent history, never granted by a
-            // single quality workout. Use last week plus a 3-week baseline.
-            const earnedMileageCeiling = Math.max(previousWeeklyMileage * 1.1, (rollingMileageBaseline || previousWeeklyMileage) * 1.05);
-            weeklyMileage = Math.min(weeklyMileage, earnedMileageCeiling);
+            const earnedMileageCeiling = Math.min(
+              previousWeeklyMileage * (1 + buildRate),
+              (rollingMileageBaseline || previousWeeklyMileage) * (1 + buildRate),
+            );
+            // Outside taper/recovery, avoid an unexplained mileage decline.
+            weeklyMileage = Math.max(previousWeeklyMileage, Math.min(weeklyMileage, earnedMileageCeiling));
           }
       }
 
