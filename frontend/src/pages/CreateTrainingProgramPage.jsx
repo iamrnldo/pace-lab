@@ -181,10 +181,21 @@ export default function CreateTrainingProgramPage() {
     };
     const [shortPrepMonths, longPrepMonths] = durationGuides[formData.raceEvent]?.[formData.level] || [2, 6];
     const durationProgress = Math.min(1, Math.max(0, (dateDuration.months - shortPrepMonths) / Math.max(1, longPrepMonths - shortPrepMonths)));
-    const peakMileage = peakMin + (peakMax - peakMin) * durationProgress;
+    const calculatedPeakMileage = peakMin + (peakMax - peakMin) * durationProgress;
     // Mileage awal general preparation harus berada di bawah peak.
     // Peak 5K 16–24 km hanya dicapai di akhir Specific Preparation.
-    const startMileage = Math.min(baseMileage * 0.6, peakMileage * 0.6);
+    const structuredIntermediate = formData.trainingBackground === "structured" && formData.level === "intermediate";
+    const structuredIntermediateMinimumMileage = { "10K": 30, "Half Marathon": 35, "Full Marathon": 50 };
+    // A continuing Intermediate must have enough peak volume to support the
+    // minimum meaningful quality session; do not start above the target peak.
+    const peakMileage = structuredIntermediate
+      ? Math.max(calculatedPeakMileage, structuredIntermediateMinimumMileage[formData.raceEvent] || 0)
+      : calculatedPeakMileage;
+    // A continuing Intermediate starts from a mileage floor that can support
+    // meaningful 10K/HM/FM T/I/M sessions, rather than 1 km quality fragments.
+    const startMileage = structuredIntermediate
+      ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredIntermediateMinimumMileage[formData.raceEvent] || 0)
+      : Math.min(baseMileage * 0.6, peakMileage * 0.6);
     let previousWeeklyMileage = null;
     const recentWeeklyMileages = [];
 
@@ -271,6 +282,7 @@ export default function CreateTrainingProgramPage() {
         const repetitions = Math.floor((Number(targetKm) * 1000) / repDistance);
         return { repDistance, repetitions, distanceKm: (repetitions * repDistance) / 1000 };
       };
+      const minimumQualityDistance = structuredIntermediate && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 2 : 1;
       const intervalCap = primaryType === "R" ? weeklyMileage * 0.05 : Math.min(weeklyMileage * 0.08, 10);
       const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * 0.08, 10) : Math.min(weeklyMileage * 0.10, 24);
       let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * 0.12 * effectiveQualityFactor, intervalCap) : 0;
@@ -337,11 +349,11 @@ export default function CreateTrainingProgramPage() {
         tempoMileage = 0;
       }
       // Jangan membuat sesi kualitas di bawah 1 km; pindahkan volumenya ke sesi lain.
-      if (intervalMileage > 0 && intervalMileage < 1) {
-        tempoMileage >= 1 ? (tempoMileage += intervalMileage) : (easyMileage += intervalMileage);
+      if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {
+        tempoMileage >= minimumQualityDistance ? (tempoMileage += intervalMileage) : (easyMileage += intervalMileage);
         intervalMileage = 0;
       }
-      if (tempoMileage > 0 && tempoMileage < 1) {
+      if (tempoMileage > 0 && tempoMileage < minimumQualityDistance) {
         easyMileage += tempoMileage;
         tempoMileage = 0;
       }
@@ -356,12 +368,12 @@ export default function CreateTrainingProgramPage() {
         else easyMileage += overflowMileage;
       }
       // Pastikan perubahan distribusi tidak membuat quality session di bawah 1 km.
-      if (intervalMileage > 0 && intervalMileage < 1) {
+      if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {
         if (allowTempo) tempoMileage += intervalMileage;
         else easyMileage += intervalMileage;
         intervalMileage = 0;
       }
-      if (tempoMileage > 0 && tempoMileage < 1) {
+      if (tempoMileage > 0 && tempoMileage < minimumQualityDistance) {
         easyMileage += tempoMileage;
         tempoMileage = 0;
       }

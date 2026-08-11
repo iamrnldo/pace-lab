@@ -1020,6 +1020,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #44 — Recovery mileage smoothing:** menghapus pemotongan recovery yang sebelumnya terkompound dengan multiplier siklus 0.90. Recovery kini memakai 85–90% planned mileage menurut level/race, quality 75–80%, dan memiliki floor 80% dari actual mileage minggu sebelumnya agar drop tidak terlalu drastis.
 - **Perubahan #45 — Mileage progression guardrail:** weekly mileage kini menjadi sumber kebenaran; quality prescription diskalakan ke budget minggu berjalan dan tidak lagi menaikkan weekly mileage secara paksa. Build dibatasi kenaikan maksimal 10% dari actual minggu sebelumnya; T/I/R/M diturunkan/dipecah bila melebihi budget 10%/8%/5%/alokasi M.
 - **Perubahan #46 — Rolling mileage baseline:** high mileage kini harus diperoleh dari riwayat tiga minggu terakhir, bukan peak target atau satu workout. Build memakai ceiling dari minggu sebelumnya (+10%) dan rolling baseline (+5%); recovery ditahan pada pengurangan 10–20% dari minggu build sebelumnya.
+- **Perubahan #47 — Meaningful quality floor structured Intermediate:** untuk 10K/HM/FM dengan background `Sedang mengikuti program` dan level Intermediate, peak/start mileage memiliki floor 30/35/50 km agar kualitas tidak berupa fragmen <2 km. T/I/R/M tetap diskalakan ke budget yang sudah dibangun dari minggu awal hingga race, bukan menaikkan mileage mendadak.
 
 ### 2026-08-10
 
