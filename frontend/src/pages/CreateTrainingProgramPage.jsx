@@ -164,7 +164,7 @@ export default function CreateTrainingProgramPage() {
     // table (main-set/run distance + race distance), not only a phase target.
     const getListedDistanceKm = (session, easyPace) => calculateSessionMetrics({
       ...session, easyPace: easyPace || baseEPace, raceDistanceKm: raceDistanceKm[formData.raceEvent] || 0,
-    }).totalDistanceKm;
+    }).mainDistanceKm;
 
     // Target peak mileage dicapai di akhir fase Specific Preparation.
     const peakRanges = {
@@ -581,17 +581,17 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
         const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(day.activity);
         const totalDistance = metrics.totalDistanceKm;
         const details = quality
-          ? `Jarak total sesi: ${totalDistance.toFixed(1)} km | Main set: ${metrics.mainDistanceKm.toFixed(1)} km | Warm-up: ${metrics.warmupKm.toFixed(1)} km | Recovery jog: ${metrics.recoveryKm.toFixed(1)} km | Cool-down: ${metrics.cooldownKm.toFixed(1)} km\n\n${day.details}`
+          ? `Jarak inti @ target pace (masuk mileage): ${metrics.mainDistanceKm.toFixed(1)} km | Estimasi total fisik sesi: ~${totalDistance.toFixed(1)} km (perkiraan warm-up ${metrics.warmupKm.toFixed(1)} km + recovery ${metrics.recoveryKm.toFixed(1)} km + cool-down ${metrics.cooldownKm.toFixed(1)} km; tidak masuk weekly mileage)\n\n${day.details}`
           : day.details;
         return {
           ...day,
           mainSetDistance: metrics.mainDistanceKm.toFixed(1),
-          distance: totalDistance > 0 ? `${totalDistance.toFixed(1)} Km` : day.distance,
+          distance: metrics.mainDistanceKm > 0 ? `${metrics.mainDistanceKm.toFixed(1)} Km` : day.distance,
           details,
           structuredSession: buildStructuredSession({ activity: day.activity, pace: day.pace, distance: day.distance, details: day.details, qSession: day.day === week.qualitySchedule?.q1 ? "Q1" : day.day === week.qualitySchedule?.q2 ? "Q2" : null, metrics }),
         };
       });
-      const totalMileage = enhancedDays.reduce((sum, day) => sum + (day.structuredSession.metrics?.totalDistanceKm || 0), 0);
+      const totalMileage = enhancedDays.reduce((sum, day) => sum + (day.structuredSession.metrics?.mainDistanceKm || 0), 0);
       const intensityVolumes = enhancedDays.reduce((volumes, day) => {
         const type = day.structuredSession.paceType;
         if (["T", "I", "R", "M"].includes(type)) volumes[type] += day.structuredSession.metrics?.mainDistanceKm || 0;
@@ -669,12 +669,12 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
           {generatedProgram.filter(w => w.week === activeWeek).map(week => (
             <div key={week.week} className="card-retro overflow-hidden p-6 animate-fade-in">
               <div className="flex justify-between items-center mb-6">
-                <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Total Jarak Sesi: {week.mileage} Km</p>{week.targetMileage && week.targetMileage !== week.mileage && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Target phase: {week.targetMileage} Km</p>}{week.intensityVolumes && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Main quality: T {week.intensityVolumes.T.toFixed(1)} · I {week.intensityVolumes.I.toFixed(1)} · R {week.intensityVolumes.R.toFixed(1)} · M {week.intensityVolumes.M.toFixed(1)} Km</p>}<p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
+                <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Total Mileage Program: {week.mileage} Km</p>{week.targetMileage && week.targetMileage !== week.mileage && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Target phase: {week.targetMileage} Km</p>}{week.intensityVolumes && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Main quality: T {week.intensityVolumes.T.toFixed(1)} · I {week.intensityVolumes.I.toFixed(1)} · R {week.intensityVolumes.R.toFixed(1)} · M {week.intensityVolumes.M.toFixed(1)} Km</p>}<p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
                 <div className="text-right"><span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? `RECOVERY · ${week.mesocycle?.name || ""}` : `${week.productPhase || (week.phase === 1 ? 'General Preparation' : week.phase === 2 ? 'Specific Preparation' : week.phase === 3 ? 'Pre Competition' : 'Competition')}`}</span>{week.mesocycle && <p className="mt-2 font-mono text-[9px] text-retro-white/40">{week.mesocycle.name}: {week.mesocycle.objective}</p>}{week.recoveryNote && <p className="mt-1 font-mono text-[9px] text-retro-white/40">{week.recoveryNote}</p>}</div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[800px]">
-                    <thead><tr className="border-b border-retro-gray-light/30"><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Hari</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Tanggal</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Aktivitas</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Jarak</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Pace</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Detail Program</th></tr></thead>
+                    <thead><tr className="border-b border-retro-gray-light/30"><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Hari</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Tanggal</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Aktivitas</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Jarak Inti</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Pace</th><th className="px-6 py-4 font-mono text-[11px] uppercase tracking-widest text-retro-white/40">Detail Program</th></tr></thead>
                     <tbody>{week.days.map((d, idx) => (<tr key={idx} className={clsx("border-b border-retro-gray-light/10 last:border-0", d.activity === "Istirahat" ? "bg-retro-gray-mid/20" : "")}><td className="px-6 py-4 font-retro text-retro-white">{d.day}</td><td className="px-6 py-4 font-mono text-xs text-retro-white/70">{d.date ? new Date(`${d.date}T00:00:00`).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}</td><td className="px-6 py-4"><span className={clsx("font-sport text-sm", d.activity !== "Easy Run" && d.activity !== "Istirahat" && d.activity !== "Shakeout Run" ? "text-retro-green" : "text-retro-white/80")}>{d.activity} {getTrainingType(d.activity) && <span className="ml-2 border border-retro-green/30 px-1 text-[9px] text-retro-green">{getTrainingType(d.activity)}</span>}</span></td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.distance}</td><td className="px-6 py-4 font-mono text-sm text-retro-white">{d.pace}</td><td className="px-6 py-4 font-mono text-[10px] text-retro-white/50 leading-relaxed italic whitespace-pre-line">{d.details}</td></tr>))}</tbody>
                 </table>
               </div>

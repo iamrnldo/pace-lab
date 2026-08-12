@@ -1028,6 +1028,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #52 — HM/FM build rate:** sesuai keputusan produk, build rate Half Marathon dinaikkan menjadi maksimum +5% dan Full Marathon menjadi maksimum +4% per minggu; recovery rate tetap tidak berubah.
 - **Perubahan #53 — Actual session mileage accounting:** header mingguan kini dihitung dari jarak sesi yang benar-benar tampil di tabel (Easy/L/T/I/R/M dan jarak race), bukan hanya target phase/taper multiplier. Target phase tetap disimpan dan ditampilkan terpisah; rolling progression minggu berikutnya memakai actual listed mileage.
 - **Perubahan #54 — Dual mileage display:** menerapkan pilihan produk `Tampilkan keduanya`. Setiap quality session kini menghitung dan menampilkan total sesi (warm-up, main set, recovery jog, cool-down) serta main-set volume terpisah. Header mingguan memakai total running mileage dan menampilkan T/I/R/M main volume; target phase tetap terpisah.
+- **Perubahan #55 — Main-set mileage policy:** sesuai keputusan produk, weekly mileage kini hanya menghitung main set untuk T/I/R/M. Warm-up, recovery jog, dan cool-down tetap ditampilkan sebagai total fisik sesi di detail, tetapi tidak masuk header mileage maupun rolling progression.
+- **Perubahan #56 — Core vs estimated session labels:** kolom jarak untuk sesi kualitas diberi makna `Jarak Inti` pada target pace. Total warm-up/recovery/cool-down diberi label `Estimasi total fisik sesi` karena merupakan perhitungan kasar dan tidak masuk weekly mileage.
 
 ### 2026-08-10
 
