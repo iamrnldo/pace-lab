@@ -134,7 +134,37 @@ export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase,
 
 // Section 18: minimum guard untuk output generator. Ini tidak menggantikan
 // keputusan medis; tujuannya mencegah sesi pendek/quality tanpa struktur dasar.
-export function buildStructuredSession({ activity, pace, distance, details, qSession }) {
+export function calculateSessionMetrics({ activity, distance, pace, easyPace, details, raceDistanceKm = 0 }) {
+  const toSeconds = (value) => {
+    const [minutes, seconds] = String(value || "").split(":").map(Number);
+    return Number.isFinite(minutes) && Number.isFinite(seconds) ? minutes * 60 + seconds : 0;
+  };
+  const numeric = Number.parseFloat(String(distance || ""));
+  const isMinutes = /menit/i.test(String(distance || ""));
+  const mainDistanceKm = activity === "RACE DAY"
+    ? raceDistanceKm
+    : isMinutes
+      ? (numeric * 60) / (toSeconds(pace && pace !== "-" ? pace : easyPace) || 1)
+      : Number.isFinite(numeric) ? numeric : 0;
+  const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);
+  if (!quality) return { mainDistanceKm, warmupKm: 0, recoveryKm: 0, cooldownKm: 0, totalDistanceKm: mainDistanceKm };
+
+  const easySeconds = toSeconds(easyPace) || toSeconds(pace) || 360;
+  const warmMatch = String(details || "").match(/(?:Warm-up|W-up):?\s*(\d+)/i);
+  const coolMatch = String(details || "").match(/(?:Cool-Down|C-down):?\s*(\d+)/i);
+  const warmMinutes = Number(warmMatch?.[1] || 12);
+  const cooldownMinutes = Number(coolMatch?.[1] || 10);
+  const repsMatch = String(details || "").match(/(\d+)\s*[×x]/i);
+  const repetitions = Number(repsMatch?.[1] || 1);
+  const recoveryMatch = String(details || "").match(/recovery[^\d]*(\d+(?:[.,]\d+)?)\s*menit/i);
+  const recoveryMinutes = Number(String(recoveryMatch?.[1] || (activity === "Interval Run" ? 2 : activity === "Repetition Run" ? 3 : activity === "Marathon Pace" ? 1.5 : 0)).replace(",", "."));
+  const warmupKm = (warmMinutes * 60) / easySeconds;
+  const cooldownKm = (cooldownMinutes * 60) / easySeconds;
+  const recoveryKm = (Math.max(0, repetitions - 1) * recoveryMinutes * 60) / easySeconds;
+  return { mainDistanceKm, warmupKm, recoveryKm, cooldownKm, totalDistanceKm: mainDistanceKm + warmupKm + recoveryKm + cooldownKm };
+}
+
+export function buildStructuredSession({ activity, pace, distance, details, qSession, metrics }) {
   const paceType = ({ "Easy Run": "E", "Easy Run + Strides": "E", "Long Run": "L", "Tempo Run": "T", "Interval Run": "I", "Repetition Run": "R", "Marathon Pace": "M", "RACE DAY": "Q" })[activity] || null;
   const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);
   return {
@@ -145,6 +175,7 @@ export function buildStructuredSession({ activity, pace, distance, details, qSes
     prescribedPace: pace,
     warmup: quality ? { durationMinutes: 12, paceType: "E" } : null,
     cooldown: quality ? { durationMinutes: 10, paceType: "E" } : null,
+    metrics,
     notes: details,
   };
 }

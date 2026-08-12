@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
 import { getTrainingType } from "../utils/trainingTypes";
-import { buildStructuredSession, ensureWorkoutMinimums, getMileageTier, getRecoveryGuidance, getWorkoutRecommendation } from "../utils/workoutLibrary";
+import { buildStructuredSession, calculateSessionMetrics, ensureWorkoutMinimums, getMileageTier, getRecoveryGuidance, getWorkoutRecommendation } from "../utils/workoutLibrary";
 import { getMesocycle, getPeriodization, getPostRaceRecoveryPlan, getPostRaceRecoverySchedule, getRecoveryWeekProfile, getSafeQualitySchedule, getTaperMultiplier, TRAINING_BACKGROUNDS } from "../utils/trainingPeriodization";
 import ExportModal from "../components/training/ExportModal";
 
@@ -159,6 +159,12 @@ export default function CreateTrainingProgramPage() {
       const secondsPerKm = paceToSeconds(pace);
       return secondsPerKm ? (Number(minutes) * 60) / secondsPerKm : 0;
     };
+    const raceDistanceKm = { "5K": 5, "10K": 10, "Half Marathon": 21.1, "Full Marathon": 42.195 };
+    // Header mileage is calculated from the sessions actually shown in the
+    // table (main-set/run distance + race distance), not only a phase target.
+    const getListedDistanceKm = (session, easyPace) => calculateSessionMetrics({
+      ...session, easyPace: easyPace || baseEPace, raceDistanceKm: raceDistanceKm[formData.raceEvent] || 0,
+    }).totalDistanceKm;
 
     // Target peak mileage dicapai di akhir fase Specific Preparation.
     const peakRanges = {
@@ -541,8 +547,13 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
           return { day, date, activity, pace, distance: validatedWorkout.distance + " Km", details: validatedWorkout.details };
         }),
       });
-      previousWeeklyMileage = weeklyMileage;
-      recentWeeklyMileages.push(weeklyMileage);
+      const generatedWeek = program[program.length - 1];
+      const listedMileage = generatedWeek.days.reduce((sum, session) => sum + getListedDistanceKm(session), 0);
+      generatedWeek.targetMileage = weeklyMileage.toFixed(1);
+      generatedWeek.mileage = listedMileage.toFixed(1);
+      // Next week progresses from work actually prescribed in the table.
+      previousWeeklyMileage = listedMileage;
+      recentWeeklyMileages.push(listedMileage);
       if (recentWeeklyMileages.length > 3) recentWeeklyMileages.shift();
     }
     // Kalender pemulihan ditambahkan setelah Race Day tanpa mengubah endDate lomba.
@@ -560,13 +571,40 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
       recoveryWeek.days.push({ day: DAYS[(recoveryDate.getDay() + 6) % 7], date: toDateInput(recoveryDate), ...recovery });
     });
 
-    return program.map((week) => ({
-      ...week,
-      days: week.days.map((day) => ({
-        ...day,
-        structuredSession: buildStructuredSession({ activity: day.activity, pace: day.pace, distance: day.distance, details: day.details, qSession: day.day === week.qualitySchedule?.q1 ? "Q1" : day.day === week.qualitySchedule?.q2 ? "Q2" : null }),
-      })),
-    }));
+    return program.map((week) => {
+      const enhancedDays = week.days.map((day) => {
+        const metrics = calculateSessionMetrics({
+          ...day,
+          easyPace: week.easyPace || baseEPace,
+          raceDistanceKm: raceDistanceKm[formData.raceEvent] || 0,
+        });
+        const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(day.activity);
+        const totalDistance = metrics.totalDistanceKm;
+        const details = quality
+          ? `Jarak total sesi: ${totalDistance.toFixed(1)} km | Main set: ${metrics.mainDistanceKm.toFixed(1)} km | Warm-up: ${metrics.warmupKm.toFixed(1)} km | Recovery jog: ${metrics.recoveryKm.toFixed(1)} km | Cool-down: ${metrics.cooldownKm.toFixed(1)} km\n\n${day.details}`
+          : day.details;
+        return {
+          ...day,
+          mainSetDistance: metrics.mainDistanceKm.toFixed(1),
+          distance: totalDistance > 0 ? `${totalDistance.toFixed(1)} Km` : day.distance,
+          details,
+          structuredSession: buildStructuredSession({ activity: day.activity, pace: day.pace, distance: day.distance, details: day.details, qSession: day.day === week.qualitySchedule?.q1 ? "Q1" : day.day === week.qualitySchedule?.q2 ? "Q2" : null, metrics }),
+        };
+      });
+      const totalMileage = enhancedDays.reduce((sum, day) => sum + (day.structuredSession.metrics?.totalDistanceKm || 0), 0);
+      const intensityVolumes = enhancedDays.reduce((volumes, day) => {
+        const type = day.structuredSession.paceType;
+        if (["T", "I", "R", "M"].includes(type)) volumes[type] += day.structuredSession.metrics?.mainDistanceKm || 0;
+        return volumes;
+      }, { T: 0, I: 0, R: 0, M: 0 });
+      return {
+        ...week,
+        targetMileage: week.targetMileage || week.mileage,
+        mileage: totalMileage > 0 ? totalMileage.toFixed(1) : week.mileage,
+        intensityVolumes,
+        days: enhancedDays,
+      };
+    });
   }, [showProgram, vcrData, formData, dateDuration]);
 
   const handleSave = async () => {
@@ -631,7 +669,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
           {generatedProgram.filter(w => w.week === activeWeek).map(week => (
             <div key={week.week} className="card-retro overflow-hidden p-6 animate-fade-in">
               <div className="flex justify-between items-center mb-6">
-                <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Mileage: {week.mileage} Km</p><p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
+                <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Total Jarak Sesi: {week.mileage} Km</p>{week.targetMileage && week.targetMileage !== week.mileage && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Target phase: {week.targetMileage} Km</p>}{week.intensityVolumes && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Main quality: T {week.intensityVolumes.T.toFixed(1)} · I {week.intensityVolumes.I.toFixed(1)} · R {week.intensityVolumes.R.toFixed(1)} · M {week.intensityVolumes.M.toFixed(1)} Km</p>}<p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
                 <div className="text-right"><span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? `RECOVERY · ${week.mesocycle?.name || ""}` : `${week.productPhase || (week.phase === 1 ? 'General Preparation' : week.phase === 2 ? 'Specific Preparation' : week.phase === 3 ? 'Pre Competition' : 'Competition')}`}</span>{week.mesocycle && <p className="mt-2 font-mono text-[9px] text-retro-white/40">{week.mesocycle.name}: {week.mesocycle.objective}</p>}{week.recoveryNote && <p className="mt-1 font-mono text-[9px] text-retro-white/40">{week.recoveryNote}</p>}</div>
               </div>
               <div className="overflow-x-auto">

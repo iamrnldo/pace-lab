@@ -1026,6 +1026,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #50 — Simple Daniels-informed mileage model:** sesuai keputusan produk, memakai model global sederhana dengan rolling 3-week baseline. Build dibatasi sekitar +5% terhadap minggu sebelumnya dan baseline (bukan +10% setiap minggu); recovery tetap 10–20% di bawah minggu build. Ini menghindari lonjakan sambil mempertahankan prinsip Daniels bahwa mileage tidak dinaikkan agresif setiap minggu.
 - **Perubahan #51 — Race-specific mileage stability:** mengganti aturan global dengan hybrid sederhana per race: build maksimum 5% (5K/10K), 4% (HM), 3% (FM); recovery hanya 8% (10K), 7% (HM), 5% (FM) di bawah minggu sebelumnya sambil quality load tetap diturunkan. Di luar recovery/taper, mileage tidak boleh turun tanpa alasan.
 - **Perubahan #52 — HM/FM build rate:** sesuai keputusan produk, build rate Half Marathon dinaikkan menjadi maksimum +5% dan Full Marathon menjadi maksimum +4% per minggu; recovery rate tetap tidak berubah.
+- **Perubahan #53 — Actual session mileage accounting:** header mingguan kini dihitung dari jarak sesi yang benar-benar tampil di tabel (Easy/L/T/I/R/M dan jarak race), bukan hanya target phase/taper multiplier. Target phase tetap disimpan dan ditampilkan terpisah; rolling progression minggu berikutnya memakai actual listed mileage.
+- **Perubahan #54 — Dual mileage display:** menerapkan pilihan produk `Tampilkan keduanya`. Setiap quality session kini menghitung dan menampilkan total sesi (warm-up, main set, recovery jog, cool-down) serta main-set volume terpisah. Header mingguan memakai total running mileage dan menampilkan T/I/R/M main volume; target phase tetap terpisah.
 
 ### 2026-08-10
 
