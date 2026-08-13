@@ -1042,6 +1042,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #66 — Final HM/FM peak & background model:** HM Beginner peak 32–48 km, HM Intermediate 40–60 km, FM Beginner 50–64 km, FM Intermediate 64–88 km. Durasi memilih nilai dalam rentang peak; kondisi latihan menentukan baseline sebagai 60% (returning), 70% (consistent), atau 80% (structured) dari peak. Long Run peak tetap mengikuti range per level yang diset sebelumnya.
 - **Perubahan #67 — Generator runtime fix:** memperbaiki referensi variabel `structuredRaceRunner` yang sudah tidak digunakan setelah pembaruan model HM/FM. Validasi minimum quality distance kini memakai kondisi `isStructuredEnduranceOrTenK`, sehingga halaman Create Training Program kembali dapat dirender.
 - **Perubahan #68 — Generator overflow runtime fix:** memperbaiki referensi `easyRunCap` di luar scope pada perhitungan overflow mileage, yang menyebabkan blue screen ketika membuat program. Perhitungan kini memakai cap Easy Run berdasarkan race event secara langsung.
+- **Perubahan #69 — Universal Tempo progression:** Tempo kini selalu naik dari 10% pada awal Specific Preparation menuju 15% pada akhir Specific Preparation untuk semua race, level, dan kondisi latihan 4–6 minggu terakhir. Tier tidak lagi mengubah persentase T; taper tetap mengurangi total melalui mesocycle multiplier.
 
 ### 2026-08-10
 

@@ -332,11 +332,13 @@ export default function CreateTrainingProgramPage() {
           ? (["Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 3 : 2.5)
           : 2)
         : 1;
-      // Product load policy: Tempo occupies 10–15% by level/tier, while
-      // Interval uses 10%. R and M keep their existing allocations.
-      const tempoFraction = formData.level === "beginner"
-        ? 0.10
-        : ({ low: 0.10, medium: 0.125, high: 0.15 }[mileageTier] || 0.10);
+      // Tempo progresses universally from 10% at the start of Specific
+      // Preparation to 15% at its end, regardless of race/level/background.
+      // Taper can still reduce the final session through mesocycle multiplier.
+      const tempoProgress = phase === 2
+        ? Math.min(1, Math.max(0, specificProgress))
+        : phase >= 3 ? 1 : 0;
+      const tempoFraction = 0.10 + (0.05 * tempoProgress);
       const danielsVolumeFraction = { T: tempoFraction, I: 0.10, R: 0.05, M: 0.10 };
       const primaryQualityFraction = danielsVolumeFraction[primaryType] || 0.10;
       const secondaryQualityFraction = danielsVolumeFraction[secondaryType] || 0.10;
