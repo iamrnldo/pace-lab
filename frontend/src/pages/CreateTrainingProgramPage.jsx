@@ -106,8 +106,8 @@ export default function CreateTrainingProgramPage() {
     const mileageMap = {
       "5K": { beginner: 16, intermediate: 16 },
       "10K": { beginner: 25, intermediate: 25 },
-      "Half Marathon": { beginner: 31, intermediate: 31 },
-      "Full Marathon": { beginner: 50, intermediate: 100 },
+      "Half Marathon": { beginner: 24, intermediate: 40 },
+      "Full Marathon": { beginner: 30, intermediate: 50 },
     };
 
     const baseMileage = mileageMap[formData.raceEvent]?.[formData.level] || 20;
@@ -170,10 +170,10 @@ export default function CreateTrainingProgramPage() {
     const peakRanges = {
       "5K": { beginner: [16, 24], intermediate: [16, 24] },
       "10K": { beginner: [25, 30], intermediate: [25, 30] },
-      "Half Marathon": { beginner: [31, 50], intermediate: [31, 50] },
+      "Half Marathon": { beginner: [24, 40], intermediate: [40, 60] },
       "Full Marathon": {
-        beginner: [50, 64],
-        intermediate: [100, 110],
+        beginner: [40, 64],
+        intermediate: [64, 88],
       },
     };
     const [peakMin, peakMax] = peakRanges[formData.raceEvent]?.[formData.level] || [20, 30];
@@ -193,7 +193,7 @@ export default function CreateTrainingProgramPage() {
     const structuredRaceRunner = formData.trainingBackground === "structured" && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent);
     const structuredMileageFloors = {
       beginner: { "10K": 25, "Half Marathon": 30, "Full Marathon": 45 },
-      intermediate: { "10K": 30, "Half Marathon": 35, "Full Marathon": 50 },
+      intermediate: { "10K": 30, "Half Marathon": 40, "Full Marathon": 50 },
     };
     const structuredMileageFloor = structuredMileageFloors[formData.level]?.[formData.raceEvent] || 0;
     // Continuing runners begin from a volume capable of supporting a real
@@ -282,17 +282,38 @@ export default function CreateTrainingProgramPage() {
           }
       }
 
-      const longRunCaps = { "5K": 7, "10K": 9, "Half Marathon": 18, "Full Marathon": 35 };
+      const peakLongRunRanges = {
+        "Half Marathon": { beginner: [16, 19], intermediate: [19, 22] },
+        "Full Marathon": { beginner: [28, 32], intermediate: [32, 36] },
+      };
+      const configuredPeakLongRun = peakLongRunRanges[formData.raceEvent]?.[formData.level];
+      const targetPeakLongRun = configuredPeakLongRun
+        ? configuredPeakLongRun[0] + ((configuredPeakLongRun[1] - configuredPeakLongRun[0]) * durationProgress)
+        : null;
+      const longRunCaps = {
+        "5K": 7,
+        "10K": 9,
+        "Half Marathon": targetPeakLongRun || 18,
+        "Full Marathon": targetPeakLongRun || 35,
+      };
       const easyRunCaps = { "5K": 4, "10K": 7, "Half Marathon": 21, "Full Marathon": 42 };
       // Long run berada di kisaran 30–40% mileage mingguan sesuai fase.
       const longRunRatio = phase === 2
         ? (w === lastSpecificPrepWeek ? 0.40 : 0.35 + Math.min(0.05, (w / Math.max(1, lastSpecificPrepWeek)) * 0.05))
         : phase === 1 ? 0.30 : phase === 3 ? 0.30 : 0.30;
       // HM tetap dibatasi maksimal 18 km sesuai batas yang ditetapkan.
-      const longRunMileage = Math.min(
+      let longRunMileage = Math.min(
         weeklyMileage * (phase === 1 ? Math.min(longRunRatio, 0.25) : longRunRatio),
         longRunCaps[formData.raceEvent] || weeklyMileage * longRunRatio,
       ) * mesocycle.longRunMultiplier;
+      // Peak long run follows the configured HM/FM range, while keeping a
+      // hard upper bound of 50% weekly mileage at the single peak week.
+      if (formData.raceEvent === "Half Marathon" && formData.level === "beginner" && phase === 1) {
+        longRunMileage = Math.max(6, Math.min(8, longRunMileage));
+      }
+      if (w === lastSpecificPrepWeek && targetPeakLongRun) {
+        longRunMileage = Math.min(targetPeakLongRun, weeklyMileage * 0.5);
+      }
       const beginnerShortTempoWindow = !is5K || !isBeginner || !isShortPreparation || w > weeks - 4;
       const allowInterval = !is5K || !isBeginner || !isShortPreparation;
       const allowTempo = beginnerShortTempoWindow;
@@ -318,10 +339,16 @@ export default function CreateTrainingProgramPage() {
       const danielsVolumeFraction = { T: tempoFraction, I: 0.10, R: 0.05, M: 0.10 };
       const primaryQualityFraction = danielsVolumeFraction[primaryType] || 0.10;
       const secondaryQualityFraction = danielsVolumeFraction[secondaryType] || 0.10;
-      const intervalCap = primaryType === "I" ? Math.min(weeklyMileage * primaryQualityFraction, 10) : weeklyMileage * primaryQualityFraction;
-      const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * secondaryQualityFraction, 10) : Math.min(weeklyMileage * secondaryQualityFraction, 24);
-      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(weeklyMileage * primaryQualityFraction * mesocycle.qualityMultiplier, intervalCap) : 0;
-      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(weeklyMileage * secondaryQualityFraction * mesocycle.qualityMultiplier, tempoCap) : 0;
+      // In Pre-Competition the sole quality session is Tempo, even when the
+      // normal secondary workout would be M Pace. Use the T percentage.
+      const activeTempoFraction = phase === 3 ? tempoFraction : secondaryQualityFraction;
+      // Use the previous actual programmed mileage as the quality budget.
+      // Phase target is only a planning reference and must not inflate T/I/R/M.
+      const qualityMileageBasis = previousWeeklyMileage || weeklyMileage;
+      const intervalCap = primaryType === "I" ? Math.min(qualityMileageBasis * primaryQualityFraction, 10) : qualityMileageBasis * primaryQualityFraction;
+      const tempoCap = secondaryType === "I" && phase !== 3 ? Math.min(qualityMileageBasis * activeTempoFraction, 10) : Math.min(qualityMileageBasis * activeTempoFraction, 24);
+      let intervalMileage = (phase === 2 && !isRecoveryWeek && allowInterval) ? Math.min(qualityMileageBasis * primaryQualityFraction * mesocycle.qualityMultiplier, intervalCap) : 0;
+      let tempoMileage = ((phase === 2 || phase === 3) && !isRecoveryWeek && allowTempo) ? Math.min(qualityMileageBasis * activeTempoFraction * mesocycle.qualityMultiplier, tempoCap) : 0;
       // Weekly mileage is the source of truth. Quality prescriptions are
       // scaled to the available weekly budget instead of inflating the week.
       let appliedThreshold = workoutRecommendation.threshold;
@@ -331,7 +358,7 @@ export default function CreateTrainingProgramPage() {
         const totalMinutes = Math.max(0, Math.round((distanceKm * paceToSeconds(tPace)) / 60));
         return {
           distanceKm: (totalMinutes * 60) / paceToSeconds(tPace),
-          workout: { ...appliedThreshold, blocks: 1, minutes: totalMinutes, label: `${totalMinutes} menit T kontinu (sesuai ${Math.round((distanceKm / weeklyMileage) * 100)}% mileage mingguan)` },
+          workout: { ...appliedThreshold, blocks: 1, minutes: totalMinutes, label: `${totalMinutes} menit T kontinu (sesuai ${Math.round((distanceKm / qualityMileageBasis) * 100)}% mileage mingguan)` },
         };
       };
       const fitMarathonBlocksToBudget = (budgetKm) => {
@@ -346,7 +373,7 @@ export default function CreateTrainingProgramPage() {
         return blocks.length ? blocks : [Number(Math.max(0.5, budgetKm).toFixed(1))];
       };
       if (primaryType === "T" && intervalMileage > 0) {
-        const fitted = fitThresholdToBudget(Math.min(intervalMileage, weeklyMileage * primaryQualityFraction));
+        const fitted = fitThresholdToBudget(Math.min(intervalMileage, qualityMileageBasis * primaryQualityFraction));
         intervalMileage = fitted.distanceKm;
         appliedThreshold = fitted.workout;
       }
@@ -360,7 +387,7 @@ export default function CreateTrainingProgramPage() {
         intervalMileage = repetitions > 0 ? (repetitions * rPlan.repDistance) / 1000 : 0;
       }
       if (secondaryType === "T" && allowSecondaryQuality && tempoMileage > 0) {
-        const fitted = fitThresholdToBudget(Math.min(tempoMileage, weeklyMileage * secondaryQualityFraction));
+        const fitted = fitThresholdToBudget(Math.min(tempoMileage, qualityMileageBasis * secondaryQualityFraction));
         tempoMileage = fitted.distanceKm;
         appliedThreshold = fitted.workout;
       }
@@ -394,11 +421,11 @@ export default function CreateTrainingProgramPage() {
       const easyCapacity = easyDays * (easyRunCaps[formData.raceEvent] || 8);
       const overflowMileage = Math.max(0, easyMileage - easyCapacity);
       easyMileage = Math.min(easyMileage, easyCapacity);
-      // Sisa mileage dialihkan ke sesi kualitas, bukan menambah Easy Run.
-      if (overflowMileage > 0 && !isRecoveryWeek) {
-        if (allowInterval && phase === 2) intervalMileage += overflowMileage * 0.5;
-        else if (allowTempo) tempoMileage += overflowMileage;
-        else easyMileage += overflowMileage;
+      // Sisa target tidak boleh dialihkan ke Tempo/Interval/M-Pace. Quality
+      // volume selalu dibatasi persen stimulusnya; selisih akan terlihat
+      // sebagai perbedaan Target phase vs Total Mileage Program.
+      if (overflowMileage > 0) {
+        easyMileage += Math.min(overflowMileage, easyRunCap * 0.25);
       }
       // Pastikan perubahan distribusi tidak membuat quality session di bawah 1 km.
       if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {

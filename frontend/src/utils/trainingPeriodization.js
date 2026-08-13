@@ -14,7 +14,7 @@ const raceConfig = {
   // Ch. 15 uses repeating workouts rather than a single universal series of phases.
   "Half Marathon": { returningBase: 4, consistentBase: 2, taper: 2, preCompetition: 2 },
   // Ch. 16 uses event-specific marathon approaches; final taper is longer.
-  "Full Marathon": { returningBase: 6, consistentBase: 3, taper: 3, preCompetition: 2 },
+  "Full Marathon": { returningBase: 6, consistentBase: 3, taper: 2, preCompetition: 2 },
 };
 
 /**
@@ -187,7 +187,7 @@ export function getPostRaceRecoverySchedule(raceEvent) {
 
 export function getTaperMultiplier({ raceEvent, taperIndex, taperWeeks }) {
   const profiles = {
-    "5K": [0.75, 0.55], "10K": [0.75, 0.55], "Half Marathon": [0.75, 0.55], "Full Marathon": [0.8, 0.6, 0.4],
+    "5K": [0.75, 0.55], "10K": [0.75, 0.55], "Half Marathon": [0.7, 0.5], "Full Marathon": [0.7, 0.5],
   };
   const profile = profiles[raceEvent] || profiles["10K"];
   const scaledIndex = Math.max(0, profile.length - taperWeeks + taperIndex);
