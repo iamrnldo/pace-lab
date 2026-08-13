@@ -1030,6 +1030,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #54 — Dual mileage display:** menerapkan pilihan produk `Tampilkan keduanya`. Setiap quality session kini menghitung dan menampilkan total sesi (warm-up, main set, recovery jog, cool-down) serta main-set volume terpisah. Header mingguan memakai total running mileage dan menampilkan T/I/R/M main volume; target phase tetap terpisah.
 - **Perubahan #55 — Main-set mileage policy:** sesuai keputusan produk, weekly mileage kini hanya menghitung main set untuk T/I/R/M. Warm-up, recovery jog, dan cool-down tetap ditampilkan sebagai total fisik sesi di detail, tetapi tidak masuk header mileage maupun rolling progression.
 - **Perubahan #56 — Core vs estimated session labels:** kolom jarak untuk sesi kualitas diberi makna `Jarak Inti` pada target pace. Total warm-up/recovery/cool-down diberi label `Estimasi total fisik sesi` karena merupakan perhitungan kasar dan tidak masuk weekly mileage.
+- **Perubahan #57 — Tempo/Interval load policy:** sesuai keputusan produk, Tempo memakai 10% (Beginner/low tier), 12.5% (Intermediate medium), atau 15% (Intermediate high) dari weekly mileage; Interval memakai 10%. Long Run tidak diubah sambil menunggu audit referensi Daniels khusus.
+- **Perubahan #58 — Global Tempo/Interval scope:** mengonfirmasi penerapan policy T/I untuk seluruh nomor lomba, level, dan kondisi latihan 4–6 minggu terakhir. Persentase diterapkan saat sesi T/I memang diizinkan oleh fase, mesocycle, dan aturan keamanan; Base/Recovery/Taper tetap dapat menurunkan atau meniadakan sesi kualitas.
 
 ### 2026-08-10
 

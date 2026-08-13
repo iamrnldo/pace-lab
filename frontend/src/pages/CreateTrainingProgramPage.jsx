@@ -308,8 +308,13 @@ export default function CreateTrainingProgramPage() {
           ? (["Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 3 : 2.5)
           : 2)
         : 1;
-      const danielsVolumeFraction = { T: 0.10, I: 0.08, R: 0.05, M: 0.10 };
-      const primaryQualityFraction = danielsVolumeFraction[primaryType] || 0.08;
+      // Product load policy: Tempo occupies 10–15% by level/tier, while
+      // Interval uses 10%. R and M keep their existing allocations.
+      const tempoFraction = formData.level === "beginner"
+        ? 0.10
+        : ({ low: 0.10, medium: 0.125, high: 0.15 }[mileageTier] || 0.10);
+      const danielsVolumeFraction = { T: tempoFraction, I: 0.10, R: 0.05, M: 0.10 };
+      const primaryQualityFraction = danielsVolumeFraction[primaryType] || 0.10;
       const secondaryQualityFraction = danielsVolumeFraction[secondaryType] || 0.10;
       const intervalCap = primaryType === "I" ? Math.min(weeklyMileage * primaryQualityFraction, 10) : weeklyMileage * primaryQualityFraction;
       const tempoCap = secondaryType === "I" ? Math.min(weeklyMileage * secondaryQualityFraction, 10) : Math.min(weeklyMileage * secondaryQualityFraction, 24);
@@ -339,7 +344,7 @@ export default function CreateTrainingProgramPage() {
         return blocks.length ? blocks : [Number(Math.max(0.5, budgetKm).toFixed(1))];
       };
       if (primaryType === "T" && intervalMileage > 0) {
-        const fitted = fitThresholdToBudget(Math.min(intervalMileage, weeklyMileage * 0.10));
+        const fitted = fitThresholdToBudget(Math.min(intervalMileage, weeklyMileage * primaryQualityFraction));
         intervalMileage = fitted.distanceKm;
         appliedThreshold = fitted.workout;
       }
@@ -353,7 +358,7 @@ export default function CreateTrainingProgramPage() {
         intervalMileage = repetitions > 0 ? (repetitions * rPlan.repDistance) / 1000 : 0;
       }
       if (secondaryType === "T" && allowSecondaryQuality && tempoMileage > 0) {
-        const fitted = fitThresholdToBudget(Math.min(tempoMileage, weeklyMileage * 0.10));
+        const fitted = fitThresholdToBudget(Math.min(tempoMileage, weeklyMileage * secondaryQualityFraction));
         tempoMileage = fitted.distanceKm;
         appliedThreshold = fitted.workout;
       }
