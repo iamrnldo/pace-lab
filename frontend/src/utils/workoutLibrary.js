@@ -114,21 +114,28 @@ export function getMarathonPacePrescription({ raceEvent, mileageTier, phase }) {
 
 // Section 20/21: satu sumber keputusan untuk workout yang direkomendasikan.
 // Validator jarak Q1/Q2 tetap sengaja tidak dilakukan di sini (P0 di-skip).
-export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase, week }) {
+export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase, week, specificProgress = 0, specificWeek = 0 }) {
   const intermediate = level === "intermediate";
   const intermediateTemplate = intermediate ? getIntermediateWorkoutTemplate(raceEvent, week) : null;
   const enduranceRace = ["Half Marathon", "Full Marathon"].includes(raceEvent);
+  // Daniels-inspired endurance progression: Beginner HM/FM introduces a
+  // controlled I session only in the middle of Specific Preparation, then
+  // repeats it every other specific week instead of making I dominant.
+  const beginnerEnduranceInterval = !intermediate && enduranceRace && phase === 2 && specificProgress >= 0.5 && specificWeek % 2 === 0;
+  const beginnerIntervalSession = raceEvent === "Half Marathon"
+    ? { type: "I", activity: "Interval Run", reps: [800, 1000], focus: "aerobic power terkontrol untuk HM Beginner" }
+    : { type: "I", activity: "Interval Run", reps: [600, 800], focus: "aerobic power maintenance untuk Marathon Beginner" };
   const secondarySession = intermediateTemplate?.secondarySession || (enduranceRace && phase >= 2
     ? { type: "M", activity: "Marathon Pace", focus: "blok M Pace sesuai mileage tier" }
     : { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" });
 
   return {
-    primarySession: intermediateTemplate?.primarySession || { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" },
+    primarySession: beginnerEnduranceInterval ? beginnerIntervalSession : (intermediateTemplate?.primarySession || { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" }),
     secondarySession,
     threshold: getThresholdPrescription({ mileageTier, phase }),
     repetition: getRepetitionPrescription({ raceEvent, mileageTier, week }),
     marathonPace: getMarathonPacePrescription({ raceEvent, mileageTier, phase }),
-    recommendedQualitySessions: mileageTier === "low" ? 1 : (intermediate || (enduranceRace && mileageTier === "high")) ? 2 : 1,
+    recommendedQualitySessions: beginnerEnduranceInterval ? 1 : mileageTier === "low" ? 1 : (intermediate || (enduranceRace && mileageTier === "high")) ? 2 : 1,
   };
 }
 

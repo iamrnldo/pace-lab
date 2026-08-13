@@ -215,7 +215,9 @@ export default function CreateTrainingProgramPage() {
       const isIntermediate = formData.level === "intermediate";
       const isIntermediateDistance = ["10K", "Half Marathon"].includes(formData.raceEvent) && isIntermediate;
       const mileageTier = getMileageTier(formData.raceEvent, formData.level, peakMileage);
-      const workoutRecommendation = getWorkoutRecommendation({ raceEvent: formData.raceEvent, level: formData.level, mileageTier, phase, week: w });
+      const specificWeek = phase === 2 ? w - foundationWeeks : 0;
+      const specificProgress = phase === 2 ? specificWeek / Math.max(1, lastSpecificPrepWeek - foundationWeeks) : 0;
+      const workoutRecommendation = getWorkoutRecommendation({ raceEvent: formData.raceEvent, level: formData.level, mileageTier, phase, week: w, specificProgress, specificWeek });
       const qualitySchedule = getSafeQualitySchedule(formData.trainingDays);
       const allowPrimaryQuality = Boolean(qualitySchedule.q1);
       const allowSecondaryQuality = workoutRecommendation.recommendedQualitySessions > 1 && mesocycle.maxQualitySessions > 1 && qualitySchedule.hasSafeSecondary;

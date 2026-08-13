@@ -1032,6 +1032,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #56 — Core vs estimated session labels:** kolom jarak untuk sesi kualitas diberi makna `Jarak Inti` pada target pace. Total warm-up/recovery/cool-down diberi label `Estimasi total fisik sesi` karena merupakan perhitungan kasar dan tidak masuk weekly mileage.
 - **Perubahan #57 — Tempo/Interval load policy:** sesuai keputusan produk, Tempo memakai 10% (Beginner/low tier), 12.5% (Intermediate medium), atau 15% (Intermediate high) dari weekly mileage; Interval memakai 10%. Long Run tidak diubah sambil menunggu audit referensi Daniels khusus.
 - **Perubahan #58 — Global Tempo/Interval scope:** mengonfirmasi penerapan policy T/I untuk seluruh nomor lomba, level, dan kondisi latihan 4–6 minggu terakhir. Persentase diterapkan saat sesi T/I memang diizinkan oleh fase, mesocycle, dan aturan keamanan; Base/Recovery/Taper tetap dapat menurunkan atau meniadakan sesi kualitas.
+- **Perubahan #59 — Beginner HM/FM interval progression:** Beginner HM/FM kini mendapat Interval Run terkontrol secara rutin selang-seling setelah mencapai pertengahan Specific Preparation. HM memakai 800–1000 m dan FM 600–800 m; satu I session menggantikan Tempo pada minggu itu, tanpa menambah Q2, dengan volume I 10% weekly mileage.
 
 ### 2026-08-10
 
