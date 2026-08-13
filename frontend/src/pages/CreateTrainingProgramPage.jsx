@@ -326,7 +326,8 @@ export default function CreateTrainingProgramPage() {
         const repetitions = Math.floor((Number(targetKm) * 1000) / repDistance);
         return { repDistance, repetitions, distanceKm: (repetitions * repDistance) / 1000 };
       };
-      const minimumQualityDistance = structuredRaceRunner
+      const isStructuredEnduranceOrTenK = formData.trainingBackground === "structured" && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent);
+      const minimumQualityDistance = isStructuredEnduranceOrTenK
         ? (formData.level === "intermediate"
           ? (["Half Marathon", "Full Marathon"].includes(formData.raceEvent) ? 3 : 2.5)
           : 2)
@@ -425,7 +426,7 @@ export default function CreateTrainingProgramPage() {
       // volume selalu dibatasi persen stimulusnya; selisih akan terlihat
       // sebagai perbedaan Target phase vs Total Mileage Program.
       if (overflowMileage > 0) {
-        easyMileage += Math.min(overflowMileage, easyRunCap * 0.25);
+        easyMileage += Math.min(overflowMileage, (easyRunCaps[formData.raceEvent] || 8) * 0.25);
       }
       // Pastikan perubahan distribusi tidak membuat quality session di bawah 1 km.
       if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {

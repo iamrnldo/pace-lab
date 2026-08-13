@@ -1040,6 +1040,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #64 — Fixed HM mileage progression:** HM Beginner sekarang menggunakan baseline 24 km/minggu dan target peak 40 km/minggu; HM Intermediate baseline 40 km/minggu dan peak 60 km/minggu. Kondisi latihan 4–6 minggu terakhir tetap mengatur panjang Base/Specific serta quality load, bukan mengubah rentang mileage HM yang ditetapkan.
 - **Perubahan #65 — Duration-adaptive HM Intermediate:** HM Intermediate kini memiliki baseline 30–40 km/minggu dan peak 40–60 km/minggu menurut durasi persiapan 3–5 bulan. Persiapan pendek menghasilkan 30→40 km, persiapan panjang 40→60 km; nilai di antaranya diinterpolasi bertahap.
 - **Perubahan #66 — Final HM/FM peak & background model:** HM Beginner peak 32–48 km, HM Intermediate 40–60 km, FM Beginner 50–64 km, FM Intermediate 64–88 km. Durasi memilih nilai dalam rentang peak; kondisi latihan menentukan baseline sebagai 60% (returning), 70% (consistent), atau 80% (structured) dari peak. Long Run peak tetap mengikuti range per level yang diset sebelumnya.
+- **Perubahan #67 — Generator runtime fix:** memperbaiki referensi variabel `structuredRaceRunner` yang sudah tidak digunakan setelah pembaruan model HM/FM. Validasi minimum quality distance kini memakai kondisi `isStructuredEnduranceOrTenK`, sehingga halaman Create Training Program kembali dapat dirender.
+- **Perubahan #68 — Generator overflow runtime fix:** memperbaiki referensi `easyRunCap` di luar scope pada perhitungan overflow mileage, yang menyebabkan blue screen ketika membuat program. Perhitungan kini memakai cap Easy Run berdasarkan race event secara langsung.
 
 ### 2026-08-10
 
