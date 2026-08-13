@@ -170,9 +170,9 @@ export default function CreateTrainingProgramPage() {
     const peakRanges = {
       "5K": { beginner: [16, 24], intermediate: [16, 24] },
       "10K": { beginner: [25, 30], intermediate: [25, 30] },
-      "Half Marathon": { beginner: [24, 40], intermediate: [40, 60] },
+      "Half Marathon": { beginner: [32, 48], intermediate: [40, 60] },
       "Full Marathon": {
-        beginner: [40, 64],
+        beginner: [50, 64],
         intermediate: [64, 88],
       },
     };
@@ -190,20 +190,20 @@ export default function CreateTrainingProgramPage() {
     const calculatedPeakMileage = peakMin + (peakMax - peakMin) * durationProgress;
     // Mileage awal general preparation harus berada di bawah peak.
     // Peak 5K 16–24 km hanya dicapai di akhir Specific Preparation.
-    const structuredRaceRunner = formData.trainingBackground === "structured" && ["10K", "Half Marathon", "Full Marathon"].includes(formData.raceEvent);
-    const structuredMileageFloors = {
-      beginner: { "10K": 25, "Half Marathon": 30, "Full Marathon": 45 },
-      intermediate: { "10K": 30, "Half Marathon": 40, "Full Marathon": 50 },
-    };
-    const structuredMileageFloor = structuredMileageFloors[formData.level]?.[formData.raceEvent] || 0;
-    // Continuing runners begin from a volume capable of supporting a real
-    // quality main set. Intermediate earns a higher floor than Beginner.
-    const peakMileage = structuredRaceRunner
-      ? Math.max(calculatedPeakMileage, structuredMileageFloor)
+    // Duration selects a point inside each peak range. Training background
+    // selects a conservative/normal/advanced starting fraction of that peak.
+    const structuredTenKRunner = formData.trainingBackground === "structured" && formData.raceEvent === "10K";
+    const structuredTenKFloor = formData.level === "intermediate" ? 30 : 25;
+    const peakMileage = structuredTenKRunner
+      ? Math.max(calculatedPeakMileage, structuredTenKFloor)
       : calculatedPeakMileage;
-    const startMileage = structuredRaceRunner
-      ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredMileageFloor)
-      : Math.min(baseMileage * 0.6, peakMileage * 0.6);
+    const backgroundStartFraction = { returning: 0.60, consistent: 0.70, structured: 0.80 }[formData.trainingBackground] || 0.70;
+    const enduranceRace = ["Half Marathon", "Full Marathon"].includes(formData.raceEvent);
+    const startMileage = enduranceRace
+      ? peakMileage * backgroundStartFraction
+      : structuredTenKRunner
+        ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredTenKFloor)
+        : Math.min(baseMileage * 0.6, peakMileage * 0.6);
     let previousWeeklyMileage = null;
     const recentWeeklyMileages = [];
 

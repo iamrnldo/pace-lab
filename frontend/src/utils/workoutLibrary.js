@@ -2,9 +2,9 @@
 export const MILEAGE_TIERS = {
   "5K": { low: 16, medium: 20, high: 24 },
   "10K": { low: 25, medium: 27.5, high: 30 },
-  "Half Marathon Beginner": { low: 24, medium: 32, high: 40 },
+  "Half Marathon Beginner": { low: 32, medium: 40, high: 48 },
   "Half Marathon Intermediate": { low: 40, medium: 50, high: 60 },
-  "Full Marathon Beginner": { low: 40, medium: 52, high: 64 },
+  "Full Marathon Beginner": { low: 50, medium: 57, high: 64 },
   "Full Marathon Intermediate": { low: 64, medium: 76, high: 88 },
 };
 
