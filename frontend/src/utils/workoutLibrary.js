@@ -1,7 +1,9 @@
 // Daniels-inspired workout library. VDOT is intentionally not used yet.
 export const MILEAGE_TIERS = {
-  "5K": { low: 16, medium: 20, high: 24 },
-  "10K": { low: 25, medium: 27.5, high: 30 },
+  "5K Beginner": { low: 16, medium: 20.5, high: 25 },
+  "5K Intermediate": { low: 24, medium: 29.5, high: 35 },
+  "10K Beginner": { low: 25, medium: 30, high: 35 },
+  "10K Intermediate": { low: 30, medium: 35, high: 40 },
   "Half Marathon Beginner": { low: 32, medium: 40, high: 48 },
   "Half Marathon Intermediate": { low: 40, medium: 50, high: 60 },
   "Full Marathon Beginner": { low: 50, medium: 57, high: 64 },
@@ -64,9 +66,7 @@ export const WORKOUT_LIBRARY = {
 };
 
 export function getMileageTier(raceEvent, level, peakMileage) {
-  const key = ["Half Marathon", "Full Marathon"].includes(raceEvent)
-    ? `${raceEvent} ${level === "intermediate" ? "Intermediate" : "Beginner"}`
-    : raceEvent;
+  const key = `${raceEvent} ${level === "intermediate" ? "Intermediate" : "Beginner"}`;
   const tier = MILEAGE_TIERS[key];
   if (!tier) return "medium";
   if (peakMileage <= tier.low + (tier.medium - tier.low) / 2) return "low";

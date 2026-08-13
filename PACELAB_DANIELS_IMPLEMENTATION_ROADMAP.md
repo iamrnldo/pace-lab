@@ -1043,6 +1043,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #67 — Generator runtime fix:** memperbaiki referensi variabel `structuredRaceRunner` yang sudah tidak digunakan setelah pembaruan model HM/FM. Validasi minimum quality distance kini memakai kondisi `isStructuredEnduranceOrTenK`, sehingga halaman Create Training Program kembali dapat dirender.
 - **Perubahan #68 — Generator overflow runtime fix:** memperbaiki referensi `easyRunCap` di luar scope pada perhitungan overflow mileage, yang menyebabkan blue screen ketika membuat program. Perhitungan kini memakai cap Easy Run berdasarkan race event secara langsung.
 - **Perubahan #69 — Universal Tempo progression:** Tempo kini selalu naik dari 10% pada awal Specific Preparation menuju 15% pada akhir Specific Preparation untuk semua race, level, dan kondisi latihan 4–6 minggu terakhir. Tier tidak lagi mengubah persentase T; taper tetap mengurangi total melalui mesocycle multiplier.
+- **Perubahan #70 — 5K/10K peak & Long Run reference:** menerapkan 5K Beginner 16–25 km / L 5–7 km, 5K Intermediate 24–35 km / L 8–10 km, 10K Beginner 25–35 km / L 9–11 km, dan 10K Intermediate 30–40 km / L 12–15 km. Durasi memilih peak dalam range dan background 4–6 minggu menentukan baseline 60/70/80% peak untuk semua race.
 
 ### 2026-08-10
 

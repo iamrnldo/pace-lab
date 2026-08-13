@@ -104,8 +104,8 @@ export default function CreateTrainingProgramPage() {
 
     // 1. MILLEAGE SCIENCE MAP
     const mileageMap = {
-      "5K": { beginner: 16, intermediate: 16 },
-      "10K": { beginner: 25, intermediate: 25 },
+      "5K": { beginner: 16, intermediate: 24 },
+      "10K": { beginner: 25, intermediate: 30 },
       "Half Marathon": { beginner: 24, intermediate: 40 },
       "Full Marathon": { beginner: 30, intermediate: 50 },
     };
@@ -168,8 +168,8 @@ export default function CreateTrainingProgramPage() {
 
     // Target peak mileage dicapai di akhir fase Specific Preparation.
     const peakRanges = {
-      "5K": { beginner: [16, 24], intermediate: [16, 24] },
-      "10K": { beginner: [25, 30], intermediate: [25, 30] },
+      "5K": { beginner: [16, 25], intermediate: [24, 35] },
+      "10K": { beginner: [25, 35], intermediate: [30, 40] },
       "Half Marathon": { beginner: [32, 48], intermediate: [40, 60] },
       "Full Marathon": {
         beginner: [50, 64],
@@ -191,19 +191,10 @@ export default function CreateTrainingProgramPage() {
     // Mileage awal general preparation harus berada di bawah peak.
     // Peak 5K 16–24 km hanya dicapai di akhir Specific Preparation.
     // Duration selects a point inside each peak range. Training background
-    // selects a conservative/normal/advanced starting fraction of that peak.
-    const structuredTenKRunner = formData.trainingBackground === "structured" && formData.raceEvent === "10K";
-    const structuredTenKFloor = formData.level === "intermediate" ? 30 : 25;
-    const peakMileage = structuredTenKRunner
-      ? Math.max(calculatedPeakMileage, structuredTenKFloor)
-      : calculatedPeakMileage;
+    // selects the starting baseline for every race and level.
+    const peakMileage = calculatedPeakMileage;
     const backgroundStartFraction = { returning: 0.60, consistent: 0.70, structured: 0.80 }[formData.trainingBackground] || 0.70;
-    const enduranceRace = ["Half Marathon", "Full Marathon"].includes(formData.raceEvent);
-    const startMileage = enduranceRace
-      ? peakMileage * backgroundStartFraction
-      : structuredTenKRunner
-        ? Math.max(Math.min(baseMileage * 0.6, peakMileage * 0.6), structuredTenKFloor)
-        : Math.min(baseMileage * 0.6, peakMileage * 0.6);
+    const startMileage = peakMileage * backgroundStartFraction;
     let previousWeeklyMileage = null;
     const recentWeeklyMileages = [];
 
@@ -283,6 +274,8 @@ export default function CreateTrainingProgramPage() {
       }
 
       const peakLongRunRanges = {
+        "5K": { beginner: [5, 7], intermediate: [8, 10] },
+        "10K": { beginner: [9, 11], intermediate: [12, 15] },
         "Half Marathon": { beginner: [16, 19], intermediate: [19, 22] },
         "Full Marathon": { beginner: [28, 32], intermediate: [32, 36] },
       };
@@ -291,8 +284,8 @@ export default function CreateTrainingProgramPage() {
         ? configuredPeakLongRun[0] + ((configuredPeakLongRun[1] - configuredPeakLongRun[0]) * durationProgress)
         : null;
       const longRunCaps = {
-        "5K": 7,
-        "10K": 9,
+        "5K": targetPeakLongRun || 7,
+        "10K": targetPeakLongRun || 11,
         "Half Marathon": targetPeakLongRun || 18,
         "Full Marathon": targetPeakLongRun || 35,
       };
