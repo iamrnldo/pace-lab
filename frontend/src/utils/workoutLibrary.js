@@ -138,7 +138,9 @@ export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase,
     threshold: getThresholdPrescription({ mileageTier, phase }),
     repetition: getRepetitionPrescription({ raceEvent, mileageTier, week }),
     marathonPace: getMarathonPacePrescription({ raceEvent, mileageTier, phase }),
-    recommendedQualitySessions: beginnerEnduranceInterval ? 1 : mileageTier === "low" ? 1 : (intermediate || (enduranceRace && mileageTier === "high")) ? 2 : 1,
+    // Beginner keeps one quality stimulus; Intermediate earns a second
+    // Q session at medium/high mileage when P0 spacing permits it.
+    recommendedQualitySessions: beginnerEnduranceInterval || !intermediate || mileageTier === "low" ? 1 : 2,
   };
 }
 

@@ -193,7 +193,11 @@ export default function CreateTrainingProgramPage() {
     // Duration selects a point inside each peak range. Training background
     // selects the starting baseline for every race and level.
     const peakMileage = calculatedPeakMileage;
-    const backgroundStartFraction = { returning: 0.60, consistent: 0.70, structured: 0.80 }[formData.trainingBackground] || 0.70;
+    const backgroundStartFractions = {
+      beginner: { returning: 0.60, consistent: 0.70, structured: 0.80 },
+      intermediate: { returning: 0.65, consistent: 0.75, structured: 0.90 },
+    };
+    const backgroundStartFraction = backgroundStartFractions[formData.level]?.[formData.trainingBackground] || 0.70;
     const startMileage = peakMileage * backgroundStartFraction;
     let previousWeeklyMileage = null;
     const recentWeeklyMileages = [];
@@ -204,6 +208,9 @@ export default function CreateTrainingProgramPage() {
       const isTaper = phaseInfo.isTaper;
       const mesocycle = getMesocycle({ productPhase: phaseInfo.productPhase, raceEvent: formData.raceEvent, week: w, totalWeeks: weeks, trainingBackground: formData.trainingBackground, level: formData.level });
       const isIntermediate = formData.level === "intermediate";
+      const trainingLoadProfile = isIntermediate
+        ? { label: formData.trainingBackground === "structured" ? "Intermediate / Structured Load" : "Intermediate Load", maxQualitySessions: 2, notes: "Volume awal lebih tinggi, Q2 tersedia bila aman, dan workout lebih kompleks." }
+        : { label: "Beginner Load", maxQualitySessions: 1, notes: "Satu quality stimulus, progression konservatif, dan recovery lebih panjang." };
       const isIntermediateDistance = ["10K", "Half Marathon"].includes(formData.raceEvent) && isIntermediate;
       const mileageTier = getMileageTier(formData.raceEvent, formData.level, peakMileage);
       const specificWeek = phase === 2 ? w - foundationWeeks : 0;
@@ -350,11 +357,24 @@ export default function CreateTrainingProgramPage() {
       let appliedThreshold = workoutRecommendation.threshold;
       let appliedMarathonBlocks = workoutRecommendation.marathonPace.blocks;
       const fitThresholdToBudget = (budgetKm) => {
-        const distanceKm = Math.min(thresholdPrescriptionDistance, Math.max(0, budgetKm));
-        const totalMinutes = Math.max(0, Math.round((distanceKm * paceToSeconds(tPace)) / 60));
+        const distanceKm = Math.max(0, budgetKm);
+        const totalSeconds = Math.max(0, Math.round(distanceKm * paceToSeconds(tPace)));
+        // Pre-Competition/Taper uses two controlled blocks; earlier phases can
+        // stay continuous unless the library already prescribes intervals.
+        const blocks = phase >= 3 && totalSeconds >= 600 ? 2 : 1;
+        const blockSeconds = Math.floor(totalSeconds / blocks);
+        const formatDuration = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+        const fittedDistance = (blockSeconds * blocks) / paceToSeconds(tPace);
         return {
-          distanceKm: (totalMinutes * 60) / paceToSeconds(tPace),
-          workout: { ...appliedThreshold, blocks: 1, minutes: totalMinutes, label: `${totalMinutes} menit T kontinu (sesuai ${Math.round((distanceKm / qualityMileageBasis) * 100)}% mileage mingguan)` },
+          distanceKm: fittedDistance,
+          workout: {
+            ...appliedThreshold,
+            blocks,
+            minutes: Math.floor(blockSeconds / 60),
+            label: blocks > 1
+              ? `${blocks} × ${formatDuration(blockSeconds)} menit T (sesuai ${Math.round((fittedDistance / qualityMileageBasis) * 100)}% mileage mingguan)`
+              : `${formatDuration(blockSeconds)} menit T kontinu (sesuai ${Math.round((fittedDistance / qualityMileageBasis) * 100)}% mileage mingguan)`,
+          },
         };
       };
       const fitMarathonBlocksToBudget = (budgetKm) => {
@@ -414,14 +434,22 @@ export default function CreateTrainingProgramPage() {
         tempoMileage = 0;
       }
       const easyDays = Math.max(1, formData.trainingDays.filter((d) => d !== "Minggu" && d !== "Sabtu").length - ((intervalMileage > 0 ? 1 : 0) + (tempoMileage > 0 ? 1 : 0)));
-      const easyCapacity = easyDays * (easyRunCaps[formData.raceEvent] || 8);
+      // Easy Run must stay below Long Run. Any excess is assigned to an
+      // existing quality session; if no quality session exists it extends L.
+      const perEasyRunCap = Math.min(easyRunCaps[formData.raceEvent] || 8, Math.max(2, longRunMileage * 0.8));
+      const easyCapacity = easyDays * perEasyRunCap;
       const overflowMileage = Math.max(0, easyMileage - easyCapacity);
       easyMileage = Math.min(easyMileage, easyCapacity);
-      // Sisa target tidak boleh dialihkan ke Tempo/Interval/M-Pace. Quality
-      // volume selalu dibatasi persen stimulusnya; selisih akan terlihat
-      // sebagai perbedaan Target phase vs Total Mileage Program.
       if (overflowMileage > 0) {
-        easyMileage += Math.min(overflowMileage, (easyRunCaps[formData.raceEvent] || 8) * 0.25);
+        if (tempoMileage >= minimumQualityDistance) {
+          const fitted = fitThresholdToBudget(tempoMileage + overflowMileage);
+          tempoMileage = fitted.distanceKm;
+          appliedThreshold = fitted.workout;
+        } else if (intervalMileage >= minimumQualityDistance) {
+          intervalMileage += overflowMileage;
+        } else {
+          longRunMileage += overflowMileage;
+        }
       }
       // Pastikan perubahan distribusi tidak membuat quality session di bawah 1 km.
       if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {
@@ -442,6 +470,7 @@ export default function CreateTrainingProgramPage() {
         productPhase: phaseInfo.productPhase,
         isTaper,
         trainingBackground: formData.trainingBackground,
+        trainingLoadProfile,
         qualitySchedule: { q1: qualitySchedule.q1, q2: qualitySchedule.q2, note: qualitySchedule.reason },
         mesocycle,
         recoveryNote: isRecoveryWeek ? recoveryProfile.note : null,
@@ -545,8 +574,8 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
             } else {
               activity = "Tempo Run"; pace = tPace; distance = tempoMileage.toFixed(1);
               const threshold = appliedThreshold;
-              details = `W-up: 12m Easy | Main: ${threshold.label} @ T-Pace (${tPace}/km) | Recovery: ${threshold.recovery} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | C-down: 8m Recovery jog.`;
-              if (phase === 3) details = "(Tapering) Menjaga intensitas. " + details;
+              details = `Warm-up: 12 menit Easy | Program inti: ${threshold.label} @ T-Pace (${tPace}/km) | Recovery antarblok: ${threshold.blocks > 1 ? "2 menit jog ringan" : "tanpa jeda"} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | Cool-Down: 8–10 menit Easy jog.`;
+              if (phase === 3) details = "(Pre-Competition) Menjaga intensitas dengan volume terkontrol. " + details;
             }
           } else if (day === q2 && tempoMileage > 0 && (phase === 2 || phase === 3) && allowSecondaryQuality) {
              const secondarySession = workoutRecommendation.secondarySession;
@@ -571,7 +600,10 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
             const easyRunCaps = { "5K": 6.0, "10K": 8.0, "Half Marathon": 12.0, "Full Marathon": 16.0 };
             const easyRunCap = easyRunCaps[formData.raceEvent] || 8.0;
             const easyRunDistance = easyMileage / Math.max(1, formData.trainingDays.length - 1 - qualityDaysCount);
-            distance = Math.min(easyRunDistance, easyRunCap, longRunMileage).toFixed(1);
+            // Long Run must remain the longest scheduled run of the week.
+            // Easy runs are capped at 80% of Long Run distance (minimum 2 km).
+            const easyVsLongRunCap = Math.max(2, longRunMileage * 0.8);
+            distance = Math.min(easyRunDistance, easyRunCap, easyVsLongRunCap).toFixed(1);
           }
           const validatedWorkout = ensureWorkoutMinimums({ activity, distance, details });
           return { day, date, activity, pace, distance: validatedWorkout.distance + " Km", details: validatedWorkout.details };
@@ -700,7 +732,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
             <div key={week.week} className="card-retro overflow-hidden p-6 animate-fade-in">
               <div className="flex justify-between items-center mb-6">
                 <div><span className="font-retro text-2xl text-retro-white uppercase">MINGGU {week.week}</span><p className="font-mono text-[10px] text-retro-white/50 mt-1 uppercase tracking-widest">Total Mileage Program: {week.mileage} Km</p>{week.targetMileage && week.targetMileage !== week.mileage && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Target phase: {week.targetMileage} Km</p>}{week.intensityVolumes && <p className="font-mono text-[9px] text-retro-white/35 mt-1">Main quality: T {week.intensityVolumes.T.toFixed(1)} · I {week.intensityVolumes.I.toFixed(1)} · R {week.intensityVolumes.R.toFixed(1)} · M {week.intensityVolumes.M.toFixed(1)} Km</p>}<p className="font-mono text-[10px] text-retro-white/40 mt-1">{week.startDate || ""} — {week.days?.[6]?.date || ""}</p></div>
-                <div className="text-right"><span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? `RECOVERY · ${week.mesocycle?.name || ""}` : `${week.productPhase || (week.phase === 1 ? 'General Preparation' : week.phase === 2 ? 'Specific Preparation' : week.phase === 3 ? 'Pre Competition' : 'Competition')}`}</span>{week.mesocycle && <p className="mt-2 font-mono text-[9px] text-retro-white/40">{week.mesocycle.name}: {week.mesocycle.objective}</p>}{week.recoveryNote && <p className="mt-1 font-mono text-[9px] text-retro-white/40">{week.recoveryNote}</p>}</div>
+                <div className="text-right"><span className="font-mono text-[10px] text-retro-green px-3 py-1 border border-retro-green/30 uppercase">{week.isRecoveryWeek ? `RECOVERY · ${week.mesocycle?.name || ""}` : `${week.productPhase || (week.phase === 1 ? 'General Preparation' : week.phase === 2 ? 'Specific Preparation' : week.phase === 3 ? 'Pre Competition' : 'Competition')}`}</span>{week.mesocycle && <p className="mt-2 font-mono text-[9px] text-retro-white/40">{week.mesocycle.name}: {week.mesocycle.objective}</p>}{week.trainingLoadProfile && <p className="mt-1 font-mono text-[9px] text-retro-white/35">{week.trainingLoadProfile.label} — {week.trainingLoadProfile.notes}</p>}{week.recoveryNote && <p className="mt-1 font-mono text-[9px] text-retro-white/40">{week.recoveryNote}</p>}</div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left min-w-[800px]">
