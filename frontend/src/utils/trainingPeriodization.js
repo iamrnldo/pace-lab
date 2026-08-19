@@ -22,15 +22,16 @@ const raceConfig = {
  * between them. That intervening day resolves to Easy Run or Rest, protecting
  * recovery. Weekend Long Run keeps its own placement rule in the generator.
  */
-export function getSafeQualitySchedule(trainingDays) {
+export function getSafeQualitySchedule(trainingDays, { minGapDays = 2, preferLatest = false } = {}) {
   const orderedDays = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"];
   const candidates = trainingDays
     .filter((day) => !["Sabtu", "Minggu"].includes(day))
     .sort((a, b) => orderedDays.indexOf(a) - orderedDays.indexOf(b));
   const q1 = candidates[0] || null;
-  const q2 = q1
-    ? candidates.find((day) => orderedDays.indexOf(day) - orderedDays.indexOf(q1) >= 2) || null
-    : null;
+  const eligibleQ2 = q1
+    ? candidates.filter((day) => orderedDays.indexOf(day) - orderedDays.indexOf(q1) >= minGapDays)
+    : [];
+  const q2 = eligibleQ2.length ? (preferLatest ? eligibleQ2[eligibleQ2.length - 1] : eligibleQ2[0]) : null;
   return {
     q1,
     q2,

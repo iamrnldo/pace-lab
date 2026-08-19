@@ -140,12 +140,18 @@ export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase,
   // repeats it every other specific week instead of making I dominant.
   const beginnerEnduranceInterval = !intermediate && enduranceRace && phase === 2 && specificProgress >= 0.5 && specificWeek % 2 === 0;
   const speedDistances = getSpeedWorkoutDistances(raceEvent, phase);
+  const beginnerSecondQuality = !intermediate && phase === 2 && specificProgress >= 0.5;
+  const beginnerSecondarySession = !enduranceRace
+    ? { type: "I", activity: "Interval Run", reps: speedDistances, focus: "interval terkontrol setelah recovery Beginner" }
+    : { type: "M", activity: "Marathon Pace", focus: "blok M Pace terkontrol setelah recovery Beginner" };
   const beginnerIntervalSession = raceEvent === "Half Marathon"
     ? { type: "I", activity: "Interval Run", reps: speedDistances, focus: "aerobic power terkontrol untuk HM Beginner" }
     : { type: "I", activity: "Interval Run", reps: speedDistances, focus: "aerobic power maintenance untuk Marathon Beginner" };
-  const secondarySession = intermediateTemplate?.secondarySession || (enduranceRace && phase >= 2
-    ? { type: "M", activity: "Marathon Pace", focus: "blok M Pace sesuai mileage tier" }
-    : { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" });
+  const secondarySession = intermediateTemplate?.secondarySession || (beginnerSecondQuality
+    ? beginnerSecondarySession
+    : (enduranceRace && phase >= 2
+      ? { type: "M", activity: "Marathon Pace", focus: "blok M Pace sesuai mileage tier" }
+      : { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" }));
 
   const rawPrimarySession = beginnerEnduranceInterval ? beginnerIntervalSession : (intermediateTemplate?.primarySession || { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" });
   const primarySession = ["I", "R"].includes(rawPrimarySession.type) ? { ...rawPrimarySession, reps: speedDistances } : rawPrimarySession;
@@ -161,7 +167,7 @@ export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase,
     marathonPace: getMarathonPacePrescription({ raceEvent, mileageTier, phase }),
     // Beginner keeps one quality stimulus; Intermediate earns a second
     // Q session at medium/high mileage when P0 spacing permits it.
-    recommendedQualitySessions: beginnerEnduranceInterval || !intermediate || mileageTier === "low" ? 1 : 2,
+    recommendedQualitySessions: beginnerEnduranceInterval ? 1 : beginnerSecondQuality ? 2 : (!intermediate || mileageTier === "low" ? 1 : 2),
   };
 }
 

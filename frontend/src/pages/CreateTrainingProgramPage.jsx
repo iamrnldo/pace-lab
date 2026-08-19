@@ -217,7 +217,10 @@ export default function CreateTrainingProgramPage() {
       const specificWeek = phase === 2 ? w - foundationWeeks : 0;
       const specificProgress = phase === 2 ? specificWeek / Math.max(1, lastSpecificPrepWeek - foundationWeeks) : 0;
       const workoutRecommendation = getWorkoutRecommendation({ raceEvent: formData.raceEvent, level: formData.level, mileageTier, phase, week: w, specificProgress, specificWeek });
-      const qualitySchedule = getSafeQualitySchedule(formData.trainingDays);
+      const qualitySchedule = getSafeQualitySchedule(formData.trainingDays, {
+        minGapDays: isBeginner ? 3 : 2,
+        preferLatest: isBeginner,
+      });
       const allowPrimaryQuality = Boolean(qualitySchedule.q1);
       const allowSecondaryQuality = workoutRecommendation.recommendedQualitySessions > 1 && mesocycle.maxQualitySessions > 1 && qualitySchedule.hasSafeSecondary;
       // Tier selects workout complexity and number of Q sessions. Volume of a
