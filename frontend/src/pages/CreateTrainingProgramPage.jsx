@@ -297,10 +297,9 @@ export default function CreateTrainingProgramPage() {
         "Full Marathon": targetPeakLongRun || 35,
       };
       const easyRunCaps = { "5K": 4, "10K": 7, "Half Marathon": 21, "Full Marathon": 42 };
-      // Long run berada di kisaran 30–40% mileage mingguan sesuai fase.
-      const longRunRatio = phase === 2
-        ? (w === lastSpecificPrepWeek ? 0.40 : 0.35 + Math.min(0.05, (w / Math.max(1, lastSpecificPrepWeek)) * 0.05))
-        : phase === 1 ? 0.30 : phase === 3 ? 0.30 : 0.30;
+      // Core weekly allocation policy: Long Run receives 30% of weekly
+      // mileage; taper/recovery still reduce it through mesocycle rules.
+      const longRunRatio = 0.30;
       // HM tetap dibatasi maksimal 18 km sesuai batas yang ditetapkan.
       let longRunMileage = Math.min(
         weeklyMileage * (phase === 1 ? Math.min(longRunRatio, 0.25) : longRunRatio),
@@ -378,15 +377,13 @@ export default function CreateTrainingProgramPage() {
         };
       };
       const fitMarathonBlocksToBudget = (budgetKm) => {
-        let remaining = Math.max(0, budgetKm);
-        const blocks = [];
-        workoutRecommendation.marathonPace.blocks.forEach((block) => {
-          if (remaining <= 0) return;
-          const fittedBlock = Math.min(block, remaining);
-          if (fittedBlock >= 0.5) blocks.push(Number(fittedBlock.toFixed(1)));
-          remaining -= fittedBlock;
-        });
-        return blocks.length ? blocks : [Number(Math.max(0.5, budgetKm).toFixed(1))];
+        const blockCount = Math.max(1, workoutRecommendation.marathonPace.blocks.length);
+        const total = Math.max(0, budgetKm);
+        const perBlock = Number((total / blockCount).toFixed(1));
+        const blocks = Array.from({ length: blockCount }, () => perBlock);
+        // Correct final block for decimal rounding so displayed blocks equal budget.
+        blocks[blocks.length - 1] = Number((total - blocks.slice(0, -1).reduce((sum, block) => sum + block, 0)).toFixed(1));
+        return blocks.filter((block) => block > 0);
       };
       if (primaryType === "T" && intervalMileage > 0) {
         const fitted = fitThresholdToBudget(Math.min(intervalMileage, qualityMileageBasis * primaryQualityFraction));
@@ -440,16 +437,12 @@ export default function CreateTrainingProgramPage() {
       const easyCapacity = easyDays * perEasyRunCap;
       const overflowMileage = Math.max(0, easyMileage - easyCapacity);
       easyMileage = Math.min(easyMileage, easyCapacity);
+      // Easy mileage remains the remainder. It is never redistributed into
+      // Tempo/Interval/M-Pace, so quality percentages stay exact. If available
+      // easy days cannot absorb the target while remaining below Long Run, the
+      // displayed Total Mileage Program stays below Target phase transparently.
       if (overflowMileage > 0) {
-        if (tempoMileage >= minimumQualityDistance) {
-          const fitted = fitThresholdToBudget(tempoMileage + overflowMileage);
-          tempoMileage = fitted.distanceKm;
-          appliedThreshold = fitted.workout;
-        } else if (intervalMileage >= minimumQualityDistance) {
-          intervalMileage += overflowMileage;
-        } else {
-          longRunMileage += overflowMileage;
-        }
+        // Keep the unallocated amount out of quality sessions by design.
       }
       // Pastikan perubahan distribusi tidak membuat quality session di bawah 1 km.
       if (intervalMileage > 0 && intervalMileage < minimumQualityDistance) {

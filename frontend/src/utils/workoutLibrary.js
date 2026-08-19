@@ -54,6 +54,20 @@ export const INTERMEDIATE_RACE_TEMPLATES = {
   },
 };
 
+
+// User-provided speed-session distance progression by race group and phase.
+export const SPEED_WORKOUT_DISTANCES = {
+  "5K": { GP: [200, 400], SP: [400, 600, 800, 1000], PC: [600, 800, 1000, 1200, 1600], MC: [400] },
+  "10K": { GP: [200, 400], SP: [400, 600, 800, 1000], PC: [600, 800, 1000, 1200, 1600], MC: [400] },
+  "Half Marathon": { GP: [1000, 1200, 1600], SP: [1000, 1200, 1600, 2000], PC: [1000, 1200, 1600, 2000, 2400], MC: [1000] },
+  "Full Marathon": { GP: [1000, 1600, 2000], SP: [1000, 1600, 2000, 2400], PC: [1000, 1600, 2000, 2400, 3200], MC: [1000] },
+};
+
+export function getSpeedWorkoutDistances(raceEvent, phase) {
+  const phaseCode = ({ 1: "GP", 2: "SP", 3: "PC", 4: "MC" })[phase] || "SP";
+  return SPEED_WORKOUT_DISTANCES[raceEvent]?.[phaseCode] || SPEED_WORKOUT_DISTANCES["5K"].SP;
+}
+
 export const WORKOUT_LIBRARY = {
   "5K Beginner": ["E Run", "L Run", "T Run"],
   "5K Intermediate": ["E Run", "L Run", "T Run", "I Run", "R Run"],
@@ -125,18 +139,25 @@ export function getWorkoutRecommendation({ raceEvent, level, mileageTier, phase,
   // controlled I session only in the middle of Specific Preparation, then
   // repeats it every other specific week instead of making I dominant.
   const beginnerEnduranceInterval = !intermediate && enduranceRace && phase === 2 && specificProgress >= 0.5 && specificWeek % 2 === 0;
+  const speedDistances = getSpeedWorkoutDistances(raceEvent, phase);
   const beginnerIntervalSession = raceEvent === "Half Marathon"
-    ? { type: "I", activity: "Interval Run", reps: [800, 1000], focus: "aerobic power terkontrol untuk HM Beginner" }
-    : { type: "I", activity: "Interval Run", reps: [600, 800], focus: "aerobic power maintenance untuk Marathon Beginner" };
+    ? { type: "I", activity: "Interval Run", reps: speedDistances, focus: "aerobic power terkontrol untuk HM Beginner" }
+    : { type: "I", activity: "Interval Run", reps: speedDistances, focus: "aerobic power maintenance untuk Marathon Beginner" };
   const secondarySession = intermediateTemplate?.secondarySession || (enduranceRace && phase >= 2
     ? { type: "M", activity: "Marathon Pace", focus: "blok M Pace sesuai mileage tier" }
     : { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" });
 
+  const rawPrimarySession = beginnerEnduranceInterval ? beginnerIntervalSession : (intermediateTemplate?.primarySession || { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" });
+  const primarySession = ["I", "R"].includes(rawPrimarySession.type) ? { ...rawPrimarySession, reps: speedDistances } : rawPrimarySession;
+  const speedSecondarySession = secondarySession?.type === "I" ? { ...secondarySession, reps: speedDistances } : secondarySession;
+  const baseRepetition = getRepetitionPrescription({ raceEvent, mileageTier, week });
+
   return {
-    primarySession: beginnerEnduranceInterval ? beginnerIntervalSession : (intermediateTemplate?.primarySession || { type: "T", activity: "Tempo Run", focus: "threshold terkontrol" }),
-    secondarySession,
+    primarySession,
+    secondarySession: speedSecondarySession,
+    speedDistances,
     threshold: getThresholdPrescription({ mileageTier, phase }),
-    repetition: getRepetitionPrescription({ raceEvent, mileageTier, week }),
+    repetition: primarySession.type === "R" ? { ...baseRepetition, repDistance: speedDistances[(week - 1) % speedDistances.length] } : baseRepetition,
     marathonPace: getMarathonPacePrescription({ raceEvent, mileageTier, phase }),
     // Beginner keeps one quality stimulus; Intermediate earns a second
     // Q session at medium/high mileage when P0 spacing permits it.
