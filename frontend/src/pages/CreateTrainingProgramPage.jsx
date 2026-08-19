@@ -200,6 +200,7 @@ export default function CreateTrainingProgramPage() {
     const backgroundStartFraction = backgroundStartFractions[formData.level]?.[formData.trainingBackground] || 0.70;
     const startMileage = peakMileage * backgroundStartFraction;
     let previousWeeklyMileage = null;
+    let previousLongRunMileage = null;
     const recentWeeklyMileages = [];
 
     for (let w = 1; w <= weeks; w++) {
@@ -312,6 +313,11 @@ export default function CreateTrainingProgramPage() {
       }
       if (w === lastSpecificPrepWeek && targetPeakLongRun) {
         longRunMileage = Math.min(targetPeakLongRun, weeklyMileage * 0.5);
+      }
+      // Long Run has its own progression guard. A peak target is a cap, not
+      // permission to jump from a short run to the peak in one week.
+      if (previousLongRunMileage) {
+        longRunMileage = Math.min(longRunMileage, previousLongRunMileage * 1.10);
       }
       const beginnerShortTempoWindow = !is5K || !isBeginner || !isShortPreparation || w > weeks - 4;
       const allowInterval = !is5K || !isBeginner || !isShortPreparation;
@@ -646,6 +652,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
       generatedWeek.mileage = listedMileage.toFixed(1);
       // Next week progresses from work actually prescribed in the table.
       previousWeeklyMileage = listedMileage;
+      previousLongRunMileage = longRunMileage;
       recentWeeklyMileages.push(listedMileage);
       if (recentWeeklyMileages.length > 3) recentWeeklyMileages.shift();
     }

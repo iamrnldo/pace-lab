@@ -1055,6 +1055,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #80 — Single source of truth:** menambahkan `weeklyAllocation` sebagai objek resmi per minggu berisi target, Long Run, Easy, primary/secondary quality, phase, dan mesocycle. Generator hari, `structuredSession`, actual mileage, serta quality volumes kini menyimpan referensi alokasi yang sama.
 - **Perubahan #81 — Detail workout dari allocation object:** Tempo, Interval, Repetition, dan M-Pace kini membentuk blok/detail dari `weeklyAllocation.primary/secondary`, sehingga jumlah blok/repetisi menggunakan Jarak Inti yang sama dengan alokasi dan header quality volume.
 - **Perubahan #82 — Automated test matrix:** menambahkan `npm test` berbasis Node test runner dengan matrix race × level × background, validasi konservasi weekly allocation, konsistensi detail workout terhadap Jarak Inti, dan kelengkapan tabel speed workout.
+- **Perubahan #83 — Long Run progression guard:** Long Run kini dibatasi kenaikan maksimal 10% dari Long Run minggu sebelumnya. Peak Long Run adalah target/cap akhir, bukan override yang boleh menyebabkan lonjakan satu minggu.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10
