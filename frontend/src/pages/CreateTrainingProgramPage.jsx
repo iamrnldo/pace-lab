@@ -4,7 +4,7 @@ import { toast } from "react-hot-toast";
 import api from "../services/api";
 import clsx from "clsx";
 import { getTrainingType } from "../utils/trainingTypes";
-import { buildStructuredSession, buildWeeklyAllocation, calculateSessionMetrics, ensureWorkoutMinimums, getMileageTier, getRecoveryGuidance, getWorkoutRecommendation } from "../utils/workoutLibrary";
+import { buildStructuredSession, buildWeeklyAllocation, buildWorkoutDetailFromAllocation, calculateSessionMetrics, ensureWorkoutMinimums, getMileageTier, getRecoveryGuidance, getWorkoutRecommendation } from "../utils/workoutLibrary";
 import { getMesocycle, getPeriodization, getPostRaceRecoveryPlan, getPostRaceRecoverySchedule, getRecoveryWeekProfile, getSafeQualitySchedule, getTaperMultiplier, TRAINING_BACKGROUNDS } from "../utils/trainingPeriodization";
 import ExportModal from "../components/training/ExportModal";
 
@@ -473,6 +473,27 @@ export default function CreateTrainingProgramPage() {
         phase: phaseInfo.productPhase,
         mesocycle: mesocycle.name,
       });
+      const primaryWorkout = buildWorkoutDetailFromAllocation({
+        type: weeklyAllocation.primary.type,
+        allocatedKm: weeklyAllocation.primary.km,
+        pace: weeklyAllocation.primary.type === "T" ? tPace : iPace,
+        phase,
+        speedDistances: workoutRecommendation.primarySession.reps || workoutRecommendation.speedDistances,
+      });
+      const secondaryWorkout = buildWorkoutDetailFromAllocation({
+        type: weeklyAllocation.secondary.type,
+        allocatedKm: weeklyAllocation.secondary.km,
+        pace: weeklyAllocation.secondary.type === "M" ? mPace : weeklyAllocation.secondary.type === "T" ? tPace : iPace,
+        phase,
+        speedDistances: workoutRecommendation.secondarySession.reps || workoutRecommendation.speedDistances,
+      });
+      weeklyAllocation.primary.km = primaryWorkout.mainDistanceKm;
+      weeklyAllocation.secondary.km = secondaryWorkout.mainDistanceKm;
+      weeklyAllocation.qualityVolumes = { T: 0, I: 0, R: 0, M: 0 };
+      if (Object.hasOwn(weeklyAllocation.qualityVolumes, weeklyAllocation.primary.type)) weeklyAllocation.qualityVolumes[weeklyAllocation.primary.type] += primaryWorkout.mainDistanceKm;
+      if (Object.hasOwn(weeklyAllocation.qualityVolumes, weeklyAllocation.secondary.type)) weeklyAllocation.qualityVolumes[weeklyAllocation.secondary.type] += secondaryWorkout.mainDistanceKm;
+      weeklyAllocation.primary.workout = primaryWorkout;
+      weeklyAllocation.secondary.workout = secondaryWorkout;
       const strengthDay = DAYS.find((day) => !formData.trainingDays.includes(day)) || null;
       program.push({
         week: w,
@@ -566,11 +587,11 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
                 const { repDistance, maxReps, focus } = workoutRecommendation.repetition;
                 const reps = Math.max(4, Math.min(maxReps, Math.round((Number(distance) * 1000) / repDistance)));
                 const total = (reps * repDistance) / 1000;
-                details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${reps} × ${repDistance}m @ R-Pace (${iPace}/km)\nFokus: ${focus}.\n${getRecoveryGuidance({ paceType: "R", level: formData.level, phase, mileageTier })}\nTotal repetition sekitar ${total.toFixed(1)} km (maksimal 5% mileage mingguan)\n\nCool-Down: 10 menit Easy jog.`;
+                details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${weeklyAllocation.primary.workout.text} (${weeklyAllocation.primary.km.toFixed(1)} km)\nFokus: ${focus}.\n${getRecoveryGuidance({ paceType: "R", level: formData.level, phase, mileageTier })}\nCool-Down: 10 menit Easy jog.`;
               } else if (primarySession?.type === "T") {
                 activity = "Tempo Run"; pace = tPace; distance = weeklyAllocation.primary.km.toFixed(1);
                 const threshold = appliedThreshold;
-                details = `Warm-up: 12 menit Easy jog\nProgram inti: ${threshold.label} @ T-Pace (${tPace}/km)\nFokus: ${primarySession.focus}.\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
+                details = `Warm-up: 12 menit Easy jog\nProgram inti: ${weeklyAllocation.primary.workout.text} (${weeklyAllocation.primary.km.toFixed(1)} km) @ T-Pace (${tPace}/km)\nFokus: ${primarySession.focus}.\nRecovery antarblok: ${weeklyAllocation.primary.workout.blocks.length > 1 ? "2 menit jog ringan" : "tanpa jeda"}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
               } else {
                 activity = "Interval Run"; pace = iPace; distance = weeklyAllocation.primary.km.toFixed(1);
               const defaultReps = { "5K": [400, 600, 800], "10K": [800, 1000, 1200, 1600], "Half Marathon": [1000, 1200, 1600], "Full Marathon": [800, 1000, 1200] };
@@ -581,12 +602,11 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
               const reps = Math.max(2, Math.ceil(targetMeters / repDistance));
               const totalMeters = reps * repDistance;
               pace = iPace;
-              details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${reps} × ${repDistance}m @ I-Pace (${iPace}/km)\nFokus: ${primarySession?.focus || "aerobic power terkontrol"}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nTotal interval sekitar ${(totalMeters / 1000).toFixed(1)} km (maksimal 8% mileage mingguan atau 10 km)\n\nCool-Down: 10 menit Easy jog.`;
+              details = `Warm-up: 12 menit Easy jog + drills\n\nProgram inti: ${weeklyAllocation.primary.workout.text} (${weeklyAllocation.primary.km.toFixed(1)} km)\nFokus: ${primarySession?.focus || "aerobic power terkontrol"}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nCool-Down: 10 menit Easy jog.`;
               }
             } else {
               activity = "Tempo Run"; pace = tPace; distance = weeklyAllocation.secondary.km.toFixed(1);
-              const threshold = appliedThreshold;
-              details = `Warm-up: 12 menit Easy | Program inti: ${threshold.label} @ T-Pace (${tPace}/km) | Recovery antarblok: ${threshold.blocks > 1 ? "2 menit jog ringan" : "tanpa jeda"} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | Cool-Down: 8–10 menit Easy jog.`;
+              details = `Warm-up: 12 menit Easy | Program inti: ${weeklyAllocation.secondary.workout.text} (${weeklyAllocation.secondary.km.toFixed(1)} km) @ T-Pace (${tPace}/km) | Recovery antarblok: ${weeklyAllocation.secondary.workout.blocks.length > 1 ? "2 menit jog ringan" : "tanpa jeda"} | ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })} | Cool-Down: 8–10 menit Easy jog.`;
               if (phase === 3) details = "(Pre-Competition) Menjaga intensitas dengan volume terkontrol. " + details;
             }
           } else if (day === q2 && weeklyAllocation.secondary.km > 0 && (phase === 2 || phase === 3) && allowSecondaryQuality) {
@@ -595,16 +615,15 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
              if (secondarySession?.type === "M") {
                activity = "Marathon Pace"; pace = mPace;
                const mPlan = workoutRecommendation.marathonPace;
-               details = `Warm-up: 12 menit Easy jog\nProgram inti: ${appliedMarathonBlocks.map((block) => `${block} km`).join(" + ")} @ M-Pace (${mPace}/km)\nFokus: ${mPlan.focus}. Recovery antarblok: ${mPlan.recovery}.\n${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
+               details = `Warm-up: 12 menit Easy jog\nProgram inti: ${weeklyAllocation.secondary.workout.text} (${weeklyAllocation.secondary.km.toFixed(1)} km) @ M-Pace (${mPace}/km)\nFokus: ${mPlan.focus}. Recovery antarblok: ${mPlan.recovery}.\n${getRecoveryGuidance({ paceType: "M", level: formData.level, phase, mileageTier })}\nCool-Down: 8–10 menit Easy jog.`;
              } else if (secondarySession?.type === "I") {
                activity = "Interval Run"; pace = iPace;
                const mainSet = getRoundedIntervalMainSet(Number(distance), secondarySession.reps);
                const { repDistance, repetitions: reps } = mainSet;
-               details = `Warm-up: 12 menit Easy jog + drills\nProgram inti: ${reps} × ${repDistance}m @ I-Pace (${iPace}/km)\nFokus: ${secondarySession.focus}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nTotal interval sekitar ${((reps * repDistance) / 1000).toFixed(1)} km (maksimal 8% mileage mingguan atau 10 km)\nCool-Down: 10 menit Easy jog.`;
+               details = `Warm-up: 12 menit Easy jog + drills\nProgram inti: ${weeklyAllocation.secondary.workout.text} (${weeklyAllocation.secondary.km.toFixed(1)} km) @ I-Pace (${iPace}/km)\nFokus: ${secondarySession.focus}.\n${getRecoveryGuidance({ paceType: "I", level: formData.level, phase, mileageTier })}\nCool-Down: 10 menit Easy jog.`;
              } else {
                activity = "Tempo Run"; pace = tPace;
-               const threshold = appliedThreshold;
-               details = `Main: ${threshold.label} @ T-Pace (${tPace}/km)\nRecovery antarblok: ${threshold.recovery}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}`;
+               details = `Main: ${weeklyAllocation.secondary.workout.text} (${weeklyAllocation.secondary.km.toFixed(1)} km) @ T-Pace (${tPace}/km)\nRecovery antarblok: ${weeklyAllocation.secondary.workout.blocks.length > 1 ? "2 menit jog ringan" : "tanpa jeda"}. ${getRecoveryGuidance({ paceType: "T", level: formData.level, phase, mileageTier })}`;
              }
           } else {
             const qualityUsed = (day === q1 && (weeklyAllocation.primary.km > 0 || (phase === 3 && weeklyAllocation.secondary.km > 0))) || (day === q2 && weeklyAllocation.secondary.km > 0 && phase === 2);

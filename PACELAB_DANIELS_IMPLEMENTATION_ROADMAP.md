@@ -1053,6 +1053,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #78 — Audit rumus generator:** menambahkan `PACELAB_TRAINING_CALCULATION_AUDIT.md`, berisi seluruh alur rumus peak/baseline, progression, alokasi T/I/R/M/L/E, sumber actual mileage, serta konflik yang masih membutuhkan keputusan produk.
 - **Perubahan #79 — Klarifikasi audit Point 3–5:** memperluas audit dengan definisi weekly allocation object, contoh pemecahan detail Tempo/I/R/M dari alokasi, dan test matrix beserta invariant yang wajib lulus.
 - **Perubahan #80 — Single source of truth:** menambahkan `weeklyAllocation` sebagai objek resmi per minggu berisi target, Long Run, Easy, primary/secondary quality, phase, dan mesocycle. Generator hari, `structuredSession`, actual mileage, serta quality volumes kini menyimpan referensi alokasi yang sama.
+- **Perubahan #81 — Detail workout dari allocation object:** Tempo, Interval, Repetition, dan M-Pace kini membentuk blok/detail dari `weeklyAllocation.primary/secondary`, sehingga jumlah blok/repetisi menggunakan Jarak Inti yang sama dengan alokasi dan header quality volume.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10

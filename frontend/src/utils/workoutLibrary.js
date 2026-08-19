@@ -215,6 +215,47 @@ export function buildWeeklyAllocation({ targetMileage, longRunKm, easyKm, primar
   };
 }
 
+// Converts a weekly allocation into the exact main-set description. The
+// returned mainDistanceKm is the same quantity used by the weekly allocation.
+export function buildWorkoutDetailFromAllocation({ type, allocatedKm, pace, phase, speedDistances = [] }) {
+  const km = Math.max(0, Number(allocatedKm || 0));
+  const [m, s] = String(pace || "0:00").split(":").map(Number);
+  const paceSeconds = Number.isFinite(m) && Number.isFinite(s) ? (m * 60) + s : 0;
+  const formatDuration = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
+  if (type === "T") {
+    const totalSeconds = Math.round(km * paceSeconds);
+    const blocks = phase >= 3 && totalSeconds >= 600 ? 2 : 1;
+    const perBlockSeconds = Math.floor(totalSeconds / blocks);
+    const mainDistanceKm = paceSeconds ? (perBlockSeconds * blocks) / paceSeconds : km;
+    return {
+      mainDistanceKm,
+      blocks: Array.from({ length: blocks }, () => ({ durationSeconds: perBlockSeconds })),
+      text: blocks > 1 ? `${blocks} × ${formatDuration(perBlockSeconds)} menit @ T-Pace` : `${formatDuration(perBlockSeconds)} menit @ T-Pace kontinu`,
+    };
+  }
+
+  if (type === "I" || type === "R") {
+    const distances = speedDistances.length ? speedDistances : (type === "I" ? [1000] : [400]);
+    const repDistance = distances[distances.length - 1];
+    const repetitions = Math.floor((km * 1000) / repDistance);
+    const mainDistanceKm = repetitions > 0 ? (repetitions * repDistance) / 1000 : 0;
+    return {
+      mainDistanceKm,
+      blocks: repetitions > 0 ? [{ repetitions, distanceMeters: repDistance }] : [],
+      text: repetitions > 0 ? `${repetitions} × ${repDistance}m @ ${type}-Pace` : "Tidak ada repetisi; volume dialihkan ke Easy Run",
+    };
+  }
+
+  if (type === "M") {
+    const blocks = km > 0 ? [Number((km / 2).toFixed(1)), Number((km - (km / 2)).toFixed(1))] : [];
+    const mainDistanceKm = blocks.reduce((sum, block) => sum + block, 0);
+    return { mainDistanceKm, blocks, text: blocks.map((block) => `${block} km`).join(" + ") + " @ M-Pace" };
+  }
+
+  return { mainDistanceKm: km, blocks: [], text: "" };
+}
+
 export function buildStructuredSession({ activity, pace, distance, details, qSession, metrics }) {
   const paceType = ({ "Easy Run": "E", "Easy Run + Strides": "E", "Long Run": "L", "Tempo Run": "T", "Interval Run": "I", "Repetition Run": "R", "Marathon Pace": "M", "RACE DAY": "Q" })[activity] || null;
   const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);
