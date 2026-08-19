@@ -256,6 +256,21 @@ export function buildWorkoutDetailFromAllocation({ type, allocatedKm, pace, phas
   return { mainDistanceKm: km, blocks: [], text: "" };
 }
 
+export function validateWeeklyAllocation(allocation, { toleranceKm = 0.15 } = {}) {
+  const primaryKm = Number(allocation.primary?.km || 0);
+  const secondaryKm = Number(allocation.secondary?.km || 0);
+  const longRunKm = Number(allocation.longRunKm || 0);
+  const easyKm = Number(allocation.easyKm || 0);
+  const targetMileage = Number(allocation.targetMileage || 0);
+  const allocatedMileage = longRunKm + easyKm + primaryKm + secondaryKm;
+  const errors = [];
+  if ([targetMileage, longRunKm, easyKm, primaryKm, secondaryKm].some((value) => value < 0 || !Number.isFinite(value))) errors.push("Allocation contains negative or invalid mileage.");
+  // `easyKm` is a weekly aggregate; individual Easy Run distance is validated by the generator using its own per-run cap. 
+  if (allocation.maxEasyRunKm && longRunKm > 0 && Number(allocation.maxEasyRunKm) >= longRunKm) errors.push("Each Easy Run must remain below Long Run mileage.");
+  if (Math.abs(allocatedMileage - targetMileage) > toleranceKm) errors.push("Allocated mileage does not equal target mileage.");
+  return { valid: errors.length === 0, errors, allocatedMileage };
+}
+
 export function buildStructuredSession({ activity, pace, distance, details, qSession, metrics }) {
   const paceType = ({ "Easy Run": "E", "Easy Run + Strides": "E", "Long Run": "L", "Tempo Run": "T", "Interval Run": "I", "Repetition Run": "R", "Marathon Pace": "M", "RACE DAY": "Q" })[activity] || null;
   const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);

@@ -1,6 +1,6 @@
 # PaceLab — Audit Rumus dan Alur Perhitungan Program
 
-**Status:** Point 3–4 diterapkan pada Perubahan #80–81; Point 5 masih bertahap  
+**Status:** Point 3–5 diterapkan pada Perubahan #80–82  
 **Tanggal:** 2026-08-11
 
 Dokumen ini menjelaskan rumus yang saat ini dipakai generator, titik yang sudah konsisten, dan bagian yang masih perlu disatukan agar semua angka di UI berasal dari satu sumber perhitungan.
