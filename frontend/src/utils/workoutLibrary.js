@@ -197,6 +197,24 @@ export function calculateSessionMetrics({ activity, distance, pace, easyPace, de
   return { mainDistanceKm, warmupKm, recoveryKm, cooldownKm, totalDistanceKm: mainDistanceKm + warmupKm + recoveryKm + cooldownKm };
 }
 
+// The single source of truth for a generated week. UI, session details, exports,
+// and future validators should consume this plan rather than recalculate splits.
+export function buildWeeklyAllocation({ targetMileage, longRunKm, easyKm, primaryType, primaryKm, secondaryType, secondaryKm, phase, mesocycle }) {
+  const volumes = { T: 0, I: 0, R: 0, M: 0 };
+  if (Object.hasOwn(volumes, primaryType)) volumes[primaryType] += Number(primaryKm || 0);
+  if (Object.hasOwn(volumes, secondaryType)) volumes[secondaryType] += Number(secondaryKm || 0);
+  return {
+    targetMileage: Number(targetMileage || 0),
+    longRunKm: Number(longRunKm || 0),
+    easyKm: Number(easyKm || 0),
+    primary: { type: primaryType, km: Number(primaryKm || 0) },
+    secondary: { type: secondaryType, km: Number(secondaryKm || 0) },
+    qualityVolumes: volumes,
+    phase,
+    mesocycle,
+  };
+}
+
 export function buildStructuredSession({ activity, pace, distance, details, qSession, metrics }) {
   const paceType = ({ "Easy Run": "E", "Easy Run + Strides": "E", "Long Run": "L", "Tempo Run": "T", "Interval Run": "I", "Repetition Run": "R", "Marathon Pace": "M", "RACE DAY": "Q" })[activity] || null;
   const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);
