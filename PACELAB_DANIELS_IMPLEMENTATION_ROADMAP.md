@@ -1064,6 +1064,7 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #89 — Login tanpa tab:** menghapus tab `USER` dan `ADMIN` pada halaman login. Google login tetap berada di atas, diikuti divider dan form email/password admin di bawahnya.
 - **Perubahan #90 — Login form label:** mengganti label divider form dari `ADMIN ACCESS` menjadi `SIGN IN FORM`.
 - **Perubahan #91 — Login input copy:** mengubah label menjadi `EMAIL :` dan `PASSWORD :`, placeholder menjadi `Enter Your Email here` serta `Enter Your Password here`, dan tombol dari `ADMIN SIGN IN` menjadi `SIGN IN`.
+- **Perubahan #92 — Login order:** memindahkan form Sign In ke bagian atas dan tombol Google ke bawah form. Divider kedua sekarang memakai label `OR CONTINUE WITH GOOGLE`.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10
