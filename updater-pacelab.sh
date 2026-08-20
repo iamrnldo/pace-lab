@@ -18,6 +18,39 @@ fail() {
   printf '\n\033[1;31m[PaceLab] Deploy gagal pada baris %s.\033[0m\n' "$1" >&2
 }
 
+wait_for_api() {
+  local body=""
+  for attempt in $(seq 1 30); do
+    if body="$(curl -fsS --max-time 3 "$API_HEALTH_URL" 2>/dev/null)"; then
+      printf '%s\n' "$body"
+      return 0
+    fi
+    printf '\r[PaceLab] Menunggu API siap... %s/30' "$attempt"
+    sleep 1
+  done
+
+  printf '\n[PaceLab] API tidak siap setelah 30 detik. PM2 log terakhir:\n' >&2
+  pm2 logs "$API_PROCESS" --lines 50 --nostream || true
+  return 1
+}
+
+wait_for_web() {
+  local status=""
+  for attempt in $(seq 1 30); do
+    status="$(curl -sS --max-time 3 -o /dev/null -w '%{http_code}' "$WEB_LOGIN_URL" 2>/dev/null || true)"
+    if [[ "$status" == "200" || "$status" == "301" || "$status" == "302" ]]; then
+      printf 'HTTP %s\n' "$status"
+      return 0
+    fi
+    printf '\r[PaceLab] Menunggu frontend siap... %s/30' "$attempt"
+    sleep 1
+  done
+
+  printf '\n[PaceLab] Frontend tidak siap setelah 30 detik (HTTP %s).\n' "${status:-000}" >&2
+  pm2 logs "$WEB_PROCESS" --lines 50 --nostream || true
+  return 1
+}
+
 trap 'fail "$LINENO"' ERR
 
 if [[ ! -d "$PACELAB_DIR/.git" ]]; then
@@ -39,9 +72,8 @@ cd "$PACELAB_DIR/backend"
 npm ci
 pm2 restart "$API_PROCESS"
 
-log "Memeriksa API health"
-api_health="$(curl -fsS "$API_HEALTH_URL")"
-printf '%s\n' "$api_health"
+log "Memeriksa API health (maksimal 30 detik)"
+wait_for_api
 
 log "Install dependency, test, build, dan restart frontend"
 cd "$PACELAB_DIR/frontend"
@@ -50,12 +82,7 @@ npm test
 npm run build
 pm2 restart "$WEB_PROCESS"
 
-log "Memeriksa halaman login"
-web_status="$(curl -sS -o /dev/null -w '%{http_code}' "$WEB_LOGIN_URL")"
-printf 'HTTP %s\n' "$web_status"
-if [[ "$web_status" != "200" && "$web_status" != "301" && "$web_status" != "302" ]]; then
-  echo "Login health check gagal (HTTP $web_status)" >&2
-  exit 1
-fi
+log "Memeriksa halaman login (maksimal 30 detik)"
+wait_for_web
 
 log "Update PaceLab selesai"
