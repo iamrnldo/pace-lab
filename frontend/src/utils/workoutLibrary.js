@@ -180,10 +180,15 @@ export function calculateSessionMetrics({ activity, distance, pace, easyPace, de
   };
   const numeric = Number.parseFloat(String(distance || ""));
   const isMinutes = /menit/i.test(String(distance || ""));
+  const requestedPaceSeconds = toSeconds(pace);
+  const easyPaceSeconds = toSeconds(easyPace);
+  // Labels such as "Easy effort" are not numeric paces. Fall back to the
+  // week's Easy Pace instead of dividing seconds by 1 (which caused 1200 km).
+  const durationPaceSeconds = requestedPaceSeconds || easyPaceSeconds || 1;
   const mainDistanceKm = activity === "RACE DAY"
     ? raceDistanceKm
     : isMinutes
-      ? (numeric * 60) / (toSeconds(pace && pace !== "-" ? pace : easyPace) || 1)
+      ? (numeric * 60) / durationPaceSeconds
       : Number.isFinite(numeric) ? numeric : 0;
   const quality = ["Tempo Run", "Interval Run", "Repetition Run", "Marathon Pace"].includes(activity);
   if (!quality) return { mainDistanceKm, warmupKm: 0, recoveryKm: 0, cooldownKm: 0, totalDistanceKm: mainDistanceKm };

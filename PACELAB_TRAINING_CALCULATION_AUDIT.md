@@ -320,3 +320,78 @@ HM Intermediate + Structured + 4 bulan + Specific + 5 hari latihan
 - M/I secondary hanya ada bila Q-spacing aman.
 - Header mileage harus sama dengan penjumlahan Jarak Inti.
 ```
+
+---
+
+## 9. Snapshot Rumus Aktif — Perubahan #96
+
+### Peak mileage
+
+| Race | Beginner | Intermediate |
+|---|---:|---:|
+| 5K | 16–25 km | 24–35 km |
+| 10K | 25–35 km | 30–40 km |
+| HM | 32–48 km | 40–60 km |
+| FM | 50–64 km | 64–88 km |
+
+Durasi persiapan memilih nilai di dalam range. Baseline awal memakai persentase peak:
+
+| Background | Beginner | Intermediate |
+|---|---:|---:|
+| Returning | 60% | 65% |
+| Consistent | 70% | 75% |
+| Structured | 80% | 90% |
+
+### Long Run
+
+| Race | Beginner peak L | Intermediate peak L |
+|---|---:|---:|
+| 5K | 5–7 km | 8–10 km |
+| 10K | 9–11 km | 12–15 km |
+| HM | 16–19 km | 19–22 km |
+| FM | 28–32 km | 32–36 km |
+
+```text
+L_base = 30% × weekly mileage
+L_peak = min(configured peak, 50% × weekly mileage)
+L_build = trajectory dari Long Run awal menuju L_peak
+L_next ≤ 110% × L_previous
+```
+
+### Weekly mileage
+
+```text
+Build:     5K/10K/HM ≤ +5%, FM ≤ +4% dari riwayat aktual
+Recovery:  tidak turun ekstrem; quality dikurangi/dihilangkan
+Taper HM/FM: 70% → 50% peak
+```
+
+### Quality volume
+
+```text
+Tempo:   10% awal Specific → 12.5% tengah → 15% akhir/PC
+Interval: 10% awal Specific → 12.5% tengah → 15% akhir/PC, cap 10 km
+Repetition: 5% weekly mileage
+M-Pace: 10% weekly mileage bila dijadwalkan
+Easy: sisa alokasi; setiap Easy Run < Long Run
+```
+
+### Jarak yang dihitung
+
+```text
+Total Mileage Program = Easy + Long + Race + Jarak Inti T/I/R/M
+Warm-up + recovery jog + cool-down = estimasi fisik, tidak masuk mileage
+```
+
+### Recovery Week distance/time cap
+
+| Race | Easy max | Long max |
+|---|---:|---:|
+| 5K | 30 menit | 45 menit |
+| 10K | 35 menit | 55 menit |
+| HM | 45 menit | 75 menit |
+| FM | 50 menit | 90 menit |
+
+```text
+Recovery Long Run ≤ 75% Long Run minggu sebelumnya
+```

@@ -1068,6 +1068,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #93 — Intermediate button copy:** menerapkan label tombol Level Pelari di Create Training Program sebagai `INTERMEDIATE`; teks `/ ELITE` telah dihapus dari source workspace.
 - **Perubahan #94 — Profile form copy:** memperbarui label dan placeholder Profile Page untuk nama, usia, berat, tinggi, komunitas, dan alamat komunitas; opsi gender `Other` dihapus dan default diubah menjadi `Select Your Gender`.
 - **Perubahan #95 — Recovery week distance/time caps:** menambahkan batas durasi Easy Run dan Long Run khusus Recovery Week untuk seluruh race, level, dan background. Quality session tetap ditiadakan/dikurangi; Long Run recovery maksimal 75% Long Run sebelumnya dan dibatasi durasi race-specific.
+- **Perubahan #96 — Audit rumus aktif:** memperbarui `PACELAB_TRAINING_CALCULATION_AUDIT.md` dengan snapshot rumus aktif untuk peak/baseline, Long Run trajectory, weekly progression, T/I/R/M/E allocation, dan recovery cap.
+- **Perubahan #97 — Post-race 1200 km unit fix:** memperbaiki konversi recovery berbasis menit dengan label `Easy effort`. Sistem kini fallback ke Easy Pace mingguan, sehingga 20 menit dikonversi menjadi beberapa kilometer, bukan 1200 km. Test regresi ditambahkan.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10

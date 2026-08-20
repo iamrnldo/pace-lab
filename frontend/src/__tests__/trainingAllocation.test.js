@@ -5,6 +5,7 @@ import {
   SPEED_WORKOUT_DISTANCES,
   buildWeeklyAllocation,
   buildWorkoutDetailFromAllocation,
+  calculateSessionMetrics,
   getSpeedWorkoutDistances,
   validateWeeklyAllocation,
 } from "../utils/workoutLibrary.js";
@@ -64,6 +65,17 @@ test("workout details always match their allocated main distance", () => {
   const marathon = buildWorkoutDetailFromAllocation({ type: "M", allocatedKm: 6, pace: "5:30", phase: 2 });
   assert.equal(marathon.mainDistanceKm, 6);
   assert.match(marathon.text, /3 km \+ 3 km/);
+});
+
+test("post-race timed Easy Run falls back to weekly Easy Pace", () => {
+  const metrics = calculateSessionMetrics({
+    activity: "Easy Run",
+    distance: "20 menit",
+    pace: "Easy effort",
+    easyPace: "6:00",
+  });
+  assert.ok(Math.abs(metrics.mainDistanceKm - (20 / 6)) < 0.01);
+  assert.ok(metrics.mainDistanceKm < 10, "20 minutes recovery must never become 1200 km");
 });
 
 test("speed table contains all declared race groups", () => {
