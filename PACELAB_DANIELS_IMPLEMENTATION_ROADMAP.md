@@ -1061,7 +1061,9 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #86 — VPS updater:** menambahkan `updater-pacelab.sh` untuk menjalankan `git pull`, install backend/frontend, API health check, frontend test, build, PM2 restart, dan login HTTP check dalam satu command.
 - **Perubahan #87 — VPS startup wait:** updater kini menunggu API dan frontend hingga 30 detik setelah PM2 restart. Jika gagal, script menampilkan 50 baris PM2 log terakhir agar penyebab deploy dapat langsung ditelusuri.
 - **Perubahan #88 — Terminologi level pelari:** label tombol level pelari diperbarui oleh pemilik produk dari `INTERMEDIATE / ELITE` menjadi `INTERMEDIATE`. Tidak ada perubahan pada logika, volume, atau template latihan; istilah level produk sekarang hanya Beginner dan Intermediate.
-- **Perubahan #89 — Login tanpa tab:** menghapus tab `USER` dan `ADMIN` pada halaman login. Google login tetap berada di atas, diikuti divider `ADMIN ACCESS` dan form email/password admin di bawahnya.
+- **Perubahan #89 — Login tanpa tab:** menghapus tab `USER` dan `ADMIN` pada halaman login. Google login tetap berada di atas, diikuti divider dan form email/password admin di bawahnya.
+- **Perubahan #90 — Login form label:** mengganti label divider form dari `ADMIN ACCESS` menjadi `SIGN IN FORM`.
+- **Perubahan #91 — Login input copy:** mengubah label menjadi `EMAIL :` dan `PASSWORD :`, placeholder menjadi `Enter Your Email here` serta `Enter Your Password here`, dan tombol dari `ADMIN SIGN IN` menjadi `SIGN IN`.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10

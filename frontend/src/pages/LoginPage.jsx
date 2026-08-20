@@ -130,22 +130,22 @@ export default function LoginPage() {
 
           <div className="my-8 flex items-center gap-3">
             <span className="h-px flex-1 bg-retro-green/20" />
-            <span className="font-mono text-[10px] tracking-[0.2em] text-retro-white/35">ADMIN ACCESS</span>
+            <span className="font-mono text-[10px] tracking-[0.2em] text-retro-white/35">SIGN IN FORM</span>
             <span className="h-px flex-1 bg-retro-green/20" />
           </div>
 
           {/* Admin email/password form */}
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
-              <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">EMAIL</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@pacelab.com" required className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider" />
+              <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">EMAIL :</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter Your Email here" required className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider" />
             </div>
             <div>
-              <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">PASSWORD</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider" />
+              <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">PASSWORD :</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter Your Password here" required className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider" />
             </div>
             <button type="submit" disabled={loading} className="btn-retro border border-retro-green/70 text-retro-green font-retro tracking-widest w-full py-4 text-lg hover:bg-retro-green hover:text-retro-black disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? "SIGNING IN..." : "ADMIN SIGN IN →"}
+              {loading ? "SIGNING IN..." : "SIGN IN →"}
             </button>
             <p className="font-mono text-[11px] text-retro-white/25 text-center mt-4 leading-relaxed">
               Admin access only. Contact administrator for credentials.
