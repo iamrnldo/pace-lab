@@ -757,7 +757,7 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
               <div><Label>Level Pelari</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <button type="button" onClick={() => setFormData({ ...formData, level: "beginner" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "beginner" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>BEGINNER</button>
-                  <button type="button" onClick={() => setFormData({ ...formData, level: "intermediate" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "intermediate" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>INTERMEDIATE </button>
+                  <button type="button" onClick={() => setFormData({ ...formData, level: "intermediate" })} className={clsx("btn-retro py-2 text-sm transition-all", formData.level === "intermediate" ? "bg-retro-green text-retro-black" : "border-retro-white/30 text-retro-white")}>INTERMEDIATE / ELITE</button>
                 </div>
               </div>
             </div>
