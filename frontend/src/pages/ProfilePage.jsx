@@ -214,13 +214,14 @@ export default function ProfilePage() {
                 {/* Name */}
                 <div>
                   <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                    FULL NAME
+                    FULL NAME :
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                     disabled={!isEditing}
+                    placeholder="Enter Your Full Name"
                     className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
@@ -229,14 +230,14 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      AGE
+                      AGE :
                     </label>
                     <input
                       type="number"
                       value={formData.age}
                       onChange={(e) => setFormData((f) => ({ ...f, age: e.target.value }))}
                       disabled={!isEditing}
-                      placeholder="25"
+                      placeholder="Enter Your Age"
                       className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
@@ -250,10 +251,9 @@ export default function ProfilePage() {
                       disabled={!isEditing}
                       className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">Select</option>
+                      <option value="">Select Your Gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
-                      <option value="other">Other</option>
                     </select>
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      WEIGHT (KG)
+                      WEIGHT (KG) :
                     </label>
                     <input
                       type="number"
@@ -270,13 +270,13 @@ export default function ProfilePage() {
                       value={formData.weight_kg}
                       onChange={(e) => setFormData((f) => ({ ...f, weight_kg: e.target.value }))}
                       disabled={!isEditing}
-                      placeholder="70.5"
+                      placeholder="Enter Your Weight (KG)"
                       className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div>
                     <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      HEIGHT (CM)
+                      HEIGHT (CM) :
                     </label>
                     <input
                       type="number"
@@ -284,15 +284,15 @@ export default function ProfilePage() {
                       value={formData.height_cm}
                       onChange={(e) => setFormData((f) => ({ ...f, height_cm: e.target.value }))}
                       disabled={!isEditing}
-                      placeholder="175"
+                      placeholder="Enter Your Height (CM)"
                       className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">NAMA KOMUNITAS</label><input value={formData.community_name} onChange={(e) => setFormData((f) => ({ ...f, community_name: e.target.value }))} disabled={!isEditing} placeholder="Pace Lab Community" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
-                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">ASAL KOMUNITAS</label><input value={formData.community_origin} onChange={(e) => setFormData((f) => ({ ...f, community_origin: e.target.value }))} disabled={!isEditing} placeholder="Surabaya, Indonesia" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
+                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">NAMA KOMUNITAS</label><input value={formData.community_name} onChange={(e) => setFormData((f) => ({ ...f, community_name: e.target.value }))} disabled={!isEditing} placeholder="Enter Your Community" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
+                  <div><label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">ASAL KOMUNITAS</label><input value={formData.community_origin} onChange={(e) => setFormData((f) => ({ ...f, community_origin: e.target.value }))} disabled={!isEditing} placeholder="Enter Your Community Address" className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50" /></div>
                 </div>
 
                 {/* Actions */}

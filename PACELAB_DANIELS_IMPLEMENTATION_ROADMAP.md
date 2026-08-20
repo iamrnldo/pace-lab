@@ -1065,6 +1065,8 @@ Penerapan export tanggal PDF/Excel: SUDAH DITERAPKAN
 - **Perubahan #90 — Login form label:** mengganti label divider form dari `ADMIN ACCESS` menjadi `SIGN IN FORM`.
 - **Perubahan #91 — Login input copy:** mengubah label menjadi `EMAIL :` dan `PASSWORD :`, placeholder menjadi `Enter Your Email here` serta `Enter Your Password here`, dan tombol dari `ADMIN SIGN IN` menjadi `SIGN IN`.
 - **Perubahan #92 — Login order:** memindahkan form Sign In ke bagian atas dan tombol Google ke bawah form. Divider kedua sekarang memakai label `OR CONTINUE WITH GOOGLE`.
+- **Perubahan #93 — Intermediate button copy:** menerapkan label tombol Level Pelari di Create Training Program sebagai `INTERMEDIATE`; teks `/ ELITE` telah dihapus dari source workspace.
+- **Perubahan #94 — Profile form copy:** memperbarui label dan placeholder Profile Page untuk nama, usia, berat, tinggi, komunitas, dan alamat komunitas; opsi gender `Other` dihapus dan default diubah menjadi `Select Your Gender`.
 - **Perubahan #74 — Global Beginner/Intermediate load differentiation:** semua race dan background kini membedakan baseline volume: Beginner 60/70/80% peak versus Intermediate 65/75/90% untuk returning/consistent/structured. Beginner dibatasi satu quality stimulus, sedangkan Intermediate medium/high dapat dua Q bila P0 aman; metadata load profile ditampilkan pada program.
 
 ### 2026-08-10
