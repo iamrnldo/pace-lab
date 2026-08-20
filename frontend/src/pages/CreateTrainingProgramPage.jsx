@@ -201,6 +201,7 @@ export default function CreateTrainingProgramPage() {
     const startMileage = peakMileage * backgroundStartFraction;
     let previousWeeklyMileage = null;
     let previousLongRunMileage = null;
+    let initialLongRunMileage = null;
     const recentWeeklyMileages = [];
 
     for (let w = 1; w <= weeks; w++) {
@@ -314,13 +315,23 @@ export default function CreateTrainingProgramPage() {
       if (formData.raceEvent === "Half Marathon" && formData.level === "beginner" && phase === 1) {
         longRunMileage = Math.max(6, Math.min(8, longRunMileage));
       }
-      if (w === lastSpecificPrepWeek && targetPeakLongRun) {
-        longRunMileage = Math.min(targetPeakLongRun, weeklyMileage * 0.5);
-      }
-      // Long Run has its own progression guard. A peak target is a cap, not
-      // permission to jump from a short run to the peak in one week.
-      if (previousLongRunMileage) {
-        longRunMileage = Math.min(longRunMileage, previousLongRunMileage * 1.10);
+      // Build a smooth trajectory from the first Long Run toward the
+      // configured peak. A peak is never injected only on the last week.
+      if (targetPeakLongRun && w <= lastSpecificPrepWeek) {
+        if (initialLongRunMileage === null) initialLongRunMileage = longRunMileage;
+        const buildSteps = Math.max(1, lastSpecificPrepWeek - 1);
+        const progress = Math.min(1, Math.max(0, (w - 1) / buildSteps));
+        const trajectoryLongRun = initialLongRunMileage + ((targetPeakLongRun - initialLongRunMileage) * progress);
+        const peakCeiling = Math.min(targetPeakLongRun, weeklyMileage * 0.5);
+        if (previousLongRunMileage) {
+          // Recovery holds the prior Long Run rather than creating a sudden
+          // drop; build weeks move toward trajectory with a 10% ceiling.
+          longRunMileage = isRecoveryWeek
+            ? Math.min(previousLongRunMileage, peakCeiling)
+            : Math.min(Math.max(longRunMileage, trajectoryLongRun), previousLongRunMileage * 1.10, peakCeiling);
+        } else {
+          longRunMileage = Math.min(longRunMileage, peakCeiling);
+        }
       }
       const beginnerShortTempoWindow = !is5K || !isBeginner || !isShortPreparation || w > weeks - 4;
       const allowInterval = !is5K || !isBeginner || !isShortPreparation;
