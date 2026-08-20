@@ -235,6 +235,13 @@ export default function CreateTrainingProgramPage() {
         workoutRecommendation.threshold.blocks * workoutRecommendation.threshold.minutes,
         tPace,
       );
+      const recoveryWeekTimeCaps = {
+        "5K": { easyMinutes: 30, longMinutes: 45 },
+        "10K": { easyMinutes: 35, longMinutes: 55 },
+        "Half Marathon": { easyMinutes: 45, longMinutes: 75 },
+        "Full Marathon": { easyMinutes: 50, longMinutes: 90 },
+      };
+      const recoveryTimeCap = recoveryWeekTimeCaps[formData.raceEvent] || recoveryWeekTimeCaps["10K"];
       // 3. MILLEAGE LOGIC (Mesocycle 3:1)
       const weekInCycle = (w - 1) % 4;
       const defaultRecoveryWeek = weekInCycle === 3 && w !== lastSpecificPrepWeek && phase < 3;
@@ -312,6 +319,11 @@ export default function CreateTrainingProgramPage() {
       ) * mesocycle.longRunMultiplier;
       // Peak long run follows the configured HM/FM range, while keeping a
       // hard upper bound of 50% weekly mileage at the single peak week.
+      if (isRecoveryWeek) {
+        const recoveryLongCapKm = durationDistanceKm(recoveryTimeCap.longMinutes, ePace);
+        const previousLongRecoveryKm = previousLongRunMileage ? previousLongRunMileage * 0.75 : recoveryLongCapKm;
+        longRunMileage = Math.min(longRunMileage, previousLongRecoveryKm, recoveryLongCapKm);
+      }
       if (formData.raceEvent === "Half Marathon" && formData.level === "beginner" && phase === 1) {
         longRunMileage = Math.max(6, Math.min(8, longRunMileage));
       }
@@ -460,7 +472,8 @@ export default function CreateTrainingProgramPage() {
       const easyDays = Math.max(1, formData.trainingDays.filter((d) => d !== "Minggu" && d !== "Sabtu").length - ((intervalMileage > 0 ? 1 : 0) + (tempoMileage > 0 ? 1 : 0)));
       // Easy Run must stay below Long Run. Any excess is assigned to an
       // existing quality session; if no quality session exists it extends L.
-      const perEasyRunCap = Math.min(easyRunCaps[formData.raceEvent] || 8, Math.max(2, longRunMileage * 0.8));
+      const recoveryEasyCapKm = isRecoveryWeek ? durationDistanceKm(recoveryTimeCap.easyMinutes, ePace) : Infinity;
+      const perEasyRunCap = Math.min(easyRunCaps[formData.raceEvent] || 8, Math.max(2, longRunMileage * 0.8), recoveryEasyCapKm);
       const easyCapacity = easyDays * perEasyRunCap;
       const overflowMileage = Math.max(0, easyMileage - easyCapacity);
       easyMileage = Math.min(easyMileage, easyCapacity);
@@ -654,7 +667,8 @@ Referensi Phase IV Daniels: T menjadi fokus; sisakan 2–3 Easy day sebelum race
             // Long Run must remain the longest scheduled run of the week.
             // Easy runs are capped at 80% of Long Run distance (minimum 2 km).
             const easyVsLongRunCap = Math.max(2, weeklyAllocation.longRunKm * 0.8);
-            distance = Math.min(easyRunDistance, easyRunCap, easyVsLongRunCap).toFixed(1);
+            const recoveryDayCap = isRecoveryWeek ? durationDistanceKm(recoveryTimeCap.easyMinutes, ePace) : Infinity;
+            distance = Math.min(easyRunDistance, easyRunCap, easyVsLongRunCap, recoveryDayCap).toFixed(1);
           }
           const validatedWorkout = ensureWorkoutMinimums({ activity, distance, details });
           return { day, date, activity, pace, distance: validatedWorkout.distance + " Km", details: validatedWorkout.details };
