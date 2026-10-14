@@ -9,6 +9,8 @@ export default function Modal({
   isOpen,
   onClose,
   title,
+  subtitle,
+  closeLabel,
   children,
   panelClassName,
 }) {
@@ -128,7 +130,7 @@ export default function Modal({
               </h3>
             )}
             <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.28em] text-retro-green/70 sm:text-[11px]">
-              Detailed calculation breakdown
+              {subtitle || "Detailed calculation breakdown"}
             </p>
           </div>
           <button
@@ -136,7 +138,7 @@ export default function Modal({
             onClick={onClose}
             className="btn-retro px-4 py-2 text-sm font-retro tracking-widest text-retro-white hover:border-retro-white"
           >
-            CLOSE
+            {closeLabel || "CLOSE"}
           </button>
         </div>
 

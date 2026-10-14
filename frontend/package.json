@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "test": "node --test src/__tests__/trainingAllocation.test.js",
+    "test": "node --test src/__tests__/trainingAllocation.test.js src/__tests__/themeUtils.test.js src/__tests__/themeProviderMount.test.js",
+    "doctor": "node scripts/doctor.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -1,18 +1,22 @@
 /** @type {import('tailwindcss').Config} */
+// Warna palette diambil dari CSS variables (--retro-*) supaya bisa diganti
+// runtime lewat modal "Template Colors" (lihat src/utils/themeUtils.js).
+const retroVar = (name) => `rgb(var(${name}) / <alpha-value>)`;
+
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
         retro: {
-          black: "#005BAC",
-          white: "#FFFFFF",
-          green: "#DFF5FF",
-          "green-dark": "#BFEAFF",
-          "green-light": "#00AEEF",
-          gray: "#0C6FBA",
-          "gray-mid": "#167FCF",
-          "gray-light": "#5CAEE2",
+          black: retroVar("--retro-black"),
+          white: retroVar("--retro-white"),
+          green: retroVar("--retro-green"),
+          "green-dark": retroVar("--retro-green-dark"),
+          "green-light": retroVar("--retro-green-light"),
+          gray: retroVar("--retro-gray"),
+          "gray-mid": retroVar("--retro-gray-mid"),
+          "gray-light": retroVar("--retro-gray-light"),
         },
       },
       fontFamily: {
@@ -46,18 +50,20 @@ export default {
           "100%": { transform: "translateY(0)", opacity: "1" },
         },
         pulseGreen: {
-          "0%, 100%": { boxShadow: "0 0 5px #DFF5FF" },
+          "0%, 100%": {
+            boxShadow: `0 0 5px rgb(var(--retro-green))`,
+          },
           "50%": {
-            boxShadow: "0 0 20px #DFF5FF, 0 0 40px rgba(223,245,255,0.4)",
+            boxShadow: `0 0 20px rgb(var(--retro-green)), 0 0 40px rgb(var(--retro-green) / 0.4)`,
           },
         },
       },
       boxShadow: {
-        retro: "4px 4px 0px #DFF5FF",
-        "retro-sm": "2px 2px 0px #DFF5FF",
-        "retro-lg": "6px 6px 0px #DFF5FF",
-        neon: "0 0 10px #DFF5FF, 0 0 30px rgba(223,245,255,0.3)",
-        "neon-sm": "0 0 5px #DFF5FF",
+        retro: "4px 4px 0px rgb(var(--retro-green))",
+        "retro-sm": "2px 2px 0px rgb(var(--retro-green))",
+        "retro-lg": "6px 6px 0px rgb(var(--retro-green))",
+        neon: "0 0 10px rgb(var(--retro-green)), 0 0 30px rgb(var(--retro-green) / 0.3)",
+        "neon-sm": "0 0 5px rgb(var(--retro-green))",
       },
     },
   },

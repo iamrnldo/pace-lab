@@ -1,14 +1,19 @@
 // src/components/layout/Footer.jsx
 import { Link } from "react-router-dom";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const { zoneVars } = useTheme();
   const STRIP_ITEMS = Array.from({ length: 12 }, () =>
     "RUN FAST · TRAIN SMART · CALCULATE BETTER ·",
   );
 
   return (
-    <footer className="border-t-2 border-retro-green/20 mt-24">
+    <footer
+      className="border-t-2 border-retro-green/20 mt-24"
+      style={zoneVars.footer}
+    >
       {/* top green strip */}
       <div className="bg-retro-green py-1 overflow-hidden">
         <div className="marquee-wrap">

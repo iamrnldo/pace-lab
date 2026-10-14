@@ -5,6 +5,17 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: true,
+    // Vite 8 memblokir request dengan host yang tidak dikenal (mis. domain VPS,
+    // IP server, atau tunnel). Dilonggarkan agar frontend bisa dibuka lewat
+    // domain/IP apa pun saat dev maupun preview. Aman untuk dev server.
+    allowedHosts: true,
+  },
+  preview: {
+    host: true,
+    allowedHosts: true,
+  },
   resolve: {
     alias: {
       "@components": path.resolve(__dirname, "src/components"),

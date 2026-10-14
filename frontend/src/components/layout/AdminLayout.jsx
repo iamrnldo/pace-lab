@@ -1,14 +1,16 @@
 // src/components/layout/AdminLayout.jsx
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
+import { useTheme } from "../../context/ThemeContext";
 import AdminSidebar from "../admin/AdminSidebar";
 import AdminHeader from "../admin/AdminHeader";
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { zoneVars } = useTheme();
 
   return (
-    <div className="min-h-screen bg-retro-black flex">
+    <div className="min-h-screen bg-retro-black flex" style={zoneVars.main}>
       {/* Sidebar */}
       <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 

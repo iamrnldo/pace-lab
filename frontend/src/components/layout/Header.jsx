@@ -4,10 +4,13 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useTheme } from "../../context/ThemeContext";
+import ThemeSettingsModal from "./ThemeSettingsModal";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [time, setTime] = useState(new Date());
   const headerRef = useRef(null);
   const auth = useAuth();
@@ -15,6 +18,7 @@ export default function Header() {
   const logout = auth?.logout;
   const navigate = useNavigate();
   const { language, changeLanguage, t } = useLanguage();
+  const { isDefault: themeIsDefault, customCount } = useTheme();
 
   // Nav items — berubah sesuai login status
   const NAV = user
@@ -58,6 +62,7 @@ export default function Header() {
   };
 
   return (
+    <>
     <header
       ref={headerRef}
       className={clsx(
@@ -72,8 +77,31 @@ export default function Header() {
         <span className="font-mono text-[11px] text-retro-white/25 tracking-widest">
           PACELAB PRO // v1.0.0
         </span>
-        <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">
-          {time.toLocaleTimeString("en-US", { hour12: false })}
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">
+            {time.toLocaleTimeString("en-US", { hour12: false })}
+          </span>
+          {/* ── tombol modal pengaturan warna template ── */}
+          <button
+            type="button"
+            onClick={() => setThemeOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={themeOpen}
+            title={t("themeSettings")}
+            className="flex items-center gap-1.5 border border-retro-green/30 px-2 py-[1px]
+              font-mono text-[10px] tracking-[0.18em] text-retro-green/70
+              transition-colors hover:border-retro-green hover:bg-retro-green hover:text-retro-black"
+          >
+            <span aria-hidden="true" className="not-italic">⚙</span>
+            {t("templateColors")}
+            {!themeIsDefault && (
+              <span
+                aria-hidden="true"
+                className="ml-0.5 block h-1.5 w-1.5 bg-current"
+                title={`${customCount} custom zone`}
+              />
+            )}
+          </button>
         </span>
         <span className="font-mono text-[11px] text-retro-white/25 tracking-widest">
           SYSTEM ONLINE ●
@@ -224,6 +252,22 @@ export default function Header() {
             </Link>
           ))}
 
+          <button
+            type="button"
+            onClick={() => {
+              setThemeOpen(true);
+              setMenuOpen(false);
+            }}
+            className="flex items-center justify-between font-retro text-xl tracking-widest
+              text-retro-white/70 hover:text-retro-green py-3
+              border-b border-retro-gray-light/20 transition-colors"
+          >
+            {t("templateColors")}
+            <span className="font-mono text-[10px] tracking-[0.2em] text-retro-green/60">
+              ⚙ SET
+            </span>
+          </button>
+
           {user ? (
             <>
               <Link to="/profile" onClick={() => setMenuOpen(false)} className="font-retro text-xl tracking-widest text-retro-white/70 hover:text-retro-green py-3 border-b border-retro-gray-light/20">
@@ -258,5 +302,9 @@ export default function Header() {
         </nav>
       </div>
     </header>
+
+    {/* ── Modal pengaturan warna template (Header / Main / Footer) ── */}
+    <ThemeSettingsModal isOpen={themeOpen} onClose={() => setThemeOpen(false)} />
+    </>
   );
 }

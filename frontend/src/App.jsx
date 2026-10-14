@@ -126,16 +126,19 @@ export default function App() {
         position="bottom-right"
         toastOptions={{
           style: {
-            background: "#0C6FBA",
-            color: "#FFFFFF",
-            border: "2px solid #DFF5FF",
+            background: "rgb(var(--retro-gray))",
+            color: "rgb(var(--retro-white))",
+            border: "2px solid rgb(var(--retro-green))",
             borderRadius: "0",
             fontFamily: '"Barlow Condensed", sans-serif',
             fontSize: "16px",
             letterSpacing: "0.05em",
           },
           success: {
-            iconTheme: { primary: "#DFF5FF", secondary: "#005BAC" },
+            iconTheme: {
+              primary: "rgb(var(--retro-green))",
+              secondary: "rgb(var(--retro-black))",
+            },
           },
         }}
       />

@@ -5,10 +5,26 @@
 @tailwind utilities;
 
 /* ── Variables ───────────────────────── */
+/* Palette template PACELAB PRO.
+   Nilai ditulis sebagai triplet RGB supaya utility Tailwind
+   (bg-retro-black, text-retro-green, dst.) tetap mendukung opacity
+   modifier: rgb(var(--retro-black) / 0.4).
+   Zona HEADER / MAIN / FOOTER bisa dioverride runtime oleh
+   ThemeContext — lihat src/utils/themeUtils.js. */
 :root {
-  --green: #DFF5FF;
-  --black: #005BAC;
-  --white: #FFFFFF;
+  --retro-black:       0 91 172;   /* background dasar   */
+  --retro-white:      255 255 255; /* teks utama         */
+  --retro-green:      223 245 255; /* accent utama       */
+  --retro-green-dark: 191 234 255; /* accent hover       */
+  --retro-green-light:  0 174 239; /* accent vivid       */
+  --retro-gray:        12 111 186; /* surface / kartu    */
+  --retro-gray-mid:    22 127 207; /* surface terang     */
+  --retro-gray-light:  92 174 226; /* border / garis     */
+
+  /* alias lama, tetap dipakai beberapa rule di bawah */
+  --green: rgb(var(--retro-green));
+  --black: rgb(var(--retro-black));
+  --white: rgb(var(--retro-white));
 }
 
 /* ── Base ────────────────────────────── */
@@ -19,13 +35,13 @@
 }
 
 html {
-  background: var(--black);
+  background: rgb(var(--retro-black));
 }
 
 body {
   font-family: 'Barlow Condensed', sans-serif;
-  background-color: var(--black);
-  color: var(--white);
+  background-color: rgb(var(--retro-black));
+  color: rgb(var(--retro-white));
   overflow-x: hidden;
   /* cursor: none; */
   /* aktifkan jika mau custom cursor */
@@ -33,13 +49,13 @@ body {
 
 /* ── Scrollbar ───────────────────────── */
 ::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-track { background: #005BAC; }
-::-webkit-scrollbar-thumb { background: #DFF5FF; }
+::-webkit-scrollbar-track { background: rgb(var(--retro-black)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--retro-green)); }
 
 /* ── Selection ───────────────────────── */
 ::selection {
-  background: #DFF5FF;
-  color: #005BAC;
+  background: rgb(var(--retro-green));
+  color: rgb(var(--retro-black));
 }
 
 /* ── Lenis ───────────────────────────── */
@@ -53,8 +69,8 @@ html.lenis, html.lenis body {
 /* ── Retro Grid ──────────────────────── */
 .retro-grid {
   background-image:
-    linear-gradient(rgba(223,245,255,0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(223,245,255,0.12) 1px, transparent 1px);
+    linear-gradient(rgb(var(--retro-green) / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--retro-green) / 0.12) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
@@ -120,14 +136,14 @@ html.lenis, html.lenis body {
 
 /* ── Card ────────────────────────────── */
 .card-retro {
-  background: #0C6FBA;
-  border: 2px solid #5CAEE2;
+  background: rgb(var(--retro-gray));
+  border: 2px solid rgb(var(--retro-gray-light));
   position: relative;
   transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
 }
 .card-retro:hover {
-  border-color: #DFF5FF;
-  box-shadow: 4px 4px 0 #DFF5FF;
+  border-color: rgb(var(--retro-green));
+  box-shadow: 4px 4px 0 rgb(var(--retro-green));
   transform: translate(-2px, -2px);
 }
 /* corner deco */
@@ -137,7 +153,7 @@ html.lenis, html.lenis body {
   position: absolute;
   width: 10px;
   height: 10px;
-  border-color: #DFF5FF;
+  border-color: rgb(var(--retro-green));
   border-style: solid;
 }
 .card-retro::before {
@@ -153,16 +169,16 @@ html.lenis, html.lenis body {
 .btn-retro {
   font-family: 'Bebas Neue', sans-serif;
   letter-spacing: 0.1em;
-  border: 2px solid #DFF5FF;
+  border: 2px solid rgb(var(--retro-green));
   transition: transform 0.12s, box-shadow 0.12s;
 }
 .btn-retro:hover:not(:disabled) {
   transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 #DFF5FF;
+  box-shadow: 4px 4px 0 rgb(var(--retro-green));
 }
 .btn-retro:active:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #DFF5FF;
+  box-shadow: 1px 1px 0 rgb(var(--retro-green));
 }
 .btn-retro:disabled {
   opacity: 0.4;
@@ -171,29 +187,29 @@ html.lenis, html.lenis body {
 
 /* ── Input ───────────────────────────── */
 .input-retro {
-  background: #0A69B1;
-  border: 2px solid #5CAEE2;
-  color: #FFFFFF;
+  background: rgb(var(--retro-gray));
+  border: 2px solid rgb(var(--retro-gray-light));
+  color: rgb(var(--retro-white));
   font-family: 'JetBrains Mono', monospace;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
 }
 .input-retro:focus {
-  border-color: #DFF5FF;
-  box-shadow: 0 0 0 1px #DFF5FF;
+  border-color: rgb(var(--retro-green));
+  box-shadow: 0 0 0 1px rgb(var(--retro-green));
 }
 .input-retro::placeholder {
-  color: #BFEAFF;
+  color: rgb(var(--retro-green-dark));
 }
 
 /* ── Text Effects ────────────────────── */
 .text-neon {
-  color: #DFF5FF;
-  text-shadow: 0 0 7px #DFF5FF, 0 0 20px rgba(223,245,255,0.35);
+  color: rgb(var(--retro-green));
+  text-shadow: 0 0 7px rgb(var(--retro-green)), 0 0 20px rgb(var(--retro-green) / 0.35);
 }
 .text-retro-shadow {
-  text-shadow: 3px 3px 0 #DFF5FF;
+  text-shadow: 3px 3px 0 rgb(var(--retro-green));
 }
 
 /* ── Tab active underline ────────────── */
@@ -205,7 +221,7 @@ html.lenis, html.lenis body {
   position: absolute;
   bottom: -2px; left: 0; right: 0;
   height: 2px;
-  background: #DFF5FF;
+  background: rgb(var(--retro-green));
 }
 
 /* ── Image loading / optimization ────── */
@@ -237,7 +253,7 @@ html.lenis, html.lenis body {
 .image-loading-overlay {
   position: absolute;
   inset: 0;
-  background-color: rgba(12,111,186,0.28);
+  background-color: rgb(var(--retro-gray) / 0.28);
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
@@ -263,8 +279,8 @@ html.lenis, html.lenis body {
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.8);
-  background: rgba(0,91,172,0.85);
+  color: rgb(var(--retro-white) / 0.8);
+  background: rgb(var(--retro-black) / 0.85);
   z-index: 3;
 }
 
@@ -291,9 +307,9 @@ html.lenis, html.lenis body {
 .retro-modal-panel {
   max-height: 88vh;
   overflow: hidden;
-  border: 2px solid #DFF5FF;
-  background: #0C6FBA;
-  box-shadow: 8px 8px 0 #DFF5FF;
+  border: 2px solid rgb(var(--retro-green));
+  background: rgb(var(--retro-gray));
+  box-shadow: 8px 8px 0 rgb(var(--retro-green));
   transform: translateY(12px);
   opacity: 0;
   will-change: transform, opacity;
