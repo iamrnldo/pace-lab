@@ -17,7 +17,7 @@ export const ZONE_LABEL_KEYS = {
   footer: "zoneFooter",
 };
 
-// Warna sumber per zona. Default = palette Pocari Blue yang lama.
+// Warna sumber per zona. Default = palette biru/putih PaceLab.
 export const DEFAULT_ZONE_COLORS = {
   bg: "#005BAC", // -> --retro-black
   accent: "#DFF5FF", // -> --retro-green
@@ -84,9 +84,15 @@ export function shadeToContrast(hex, againstHex, targetRatio = 4.5, options = {}
 
 // ── Preset palet siap pakai (diterapkan ke 3 zona sekaligus) ─────────────────
 export const THEME_PRESETS = [
+  // Catatan: id "pocari" dipertahankan (internal) agar tidak ada referensi yang
+  // putus; yang tampil ke pengguna adalah label di bawah.
   {
     id: "pocari",
-    label: "POCARI BLUE",
+    label: "DEFAULT COLOR",
+    hint: {
+      en: "PaceLab default palette",
+      id: "Palette default PaceLab",
+    },
     colors: { bg: "#005BAC", accent: "#DFF5FF", text: "#FFFFFF" },
   },
   {

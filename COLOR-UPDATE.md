@@ -52,7 +52,7 @@ Pratinjau warna: `PACELAB_WARM_SAND_PREVIEW.html`.
 
 | # | Nama | Tipe |
 | --- | --- | --- |
-| 1 | POCARI BLUE | tema gelap (default) |
+| 1 | DEFAULT COLOR | tema gelap (warna default PaceLab, `#005BAC` / `#DFF5FF` / `#FFFFFF`) |
 | 2 | CARBON | tema gelap |
 | 3 | SUNSET | tema gelap |
 | 4 | MONOCHROME | tema gelap |
@@ -73,6 +73,10 @@ Turunan otomatis: kartu `#CECECE`, permukaan tengah `#B1B1B1`, garis `#838383`, 
 `#131313` (pada tema terang hover dibuat lebih gelap).
 
 Preset `TERMINAL AMBER`, `RETRO GREEN`, dan `CRIMSON` dihapus sesuai permintaan pemilik produk.
+
+Preset pertama berganti **nama** menjadi `DEFAULT COLOR` (sebelumnya `POCARI BLUE`); kode warnanya
+tidak diubah sama sekali, dan posisinya tetap paling awal sebagai tema default aplikasi. Id internal
+tetap `pocari` agar tidak ada referensi yang putus — id ini tidak pernah ditampilkan ke pengguna.
 
 Catatan: tema yang sudah tersimpan di localStorage tetap berlaku walaupun preset sumbernya dihapus
 (warnanya tersimpan sebagai kode hex), jadi tidak ada tampilan yang rusak. Chip preset hanya akan

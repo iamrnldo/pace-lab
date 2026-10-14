@@ -89,7 +89,7 @@ const THEME_PRESET_COUNT = (themeUtils.match(/^\s{4}id: "/gm) || []).length;
 
 // 4b) Semua preset tema tersedia (termasuk preset terbaru)
 const EXPECTED_PRESETS = [
-  ["pocari", "POCARI BLUE"],
+  ["pocari", "DEFAULT COLOR"],
   ["carbon", "CARBON"],
   ["sunset", "SUNSET"],
   ["mono", "MONOCHROME"],

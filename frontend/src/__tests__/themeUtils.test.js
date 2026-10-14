@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_THEME_VARS_KEYS,
+  DEFAULT_ZONE_COLORS,
   applyRootVars,
   shadeToContrast,
   buildZoneVars,
@@ -174,7 +175,7 @@ test("preset: semua preset valid, bisa diterapkan ke 3 zona, dan terdeteksi akti
   assert.deepEqual(
     THEME_PRESETS.map((preset) => preset.label),
     [
-      "POCARI BLUE",
+      "DEFAULT COLOR",
       "CARBON",
       "SUNSET",
       "MONOCHROME",
@@ -260,6 +261,42 @@ test("preset WARM SAND memakai palette cream/beige dan tetap terbaca", () => {
   const applied = applyPresetToTheme("warm-sand", createDefaultTheme());
   assert.equal(findActivePreset(applied), "warm-sand");
   THEME_ZONES.forEach((zone) => assert.deepEqual(applied[zone], preset.colors));
+});
+
+test("preset default bernama DEFAULT COLOR dengan warna default PaceLab", () => {
+  const preset = THEME_PRESETS.find((item) => item.id === "pocari");
+  assert.ok(preset, "preset default harus ada");
+
+  // hanya nama yang berubah; warna tetap palette default PaceLab
+  assert.equal(preset.label, "DEFAULT COLOR");
+  assert.deepEqual(preset.colors, {
+    bg: "#005BAC",
+    accent: "#DFF5FF",
+    text: "#FFFFFF",
+  });
+  assert.deepEqual(preset.colors, DEFAULT_ZONE_COLORS);
+
+  // hint tetap ramah pengguna (bilingual) dan tidak memakai nama lama
+  assert.ok(preset.hint?.en && preset.hint?.id);
+  const visibleText = [
+    preset.label,
+    preset.hint.en,
+    preset.hint.id,
+    ...(preset.swatches || []),
+  ].join(" ");
+  assert.equal(
+    /pocari/i.test(visibleText),
+    false,
+    "nama lama tidak boleh muncul pada teks yang tampil ke pengguna",
+  );
+
+  // tema default aplikasi tetap terdeteksi sebagai preset default
+  assert.equal(findActivePreset(createDefaultTheme()), "pocari");
+  assert.deepEqual(
+    buildZoneVars(preset.colors),
+    DEFAULT_ZONE_VARS,
+    "variabel zona default tidak berubah sama sekali",
+  );
 });
 
 test("preset MONOCHROME V2 adalah kebalikan (inversi) dari MONOCHROME", () => {
