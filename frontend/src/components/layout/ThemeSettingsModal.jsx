@@ -5,6 +5,10 @@ import Modal from "../ui/Modal";
 import { useTheme } from "../../context/ThemeContext";
 import { useLanguage } from "../../context/LanguageContext";
 import {
+  APP_VERSION_LABEL,
+  THEME_ENGINE_VERSION,
+} from "../../constants/appVersion";
+import {
   COLOR_LABEL_KEYS,
   THEME_COLOR_KEYS,
   THEME_PRESETS,
@@ -89,7 +93,7 @@ function ZonePreview({ zone, colors }) {
           className="flex items-center justify-between border-b pb-1 font-mono text-[7px] tracking-[0.2em]"
           style={{ borderColor: line, color: colors.accent }}
         >
-          <span>PACELAB PRO // v1.0.0</span>
+          <span>PACELAB PRO // {APP_VERSION_LABEL}</span>
           <span>SYSTEM ONLINE ●</span>
         </div>
         <div className="mt-2 flex items-center justify-between">
@@ -251,11 +255,21 @@ function ZoneCard({ zone }) {
   );
 }
 
+// Warna yang ditampilkan pada chip preset: pakai seluruh palette kalau ada,
+// kalau tidak fallback ke 3 warna tema.
+function getPresetSwatches(preset) {
+  if (Array.isArray(preset.swatches) && preset.swatches.length) {
+    return preset.swatches;
+  }
+  return ["bg", "accent", "text"].map((key) => preset.colors[key]);
+}
+
 // ── Modal utama ──────────────────────────────────────────────────────────────
 export default function ThemeSettingsModal({ isOpen, onClose }) {
   const { theme, applyPreset, resetTheme, isDefault } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const activePreset = findActivePreset(theme);
+  const activePresetData = THEME_PRESETS.find((preset) => preset.id === activePreset);
 
   return (
     <Modal
@@ -269,8 +283,11 @@ export default function ThemeSettingsModal({ isOpen, onClose }) {
         {/* Preset palet */}
         <section>
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-            <h4 className="font-retro text-lg tracking-widest text-retro-white">
+            <h4 className="flex items-baseline gap-2 font-retro text-lg tracking-widest text-retro-white">
               {t("presets")}
+              <span className="font-mono text-[10px] tracking-[0.18em] text-retro-green/80">
+                ({THEME_PRESETS.length})
+              </span>
             </h4>
             <span className="font-mono text-[9px] tracking-[0.18em] text-retro-white/35">
               {t("presetHint")}
@@ -279,11 +296,13 @@ export default function ThemeSettingsModal({ isOpen, onClose }) {
           <div className="flex flex-wrap gap-2">
             {THEME_PRESETS.map((preset) => {
               const isActive = activePreset === preset.id;
+              const swatches = getPresetSwatches(preset);
               return (
                 <button
                   key={preset.id}
                   type="button"
                   onClick={() => applyPreset(preset.id)}
+                  title={`${preset.label} — ${swatches.join(" ")}`}
                   className={clsx(
                     "flex items-center gap-2 border px-2 py-2 transition-colors",
                     isActive
@@ -292,21 +311,40 @@ export default function ThemeSettingsModal({ isOpen, onClose }) {
                   )}
                 >
                   <span className="flex overflow-hidden border border-retro-gray-light/30">
-                    {["bg", "accent", "text"].map((key) => (
+                    {swatches.map((color, index) => (
                       <span
-                        key={key}
+                        key={`${color}-${index}`}
                         className="block h-4 w-[7px]"
-                        style={{ backgroundColor: preset.colors[key] }}
+                        style={{ backgroundColor: color }}
                       />
                     ))}
                   </span>
                   <span className="font-mono text-[10px] tracking-[0.14em]">
                     {preset.label}
                   </span>
+                  {preset.isNew && (
+                    <span className="border border-current px-1 py-[1px] font-mono text-[8px] tracking-[0.14em]">
+                      NEW
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
+          {activePresetData && (
+            <p className="mt-3 flex flex-wrap items-center gap-2 font-mono text-[9px] tracking-[0.14em] text-retro-white/40">
+              <span className="text-retro-green/80">{t("palette")}:</span>
+              {getPresetSwatches(activePresetData).map((color, index) => (
+                <span
+                  key={`${color}-${index}`}
+                  className="block h-3 w-3 border border-retro-gray-light/40"
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              <span>{activePresetData.hint?.[language] || activePresetData.label}</span>
+            </p>
+          )}
         </section>
 
         {/* Zona */}
@@ -318,9 +356,15 @@ export default function ThemeSettingsModal({ isOpen, onClose }) {
 
         {/* Footer modal */}
         <section className="flex flex-wrap items-center justify-between gap-3 border-t border-retro-gray-light/25 pt-4">
-          <p className="font-mono text-[9px] leading-relaxed tracking-[0.16em] text-retro-white/35">
-            {t("themeSavedLocally")}
-          </p>
+          <div className="space-y-1">
+            <p className="font-mono text-[9px] leading-relaxed tracking-[0.16em] text-retro-white/35">
+              {t("themeSavedLocally")}
+            </p>
+            {/* Penanda versi: memudahkan memastikan file yang terpasang sudah terbaru */}
+            <p className="font-mono text-[9px] tracking-[0.16em] text-retro-green/50">
+              {t("themeEngine")} v{THEME_ENGINE_VERSION} · {THEME_PRESETS.length} {t("presets")}
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"

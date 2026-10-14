@@ -59,6 +59,29 @@ export function createDefaultTheme() {
   };
 }
 
+// ── Shading otomatis untuk tema terang ──────────────────────────────────────
+// Beberapa palette (mis. cream/beige) hanya berisi warna terang, sehingga tidak
+// ada pasangan yang cukup kontras untuk teks. Helper ini menggelapkan warna
+// (tetap dalam keluarga hue yang sama) sampai target kontras WCAG tercapai.
+export const SHADE_TARGET = "#120F0D";
+
+export function shadeToContrast(hex, againstHex, targetRatio = 4.5, options = {}) {
+  const source = normalizeHex(hex);
+  const against = normalizeHex(againstHex);
+  if (!source || !against) return source || normalizeHex(hex) || hex;
+  if (contrastRatio(source, against) >= targetRatio) return source;
+
+  const toward = normalizeHex(options.toward) || SHADE_TARGET;
+  const steps = 200;
+  for (let step = 1; step <= steps; step += 1) {
+    const candidate = mixHex(source, toward, step / steps);
+    if (candidate && contrastRatio(candidate, against) >= targetRatio) {
+      return candidate;
+    }
+  }
+  return mixHex(source, toward, 1) || source;
+}
+
 // ── Preset palet siap pakai (diterapkan ke 3 zona sekaligus) ─────────────────
 export const THEME_PRESETS = [
   {
@@ -72,21 +95,6 @@ export const THEME_PRESETS = [
     colors: { bg: "#0B0F14", accent: "#00E5A0", text: "#F1F7F8" },
   },
   {
-    id: "amber",
-    label: "TERMINAL AMBER",
-    colors: { bg: "#160F03", accent: "#FFB000", text: "#FFE9B8" },
-  },
-  {
-    id: "retro-green",
-    label: "RETRO GREEN",
-    colors: { bg: "#03170D", accent: "#39FF88", text: "#EAFFF3" },
-  },
-  {
-    id: "crimson",
-    label: "CRIMSON",
-    colors: { bg: "#2A0710", accent: "#FF4D6D", text: "#FFE6EC" },
-  },
-  {
     id: "sunset",
     label: "SUNSET",
     colors: { bg: "#2B1055", accent: "#FF8A3D", text: "#FFF1E0" },
@@ -95,6 +103,36 @@ export const THEME_PRESETS = [
     id: "mono",
     label: "MONOCHROME",
     colors: { bg: "#101010", accent: "#E8E8E8", text: "#FFFFFF" },
+  },
+  // Versi reverse dari MONOCHROME: setiap channel dibalik (255 - x), sehingga
+  // #101010 -> #EFEFEF (latar), #E8E8E8 -> #171717 (aksen), #FFFFFF -> #000000 (teks).
+  {
+    id: "mono-v2",
+    label: "MONOCHROME V2",
+    isNew: true,
+    hint: {
+      en: "Monochrome reversed — light theme",
+      id: "Kebalikan monochrome — tema terang",
+    },
+    swatches: ["#FFFFFF", "#EFEFEF", "#E8E8E8", "#171717", "#101010"],
+    colors: { bg: "#EFEFEF", accent: "#171717", text: "#000000" },
+  },
+  // Palette cream & beige (semua warna terang), jadi dijalankan sebagai TEMA
+  // TERANG: latar memakai cream asli, sedangkan aksen dan teks diturunkan
+  // (shade) dari warna palette yang sama sampai kontras WCAG tercapai.
+  {
+    id: "warm-sand",
+    label: "WARM SAND",
+    hint: {
+      en: "Warm cream & beige — light theme",
+      id: "Cream & beige hangat — tema terang",
+    },
+    swatches: ["#EDEDE9", "#D6CCC2", "#F5EBE0", "#E3D5CA", "#D5BDAF"],
+    colors: {
+      bg: "#F5EBE0",
+      accent: shadeToContrast("#D5BDAF", "#F5EBE0", 4.5),
+      text: shadeToContrast("#D6CCC2", "#F5EBE0", 10),
+    },
   },
 ];
 
@@ -197,14 +235,22 @@ export function buildZoneVars(zoneColors) {
 
   if (isDefault) return { ...DEFAULT_ZONE_VARS };
 
+  // Pada tema terang (latar lebih terang dari teks), state hover accent harus
+  // jadi lebih GELAP supaya teks di atas tombol accent tetap terbaca.
+  const isLightTheme =
+    relativeLuminance(bg) > relativeLuminance(text);
+  const accentShadeTarget = isLightTheme ? text : bg;
+  const accentDarkMix = isLightTheme ? 0.18 : 0.28;
+  const accentLightMix = isLightTheme ? 0.38 : 0.55;
+
   return {
     // warna dasar
     "--retro-black": hexToTriplet(bg),
     "--retro-white": hexToTriplet(text),
     "--retro-green": hexToTriplet(accent),
     // turunan accent: dipakai untuk hover button & badge
-    "--retro-green-dark": hexToTriplet(mixHex(accent, bg, 0.28)),
-    "--retro-green-light": hexToTriplet(mixHex(accent, bg, 0.55)),
+    "--retro-green-dark": hexToTriplet(mixHex(accent, accentShadeTarget, accentDarkMix)),
+    "--retro-green-light": hexToTriplet(mixHex(accent, accentShadeTarget, accentLightMix)),
     // turunan surface/border: campuran background ke arah warna teks
     "--retro-gray": hexToTriplet(mixHex(bg, text, 0.14)),
     "--retro-gray-mid": hexToTriplet(mixHex(bg, text, 0.26)),

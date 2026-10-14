@@ -25,6 +25,7 @@ const requiredFiles = [
   "src/utils/themeUtils.js",
   "src/context/ThemeContext.jsx",
   "src/components/layout/ThemeSettingsModal.jsx",
+  "vite.config.js",
   "src/components/ui/ErrorBoundary.jsx",
   "src/components/layout/MainLayout.jsx",
   "src/components/layout/Header.jsx",
@@ -84,6 +85,43 @@ record(
   "Versi terbaru memakai fallback palette default, bukan throw.",
 );
 
+const THEME_PRESET_COUNT = (themeUtils.match(/^\s{4}id: "/gm) || []).length;
+
+// 4b) Semua preset tema tersedia (termasuk preset terbaru)
+const EXPECTED_PRESETS = [
+  ["pocari", "POCARI BLUE"],
+  ["carbon", "CARBON"],
+  ["sunset", "SUNSET"],
+  ["mono", "MONOCHROME"],
+  ["mono-v2", "MONOCHROME V2"],
+  ["warm-sand", "WARM SAND"],
+];
+const missingPresets = EXPECTED_PRESETS.filter(
+  ([id]) => !themeUtils.includes(`id: "${id}"`),
+);
+record(
+  `Preset tema lengkap (${EXPECTED_PRESETS.length})`,
+  missingPresets.length === 0,
+  missingPresets.length
+    ? `Belum ada: ${missingPresets.map(([, label]) => label).join(", ")} → salin ulang src/utils/themeUtils.js versi terbaru.`
+    : "",
+);
+if (missingPresets.length === 0) {
+  console.log(
+    `       preset: ${EXPECTED_PRESETS.map(([, label]) => label).join(" / ")}`,
+  );
+}
+record(
+  "Preset berbasis palette cream/beige (WARM SAND) memakai shadeToContrast",
+  themeUtils.includes("shadeToContrast") && themeUtils.includes("#D5BDAF"),
+  "Preset WARM SAND butuh helper shadeToContrast() di file yang sama.",
+);
+record(
+  "Modal menampilkan jumlah preset + badge NEW",
+  exists("src/components/layout/ThemeSettingsModal.jsx") &&
+    read("src/components/layout/ThemeSettingsModal.jsx").includes("THEME_PRESETS.length"),
+);
+
 // 5) Konsumen tema memakai useTheme
 [
   ["src/components/layout/Header.jsx", "useTheme()"],
@@ -115,6 +153,38 @@ record(
   ),
 );
 
+// 7b) Penanda versi build (untuk memastikan file terbaru sudah terpasang)
+const appVersionSource = exists("src/constants/appVersion.js")
+  ? read("src/constants/appVersion.js")
+  : "";
+const versionMatch = appVersionSource.match(/APP_VERSION\s*=\s*"([^"]+)"/);
+const presetCountMatch = appVersionSource.match(/EXPECTED_PRESET_COUNT\s*=\s*(\d+)/);
+record(
+  "src/constants/appVersion.js tersedia",
+  Boolean(versionMatch),
+  "File ini memuat penanda versi build yang tampil di header.",
+);
+const headerSource = exists("src/components/layout/Header.jsx")
+  ? read("src/components/layout/Header.jsx")
+  : "";
+record(
+  "Header menampilkan versi build dari konstanta",
+  headerSource.includes("APP_VERSION_LABEL"),
+  "Header harus menampilkan `PACELAB PRO // v<versi>` dari appVersion.js.",
+);
+record(
+  "Modal memakai THEME_ENGINE_VERSION",
+  read("src/components/layout/ThemeSettingsModal.jsx").includes("THEME_ENGINE_VERSION"),
+);
+if (presetCountMatch) {
+  const expected = Number(presetCountMatch[1]);
+  record(
+    `EXPECTED_PRESET_COUNT cocok dengan jumlah preset (${expected})`,
+    THEME_PRESET_COUNT === expected,
+    `appVersion.js menyebut ${expected}, themeUtils.js punya ${THEME_PRESET_COUNT}.`,
+  );
+}
+
 // 8) vite.config.js: host non-lokal diizinkan (VPS / tunnel / preview)
 const viteConfig = exists("vite.config.js") ? read("vite.config.js") : "";
 record(
@@ -131,7 +201,10 @@ record(
 );
 
 // ── Laporan ─────────────────────────────────────────────────────────────────
-console.log("\nPACELAB FRONTEND DOCTOR\n" + "─".repeat(60));
+console.log(
+  `\nPACELAB FRONTEND DOCTOR${versionMatch ? ` — app v${versionMatch[1]}` : ""}\n` +
+    "─".repeat(60),
+);
 let failed = 0;
 results.forEach((item) => {
   if (!item.ok) failed += 1;

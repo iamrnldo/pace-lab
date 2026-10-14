@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeSettingsModal from "./ThemeSettingsModal";
+import { APP_VERSION_LABEL } from "../../constants/appVersion";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -75,7 +76,7 @@ export default function Header() {
       {/* ── top strip — desktop only ── */}
       <div className="hidden md:flex items-center justify-between px-6 h-7 border-b border-retro-gray-light/10">
         <span className="font-mono text-[11px] text-retro-white/25 tracking-widest">
-          PACELAB PRO // v1.0.0
+          PACELAB PRO // {APP_VERSION_LABEL}
         </span>
         <span className="flex items-center gap-2">
           <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   DEFAULT_THEME_VARS_KEYS,
   applyRootVars,
+  shadeToContrast,
   buildZoneVars,
   createDefaultTheme,
   describeTheme,
@@ -16,6 +17,7 @@ import {
   setZoneColor,
   applyPresetToTheme,
   contrastRatio,
+  relativeLuminance,
   DEFAULT_ZONE_VARS,
   THEME_PRESETS,
   THEME_ZONES,
@@ -142,14 +144,62 @@ test("preset: semua preset valid, bisa diterapkan ke 3 zona, dan terdeteksi akti
     ["bg", "accent", "text"].forEach((key) => {
       assert.ok(normalizeHex(preset.colors[key]), `${preset.id}.${key}`);
     });
+    // label harus ramah dibaca & id unik
+    assert.match(preset.label, /^[A-Z0-9 &/+-]+$/, `${preset.id} label = ${preset.label}`);
+    if (preset.swatches) {
+      assert.ok(preset.swatches.length >= 3, `${preset.id} punya minimal 3 swatch`);
+      preset.swatches.forEach((color) =>
+        assert.ok(normalizeHex(color), `${preset.id} swatch ${color}`),
+      );
+    }
   });
 
-  const applied = applyPresetToTheme("amber", createDefaultTheme());
+  const ids = THEME_PRESETS.map((preset) => preset.id);
+  assert.equal(new Set(ids).size, ids.length, "id preset harus unik");
+
+  // daftar preset final — regresi "preset hilang/tertambah" harus ketahuan di sini
+  assert.equal(
+    THEME_PRESETS.length,
+    6,
+    `jumlah preset = ${THEME_PRESETS.length} (seharusnya 6)`,
+  );
+  ["pocari", "carbon", "sunset", "mono", "mono-v2", "warm-sand"].forEach((id) =>
+    assert.ok(ids.includes(id), `preset ${id} harus terdaftar`),
+  );
+  [
+    "amber",
+    "retro-green",
+    "crimson",
+  ].forEach((id) => assert.ok(!ids.includes(id), `preset ${id} sudah dihapus`));
+  assert.deepEqual(
+    THEME_PRESETS.map((preset) => preset.label),
+    [
+      "POCARI BLUE",
+      "CARBON",
+      "SUNSET",
+      "MONOCHROME",
+      "MONOCHROME V2",
+      "WARM SAND",
+    ],
+    "urutan & nama preset",
+  );
+  assert.equal(
+    THEME_PRESETS.find((preset) => preset.id === "mono-v2").isNew,
+    true,
+    "MONOCHROME V2 ditandai sebagai preset baru",
+  );
+  assert.equal(
+    THEME_PRESETS.find((preset) => preset.id === "warm-sand").isNew,
+    undefined,
+    "badge NEW pindah ke preset terbaru",
+  );
+
+  const applied = applyPresetToTheme("sunset", createDefaultTheme());
   THEME_ZONES.forEach((zone) => {
-    assert.equal(applied[zone].bg, "#160F03");
-    assert.equal(applied[zone].accent, "#FFB000");
+    assert.equal(applied[zone].bg, "#2B1055");
+    assert.equal(applied[zone].accent, "#FF8A3D");
   });
-  assert.equal(findActivePreset(applied), "amber");
+  assert.equal(findActivePreset(applied), "sunset");
   assert.equal(findActivePreset(createDefaultTheme()), "pocari");
 
   // preset tidak dikenal -> tema tidak berubah
@@ -157,6 +207,141 @@ test("preset: semua preset valid, bisa diterapkan ke 3 zona, dan terdeteksi akti
     applyPresetToTheme("tidak-ada", createDefaultTheme()),
     createDefaultTheme(),
   );
+});
+
+test("preset WARM SAND memakai palette cream/beige dan tetap terbaca", () => {
+  const preset = THEME_PRESETS.find((item) => item.id === "warm-sand");
+  assert.ok(preset, "preset warm-sand harus ada");
+
+  // nama ramah pengguna + seluruh 5 kode warna yang diminta
+  assert.equal(preset.label, "WARM SAND");
+  assert.deepEqual(preset.swatches, [
+    "#EDEDE9",
+    "#D6CCC2",
+    "#F5EBE0",
+    "#E3D5CA",
+    "#D5BDAF",
+  ]);
+  assert.equal(preset.hint.en.length > 0, true);
+  assert.equal(preset.hint.id.length > 0, true);
+
+  const { bg, accent, text } = preset.colors;
+
+  // latar memakai cream asli dari palette
+  assert.equal(bg, "#F5EBE0");
+
+  // teks utama sangat terbaca, dan teks aksen tetap lolos ambang WCAG
+  assert.ok(contrastRatio(text, bg) >= 9, `teks vs latar = ${contrastRatio(text, bg)}`);
+  assert.equal(getContrastLevel(text, bg), "good");
+  assert.ok(
+    contrastRatio(accent, bg) >= 4.5,
+    `accent vs latar = ${contrastRatio(accent, bg)}`,
+  );
+  assert.equal(getContrastLevel(accent, bg), "good");
+
+  // teks tombol (memakai warna latar) harus terbaca di atas tombol accent
+  assert.ok(contrastRatio(bg, accent) >= 4.5, `teks tombol vs accent = ${contrastRatio(bg, accent)}`);
+
+  // aksen & teks masih satu keluarga hue dengan palette (warm: R > G > B)
+  [accent, text].forEach((hex) => {
+    const rgb = { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) };
+    assert.ok(rgb.r > rgb.g && rgb.g > rgb.b, `${hex} harus tetap hangat (R>G>B)`);
+  });
+
+  // tema terang: hover tombol accent jadi lebih gelap (bukan lebih terang)
+  const vars = buildZoneVars(preset.colors);
+  const toHex = (triplet) =>
+    "#" + triplet.split(" ").map((v) => Number(v).toString(16).padStart(2, "0")).join("").toUpperCase();
+  const bgLum = relativeLuminance(bg);
+  assert.ok(relativeLuminance(toHex(vars["--retro-green-dark"])) < relativeLuminance(accent));
+  assert.ok(bgLum > relativeLuminance(text), "zona warm-sand harus terang");
+
+  // bisa diterapkan & terdeteksi aktif
+  const applied = applyPresetToTheme("warm-sand", createDefaultTheme());
+  assert.equal(findActivePreset(applied), "warm-sand");
+  THEME_ZONES.forEach((zone) => assert.deepEqual(applied[zone], preset.colors));
+});
+
+test("preset MONOCHROME V2 adalah kebalikan (inversi) dari MONOCHROME", () => {
+  const mono = THEME_PRESETS.find((item) => item.id === "mono");
+  const v2 = THEME_PRESETS.find((item) => item.id === "mono-v2");
+  assert.ok(mono && v2, "kedua preset monochrome harus ada");
+  assert.equal(v2.label, "MONOCHROME V2");
+
+  const invert = (hex) =>
+    "#" +
+    hex
+      .slice(1)
+      .match(/../g)
+      .map((part) => (255 - parseInt(part, 16)).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+
+  // setiap channel dibalik: 255 - x
+  assert.equal(v2.colors.bg, invert(mono.colors.bg));
+  assert.equal(v2.colors.accent, invert(mono.colors.accent));
+  assert.equal(v2.colors.text, invert(mono.colors.text));
+  assert.deepEqual(v2.colors, {
+    bg: "#EFEFEF",
+    accent: "#171717",
+    text: "#000000",
+  });
+
+  // peran warna benar-benar bertukar: latar gelap -> terang, teks terang -> gelap
+  assert.equal(relativeLuminance(v2.colors.bg) > relativeLuminance(mono.colors.bg), true);
+  assert.equal(relativeLuminance(v2.colors.text) < relativeLuminance(mono.colors.text), true);
+  assert.equal(getContrastLevel(v2.colors.text, v2.colors.bg), "good");
+  assert.equal(getContrastLevel(v2.colors.accent, v2.colors.bg), "good");
+  assert.ok(contrastRatio(v2.colors.text, v2.colors.bg) >= 15);
+  assert.ok(contrastRatio(v2.colors.bg, v2.colors.accent) >= 10);
+
+  // tema terang -> hover aksen lebih gelap, bukan lebih terang
+  const vars = buildZoneVars(v2.colors);
+  const toHex = (triplet) =>
+    "#" +
+    triplet
+      .split(" ")
+      .map((value) => Number(value).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+  assert.equal(
+    relativeLuminance(toHex(vars["--retro-green-dark"])) <
+      relativeLuminance(v2.colors.accent),
+    true,
+  );
+  assert.equal(
+    relativeLuminance(toHex(vars["--retro-gray"])) < relativeLuminance(v2.colors.bg),
+    true,
+    "kartu tetap lebih gelap dari latar",
+  );
+
+  // bisa diterapkan & terdeteksi aktif
+  const applied = applyPresetToTheme("mono-v2", createDefaultTheme());
+  assert.equal(findActivePreset(applied), "mono-v2");
+  THEME_ZONES.forEach((zone) => assert.deepEqual(applied[zone], v2.colors));
+  assert.ok(
+    Array.isArray(v2.swatches) && v2.swatches.length >= 3,
+    "swatch palette tersedia untuk chip preset",
+  );
+});
+
+test("shadeToContrast menurunkan warna sampai target kontras tercapai", () => {
+  const bg = "#F5EBE0";
+
+  const shaded = shadeToContrast("#D5BDAF", bg, 4.5);
+  assert.ok(contrastRatio(shaded, bg) >= 4.5);
+  assert.ok(relativeLuminance(shaded) < relativeLuminance("#D5BDAF"), "harus lebih gelap");
+
+  // warna yang sudah lolos tidak diubah
+  assert.equal(shadeToContrast("#000000", "#FFFFFF", 4.5), "#000000");
+
+  // target tidak mungkin tercapai -> tetap mengembalikan hex valid
+  const impossible = shadeToContrast("#F5EBE0", "#F5EBE0", 21);
+  assert.match(impossible, /^#[0-9A-F]{6}$/);
+
+  // input rusak tidak membuat crash
+  assert.equal(shadeToContrast("bukan-warna", bg, 4.5), "bukan-warna");
+  assert.equal(shadeToContrast("#EDEDE9", "xx", 4.5), "#EDEDE9");
 });
 
 test("applyRootVars menulis variabel zona MAIN ke root element", () => {

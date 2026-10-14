@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PaceLab — Palette WARM SAND</title>
+    <style>
+      :root {
+        --bg: #f5ebe0;
+        --text: #3b3733;
+        --accent: #766960;
+        --accent-hover: #6b6058;
+        --surface: #dbd2c8;
+        --surface-mid: #c5bcb3;
+        --line: #a19a92;
+        --font-title: "Arial Narrow", Impact, "Haettenschweiler", sans-serif;
+        --font-body: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+        --font-mono: "Courier New", monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-body);
+        padding: 24px;
+        line-height: 1.5;
+      }
+      .wrap { max-width: 980px; margin: 0 auto; }
+      h1 {
+        font-family: var(--font-title);
+        letter-spacing: 0.06em;
+        font-size: 34px;
+        margin-bottom: 4px;
+      }
+      h2 {
+        font-family: var(--font-title);
+        letter-spacing: 0.1em;
+        font-size: 20px;
+        margin: 28px 0 10px;
+        text-transform: uppercase;
+      }
+      .sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.22em; opacity: 0.6; }
+
+      /* palette asli */
+      .palette { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+      .chip { width: 150px; border: 2px solid var(--line); }
+      .chip .swatch { height: 64px; }
+      .chip .code { font-family: var(--font-mono); font-size: 11px; padding: 6px 8px; letter-spacing: 0.1em; }
+
+      /* mockup aplikasi */
+      .mock { border: 2px solid var(--line); margin-top: 10px; overflow: hidden; }
+      .topbar {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 6px 12px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em;
+        border-bottom: 1px solid var(--surface-mid);
+      }
+      .topbar .clock { color: var(--accent); font-weight: 700; }
+      .topbar .setting { border: 1px solid var(--accent); padding: 2px 8px; }
+      .navbar { display: flex; align-items: center; justify-content: space-between; padding: 12px; }
+      .logo { display: flex; align-items: center; gap: 10px; }
+      .logo .mark {
+        width: 34px; height: 34px; border: 2px solid var(--accent); color: var(--accent);
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-title); font-size: 20px;
+      }
+      .logo .name { font-family: var(--font-title); font-size: 26px; letter-spacing: 0.08em; }
+      .logo .name b { color: var(--accent); }
+      .logo .tag { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.35em; opacity: 0.55; }
+      .nav { display: flex; gap: 16px; font-family: var(--font-title); letter-spacing: 0.12em; font-size: 15px; }
+      .nav .active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+      .btn {
+        background: var(--accent); color: var(--bg); border: 2px solid var(--accent);
+        font-family: var(--font-title); letter-spacing: 0.12em; padding: 8px 18px; font-size: 14px;
+      }
+      .btn.ghost { background: transparent; color: var(--accent); }
+      .strip {
+        background: var(--accent); color: var(--bg); font-family: var(--font-title);
+        letter-spacing: 0.3em; font-size: 11px; padding: 5px 12px;
+      }
+      .main { padding: 16px; }
+      .main .head { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.28em; color: var(--accent); }
+      .main h3 { font-family: var(--font-title); font-size: 24px; margin: 6px 0 12px; letter-spacing: 0.04em; }
+      .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .card { background: var(--surface); border: 2px solid var(--line); padding: 14px; }
+      .card .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; opacity: 0.7; }
+      .card .v { font-family: var(--font-title); font-size: 28px; margin: 4px 0 2px; }
+      .card .n { font-size: 13px; opacity: 0.75; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 13px; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--surface-mid); }
+      th { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; opacity: 0.65; }
+      .num { font-family: var(--font-mono); }
+      .good { color: #2f6b3f; font-family: var(--font-mono); font-size: 11px; }
+      .footer { border-top: 2px solid var(--surface-mid); margin-top: 14px; }
+      .footgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 16px; }
+      .footgrid h4 { font-family: var(--font-title); letter-spacing: 0.16em; color: var(--accent); font-size: 14px; margin-bottom: 6px; }
+      .footgrid p, .footgrid li { font-size: 13px; opacity: 0.7; }
+      .footgrid ul { list-style: none; }
+      .bottombar {
+        display: flex; justify-content: space-between; padding: 8px 16px;
+        font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; opacity: 0.6;
+        border-top: 1px solid var(--surface-mid);
+      }
+      .note { font-size: 13px; opacity: 0.75; margin-top: 8px; }
+      .note b { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>WARM SAND</h1>
+      <p class="sub">PRESET TEMA BARU // PALETTE CREAM &amp; BEIGE // TEMA TERANG</p>
+
+      <h2>Palette asli yang diminta</h2>
+      <div class="palette">
+        <div class="chip"><div class="swatch" style="background:#ededE9"></div><div class="code">#EDEDE9</div></div>
+        <div class="chip"><div class="swatch" style="background:#d6ccc2"></div><div class="code">#D6CCC2</div></div>
+        <div class="chip"><div class="swatch" style="background:#f5ebe0"></div><div class="code">#F5EBE0</div></div>
+        <div class="chip"><div class="swatch" style="background:#e3d5ca"></div><div class="code">#E3D5CA</div></div>
+        <div class="chip"><div class="swatch" style="background:#d5bdaf"></div><div class="code">#D5BDAF</div></div>
+      </div>
+      <p class="note">
+        Kelima warna ini semuanya terang (kontras antar warna hanya 1.0–1.5), jadi dipakai sebagai
+        <b>tema terang</b>: cream <b>#F5EBE0</b> menjadi latar, sedangkan aksen dan teks diturunkan
+        (shade) dari warna palette yang sama agar teks tetap terbaca.
+      </p>
+
+      <h2>Cara tampil di aplikasi</h2>
+      <div class="mock">
+        <div class="topbar">
+          <span>PACELAB PRO // v1.0.0</span>
+          <span><span class="clock">14:32:07</span> &nbsp;<span class="setting">⚙ TEMPLATE COLORS</span></span>
+          <span>SYSTEM ONLINE ●</span>
+        </div>
+        <div class="navbar">
+          <div class="logo">
+            <div class="mark">R</div>
+            <div>
+              <div class="name">PACE<b>LAB</b></div>
+              <div class="tag">PRO EDITION</div>
+            </div>
+          </div>
+          <div class="nav">
+            <span>CALCULATOR</span>
+            <span class="active">DASHBOARD</span>
+            <span>MY PROGRAMS</span>
+          </div>
+          <div class="btn">SIGN IN →</div>
+        </div>
+        <div class="strip">RUN FAST · TRAIN SMART · CALCULATE BETTER ·</div>
+        <div class="main">
+          <div class="head">WEEK 7 / 18 — RACE-SPECIFIC PHASE</div>
+          <h3>MINGGU INI: 42.6 KM</h3>
+          <div class="cards">
+            <div class="card">
+              <div class="k">LONG RUN</div>
+              <div class="v">12.8 KM</div>
+              <div class="n">Minggu · durasi 1:15:00</div>
+            </div>
+            <div class="card">
+              <div class="k">TEMPO</div>
+              <div class="v">6.4 KM</div>
+              <div class="n">2 × 12 menit @ threshold</div>
+            </div>
+            <div class="card">
+              <div class="k">EASY RUN</div>
+              <div class="v">4.2 KM</div>
+              <div class="n">Selasa · recovery santai</div>
+            </div>
+          </div>
+          <table>
+            <tr><th>HARI</th><th>SESI</th><th>JARAK INTI</th><th>STATUS</th></tr>
+            <tr><td>Senin</td><td>Easy Run</td><td class="num">5.0 km</td><td class="good">OK</td></tr>
+            <tr><td>Selasa</td><td>Tempo Run</td><td class="num">6.4 km</td><td class="good">OK</td></tr>
+            <tr><td>Minggu</td><td>Long Run</td><td class="num">12.8 km</td><td class="good">OK</td></tr>
+          </table>
+        </div>
+        <div class="footer">
+          <div class="strip">RUN FAST · TRAIN SMART · CALCULATE BETTER ·</div>
+          <div class="footgrid">
+            <div>
+              <div style="font-family:var(--font-title);font-size:24px">PACE<span style="color:var(--accent)">LAB</span></div>
+              <p class="sub" style="margin:4px 0 8px">PRO EDITION</p>
+              <p>Professional running calculators for serious athletes.</p>
+            </div>
+            <div>
+              <h4>CALCULATORS</h4>
+              <ul>
+                <li>VCR Calculator</li>
+                <li>Race Predictor</li>
+                <li>Training Zones</li>
+              </ul>
+            </div>
+            <div>
+              <h4>LINKS</h4>
+              <ul>
+                <li>Home</li>
+                <li>Calculator</li>
+                <li>Login</li>
+              </ul>
+            </div>
+          </div>
+          <div class="bottombar">
+            <span>© 2026 PACELAB PRO. ALL RIGHTS RESERVED.</span>
+            <span>↑ TOP</span>
+          </div>
+        </div>
+      </div>
+
+      <h2>Pemeriksaan kontras (WCAG)</h2>
+      <table>
+        <tr><th>PASANGAN</th><th>RASIO</th><th>HASIL</th></tr>
+        <tr><td>Teks #3B3733 di atas latar #F5EBE0</td><td class="num">10.02 : 1</td><td class="good">LOLOS (AA &amp; AAA)</td></tr>
+        <tr><td>Aksen #766960 di atas latar #F5EBE0</td><td class="num">4.51 : 1</td><td class="good">LOLOS (AA)</td></tr>
+        <tr><td>Teks tombol #F5EBE0 di atas tombol aksen</td><td class="num">4.51 : 1</td><td class="good">LOLOS (AA)</td></tr>
+        <tr><td>Hover tombol #6B6058 (lebih gelap)</td><td class="num">5.19 : 1</td><td class="good">LOLOS (AA)</td></tr>
+      </table>
+      <p class="note">
+        Ini pratinjau warna (bukan aplikasi berjalan). Untuk mencoba sungguhan: buka aplikasi →
+        tombol <b>⚙ TEMPLATE COLORS</b> di header → pilih preset <b>WARM SAND</b>.
+      </p>
+    </div>
+  </body>
+</html>

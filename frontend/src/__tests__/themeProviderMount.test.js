@@ -4,7 +4,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createFallbackThemeValue, DEFAULT_ZONE_VARS } from "../utils/themeUtils.js";
+import {
+  createFallbackThemeValue,
+  DEFAULT_ZONE_VARS,
+  THEME_PRESETS,
+} from "../utils/themeUtils.js";
 
 const read = (relativePath) =>
   readFileSync(new URL(relativePath, import.meta.url), "utf8");
@@ -48,12 +52,36 @@ test("main.jsx memasang ErrorBoundary paling luar (anti blue screen)", () => {
   );
 });
 
+test("penanda versi build konsisten (header, modal, doctor)", () => {
+  const constants = read("../constants/appVersion.js");
+  const version = constants.match(/APP_VERSION\s*=\s*"([^"]+)"/)?.[1];
+  const presetCount = Number(
+    constants.match(/EXPECTED_PRESET_COUNT\s*=\s*(\d+)/)?.[1],
+  );
+
+  assert.match(version || "", /^\d+\.\d+\.\d+$/, "APP_VERSION harus semver");
+  assert.equal(presetCount, THEME_PRESETS.length, "EXPECTED_PRESET_COUNT harus sama dengan jumlah preset");
+
+  const header = read("../components/layout/Header.jsx");
+  assert.ok(header.includes("APP_VERSION_LABEL"), "Header memakai konstanta versi");
+  assert.ok(
+    !header.includes("PACELAB PRO // v1.0.0"),
+    "versi hardcode lama harus sudah dihapus",
+  );
+
+  const modal = read("../components/layout/ThemeSettingsModal.jsx");
+  assert.ok(modal.includes("THEME_ENGINE_VERSION"), "Modal memakai konstanta versi engine");
+
+  const doctor = read("../../scripts/doctor.mjs");
+  assert.ok(doctor.includes("appVersion.js"), "doctor memeriksa appVersion.js");
+});
+
 test("tersedia npm run doctor untuk diagnosa setup lokal", () => {
   const pkg = JSON.parse(read("../../package.json"));
 
   assert.equal(pkg.scripts.doctor, "node scripts/doctor.mjs");
   const doctor = read("../../scripts/doctor.mjs");
-  ["ThemeProvider", "createFallbackThemeValue", "ErrorBoundary", "--retro-black"].forEach(
+  ["ThemeProvider", "createFallbackThemeValue", "ErrorBoundary", "--retro-black", "warm-sand"].forEach(
     (needle) => {
       assert.ok(doctor.includes(needle), `doctor.mjs harus memeriksa ${needle}`);
     },
