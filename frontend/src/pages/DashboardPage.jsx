@@ -6,15 +6,15 @@ import clsx from "clsx";
 import api from "../services/api";
 import HistoryList from "../components/dashboard/HistoryList";
 import HistoryDetail from "../components/dashboard/HistoryDetail";
+import { filterVisibleStats } from "../utils/dashboardStats";
 
+// Ikon hanya untuk kartu yang tampil di dashboard.
+// Kalkulator VO2 Max, Calorie, Split, dan Finish Time tidak lagi ditampilkan
+// (lihat src/utils/dashboardStats.js).
 const CALC_ICONS = {
   "vcr-calculator": "fa-bolt",
   "race-predictor": "fa-trophy",
   "training-zone": "fa-heart-pulse",
-  "vo2max-calculator": "fa-lungs",
-  "calorie-calculator": "fa-fire",
-  "split-calculator": "fa-chart-bar",
-  "finish-time": "fa-flag-checkered",
 };
 
 const CALCULATOR_TABS = [
@@ -45,7 +45,8 @@ export default function DashboardPage() {
         .then((r) => r.data),
   });
 
-  const stats = statsData?.stats || [];
+  // VO2 Max / Calorie / Split / Finish Time disaring agar tidak tampil sebagai kartu
+  const stats = filterVisibleStats(statsData?.stats);
   const history = historyData?.history || [];
   const totalPages = historyData?.totalPages || 1;
 
@@ -63,7 +64,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {stats.map((s) => {
             const icon = CALC_ICONS[s.slug] || "fa-calculator";
             return (

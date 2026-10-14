@@ -1,6 +1,7 @@
 const TrainingProgram = require("../models/TrainingProgram");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
+const { renderTrainingProgramPDF } = require("../utils/pdfProgramLayout");
 
 const getPhaseName = (week) => {
   if (week.isRecoveryWeek) return "Recovery Week";
@@ -58,34 +59,27 @@ const trainingProgramController = {
       const program = req.params.id ? await TrainingProgram.findById(req.params.id, req.user.id) : { ...req.body, program_data: req.body.program_data || [] };
       if (!program) return res.status(404).send("Not Found");
 
-      const doc = new PDFDocument({ margin: 50 });
+      // Layout PDF (border bingkai halaman, kotak header, dan tabel per minggu)
+      // ada di src/utils/pdfProgramLayout.js supaya bisa diuji terpisah.
+      const doc = new PDFDocument({
+        size: "A4",
+        layout: "landscape", // default export: A4 landscape, 1 halaman = 1 minggu
+        margin: 40,
+        bufferPages: true,
+        info: {
+          Title: `PaceLab — ${program.name}`,
+          Author: "PaceLab Pro",
+          Subject: `Program latihan ${program.race_event || ""}`.trim(),
+        },
+      });
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename=Program_${program.name}.pdf`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=Program_${String(program.name || "Training").replace(/[^a-z0-9]/gi, "_")}.pdf`,
+      );
       doc.pipe(res);
 
-      doc.fontSize(20).text("PACE LAB - TRAINING PROGRAM", { align: "center" });
-      doc.moveDown();
-      doc.fontSize(16).text(program.name.toUpperCase(), { align: "center" });
-      doc.fontSize(12).text(`${program.race_event} - ${program.level.toUpperCase()}`, { align: "center" });
-      doc.moveDown(2);
-
-      program.program_data.forEach((week) => {
-        if (doc.y > 650) doc.addPage();
-        doc.fontSize(14).fillColor("#005BAC").text(`MINGGU ${week.week} | FASE ${getPhaseName(week)} | TOTAL MILEAGE: ${week.mileage || 0} Km`, { underline: true });
-        if (week.startDate || week.days?.[0]?.date) {
-          doc.fontSize(9).fillColor("#666666").text(`Periode: ${week.startDate || week.days[0].date} - ${week.days?.[week.days.length - 1]?.date || ""}`);
-        }
-        doc.moveDown(0.5).fillColor("black");
-
-        week.days.forEach((d) => {
-          if (doc.y > 700) doc.addPage();
-          doc.fontSize(10).font("Helvetica-Bold").text(`${d.date || ""} | ${d.day}: ${d.activity}`, 50);
-          doc.font("Helvetica").text(`${d.distance} | Pace: ${d.pace}`, 350, doc.y - 12, { align: "right" });
-          if (d.details !== "-") doc.fontSize(8).fillColor("gray").text(`   Detail: ${d.details}`, 60);
-          doc.moveDown(0.5).fillColor("black");
-        });
-        doc.moveDown();
-      });
+      renderTrainingProgramPDF(doc, program);
       doc.end();
     } catch (e) { res.status(500).send("Error"); }
   },
