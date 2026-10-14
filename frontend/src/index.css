@@ -20,6 +20,7 @@
   --retro-gray:        12 111 186; /* surface / kartu    */
   --retro-gray-mid:    22 127 207; /* surface terang     */
   --retro-gray-light:  92 174 226; /* border / garis     */
+  --retro-warn:       255 205 83;  /* peringatan/kunci   */
 
   /* alias lama, tetap dipakai beberapa rule di bawah */
   --green: rgb(var(--retro-green));

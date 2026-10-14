@@ -35,6 +35,7 @@ export const DEFAULT_ZONE_VARS = {
   "--retro-gray": "12 111 186",
   "--retro-gray-mid": "22 127 207",
   "--retro-gray-light": "92 174 226",
+  "--retro-warn": "255 205 83",
 };
 
 export const THEME_COLOR_KEYS = ["bg", "accent", "text"];
@@ -199,6 +200,45 @@ export function isSameColor(hexA, hexB) {
   return Boolean(a) && a === b;
 }
 
+// Mengunci warna agar selalu kontras terhadap latar. Warna bisa perlu
+// DIGELAPKAN (latar terang) atau DITERANGKAN (latar sedang/gelap), jadi kedua
+// arah dicoba dan dipilih perubahan yang paling dekat dengan warna aslinya.
+export const LIGHTEN_TARGET = "#FFFFFF";
+
+export function ensureContrast(hex, againstHex, targetRatio = 4.5) {
+  const source = normalizeHex(hex);
+  const against = normalizeHex(againstHex);
+  if (!source || !against) return source || null;
+  if (contrastRatio(source, against) >= targetRatio) return source;
+
+  const steps = 200;
+  let darkened = null;
+  let lightened = null;
+
+  for (let step = 1; step <= steps; step += 1) {
+    if (!darkened) {
+      const candidate = mixHex(source, SHADE_TARGET, step / steps);
+      if (candidate && contrastRatio(candidate, against) >= targetRatio) darkened = candidate;
+    }
+    if (!lightened) {
+      const candidate = mixHex(source, LIGHTEN_TARGET, step / steps);
+      if (candidate && contrastRatio(candidate, against) >= targetRatio) lightened = candidate;
+    }
+    if (darkened && lightened) break;
+  }
+
+  if (darkened && lightened) {
+    const darkDistance = Math.abs(relativeLuminance(darkened) - relativeLuminance(source));
+    const lightDistance = Math.abs(relativeLuminance(lightened) - relativeLuminance(source));
+    return darkDistance <= lightDistance ? darkened : lightened;
+  }
+  return darkened || lightened || mixHex(source, LIGHTEN_TARGET, 1) || source;
+}
+
+// Warna peringatan (kunci profil). Dipakai lewat CSS variable `--retro-warn`
+// supaya otomatis menyesuaikan tema terang maupun gelap.
+export const WARN_COLOR = "#FBBF24";
+
 // ── Kontras (WCAG) ───────────────────────────────────────────────────────────
 export function relativeLuminance(hex) {
   const rgb = hexToRgb(hex);
@@ -258,6 +298,8 @@ export function buildZoneVars(zoneColors) {
     "--retro-green-dark": hexToTriplet(mixHex(accent, accentShadeTarget, accentDarkMix)),
     "--retro-green-light": hexToTriplet(mixHex(accent, accentShadeTarget, accentLightMix)),
     // turunan surface/border: campuran background ke arah warna teks
+    // warna peringatan (kunci profil) yang tetap terbaca di tema terang/gelap
+    "--retro-warn": hexToTriplet(ensureContrast(WARN_COLOR, bg, 4.5)),
     "--retro-gray": hexToTriplet(mixHex(bg, text, 0.14)),
     "--retro-gray-mid": hexToTriplet(mixHex(bg, text, 0.26)),
     "--retro-gray-light": hexToTriplet(mixHex(bg, text, 0.45)),

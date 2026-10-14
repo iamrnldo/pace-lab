@@ -17,6 +17,7 @@ export default {
           gray: retroVar("--retro-gray"),
           "gray-mid": retroVar("--retro-gray-mid"),
           "gray-light": retroVar("--retro-gray-light"),
+          warn: retroVar("--retro-warn"),
         },
       },
       fontFamily: {

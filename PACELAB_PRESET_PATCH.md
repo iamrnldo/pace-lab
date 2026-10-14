@@ -1,7 +1,7 @@
 # Patch cepat — Preset `MONOCHROME V2` & cara memastikan file sudah terbaru
 
 Preset **MONOCHROME V2** (versi reverse/terbalik dari MONOCHROME) sudah ada di kode sumber
-workspace, di arsip `pacelab-theme-update.zip`, dan di build preview.
+workspace, di arsip `pacelab-frontend-update.zip`, dan di build preview.
 
 - `frontend/src/utils/themeUtils.js` → `id: "mono-v2"`
 - `frontend/src/__tests__/themeUtils.test.js` → test inversi channel
@@ -16,7 +16,7 @@ Kalau di aplikasimu belum muncul, pakai salah satu cara di bawah.
 ```bash
 cd ~/Downloads/pacelab/pace-lab/frontend      # WAJIB di dalam folder frontend
 
-unzip -o ~/Downloads/pacelab-theme-update.zip -d .
+unzip -o ~/Downloads/pacelab-frontend-update.zip -d .
 rm -rf node_modules/.vite
 
 npm run doctor     # harus: "PACELAB FRONTEND DOCTOR — app v1.3.0" + "Semua pemeriksaan lulus"

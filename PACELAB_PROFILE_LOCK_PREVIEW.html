@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PaceLab — Penguncian Menu untuk Profil Belum Lengkap</title>
+    <style>
+      :root {
+        --bg: #005bac;
+        --surface: #0c6fba;
+        --surface-2: #167fcf;
+        --line: #5caee2;
+        --accent: #dff5ff;
+        --text: #ffffff;
+        /* warna peringatan = token tema, bukan amber tetap */
+        --warn: #ffcd53;
+        --warn-soft: rgba(255, 205, 83, 0.1);
+        --font-title: "Arial Narrow", Impact, sans-serif;
+        --font-body: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+        --font-mono: "Courier New", monospace;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: var(--bg); color: var(--text); font-family: var(--font-body); padding: 22px; line-height: 1.5; }
+      .wrap { max-width: 1000px; margin: 0 auto; }
+      h1 { font-family: var(--font-title); font-size: 32px; letter-spacing: 0.05em; }
+      h2 { font-family: var(--font-title); font-size: 20px; letter-spacing: 0.08em; margin: 26px 0 10px; text-transform: uppercase; color: var(--accent); }
+      .sub { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em; opacity: 0.6; margin-bottom: 6px; }
+      .note { font-size: 14px; opacity: 0.8; margin-top: 6px; }
+      .note b { color: var(--accent); }
+
+      /* header mock */
+      .mock { border: 2px solid var(--accent); overflow: hidden; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 5px 12px; border-bottom: 1px solid rgba(92,174,226,0.4); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; }
+      .topbar .dim { opacity: 0.35; }
+      .topbar .clock { color: var(--accent); }
+      .chip-lock { display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,205,83,0.55); color: var(--warn); padding: 2px 7px; }
+      .nav { display: flex; align-items: center; justify-content: space-between; padding: 12px; }
+      .logo { display: flex; align-items: center; gap: 10px; }
+      .logo .mark { width: 32px; height: 32px; border: 2px solid var(--accent); color: var(--accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-title); font-size: 18px; }
+      .logo .name { font-family: var(--font-title); font-size: 24px; letter-spacing: 0.08em; }
+      .logo .name b { color: var(--accent); }
+      .items { display: flex; gap: 6px; }
+      .item { display: flex; align-items: center; gap: 6px; font-family: var(--font-title); letter-spacing: 0.12em; font-size: 16px; padding: 6px 12px; }
+      .item.locked { color: rgba(255,255,255,0.35); }
+      .item.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+      /* banner */
+      .banner { margin-top: 14px; border: 2px solid rgba(255,205,83,0.6); background: rgba(255,205,83,0.1); padding: 16px; display: flex; flex-wrap: wrap; gap: 16px; }
+      .banner h3 { font-family: var(--font-title); font-size: 22px; letter-spacing: 0.06em; color: var(--warn); }
+      .banner p { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; opacity: 0.7; margin-top: 6px; }
+      .progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+      .bar { width: 240px; height: 8px; border: 1px solid rgba(255,205,83,0.5); background: rgba(0,0,0,0.25); }
+      .bar i { display: block; height: 100%; background: var(--warn); }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+      .field-chip { border: 1px solid rgba(255,205,83,0.5); color: var(--warn); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.12em; padding: 3px 8px; }
+      .btn { font-family: var(--font-title); letter-spacing: 0.1em; border: 2px solid var(--accent); background: transparent; color: var(--text); padding: 9px 18px; font-size: 15px; }
+      .btn.amber { background: var(--warn); border-color: var(--warn); color: #1f2937; }
+      .lock-svg { width: 26px; height: 26px; color: var(--warn); flex: 0 0 auto; }
+
+      /* form mock */
+      .form { margin-top: 16px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+      .field label { display: flex; align-items: center; gap: 8px; font-size: 13px; letter-spacing: 0.06em; opacity: 0.65; margin-bottom: 6px; }
+      .input { border: 2px solid var(--line); background: var(--surface); padding: 10px 12px; font-family: var(--font-mono); font-size: 12px; color: rgba(255,255,255,0.55); }
+      .input.missing { border-color: rgba(255,205,83,0.7); }
+      .badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; padding: 1px 6px; border: 1px solid rgba(255,205,83,0.6); color: var(--warn); }
+      .badge.ok { border-color: rgba(223,245,255,0.45); color: rgba(223,245,255,0.65); }
+      ul { list-style: square; padding-left: 18px; }
+      li { font-size: 14px; opacity: 0.85; margin: 3px 0; }
+      code { font-family: var(--font-mono); font-size: 12px; background: rgba(0,0,0,0.25); padding: 1px 5px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 14px; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid rgba(92,174,226,0.35); }
+      th { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em; opacity: 0.65; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="sub">PACELAB PRO // PENGUNCIAN MENU</div>
+      <h1>PROFIL BELUM LENGKAP = MENU TERKUNCI</h1>
+      <p class="note">
+        Pengguna baru (mis. daftar lewat Google) hanya punya <b>email + nama</b>. Selama data pelari belum lengkap,
+        seluruh menu aplikasi dikunci dan pengguna diarahkan ke halaman Profile.
+      </p>
+
+      <h2>Tampilan header saat terkunci</h2>
+      <div class="mock">
+        <div class="topbar">
+          <span class="dim">PACELAB PRO // v1.4.0</span>
+          <span style="display:inline-flex;gap:8px;align-items:center">
+            <span class="chip-lock">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              PROFIL BELUM LENGKAP 4/5
+            </span>
+            <span class="clock">14:32:07</span>
+          </span>
+          <span class="dim">SYSTEM ONLINE ●</span>
+        </div>
+        <div class="nav">
+          <div class="logo">
+            <div class="mark">R</div>
+            <div>
+              <div class="name">PACE<b>LAB</b></div>
+              <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.3em;opacity:0.5">PRO EDITION</div>
+            </div>
+          </div>
+          <div class="items">
+            <span class="item locked">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              CALCULATOR
+            </span>
+            <span class="item locked">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              DASHBOARD
+            </span>
+            <span class="item locked">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              MY PROGRAMS
+            </span>
+            <span class="item active">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <p class="note">
+        Menu berubah jadi tombol berikon <b>gembok</b>. Diklik → toast <i>“Lengkapi profil dulu untuk membuka menu aplikasi.”</i>
+        lalu diarahkan ke <code>/profile</code>. Di mobile, tombol <b>START CALCULATING</b> berubah jadi <b>LENGKAPI PROFIL →</b>.
+      </p>
+
+      <h2>Banner di halaman Profile</h2>
+      <div class="banner">
+        <svg class="lock-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v3"/></svg>
+        <div style="flex:1;min-width:280px">
+          <h3>AKSES TERKUNCI — LENGKAPI PROFIL</h3>
+          <p>Calculator, Dashboard, dan My Programs terkunci sampai profil pelari kamu lengkap.</p>
+          <div class="progress">
+            <span class="bar"><i style="width:20%"></i></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:#fde68a">1/5</span>
+          </div>
+          <p style="margin-top:12px">Field wajib yang masih kosong:</p>
+          <div class="chips">
+            <span class="field-chip">USIA</span>
+            <span class="field-chip">JENIS KELAMIN</span>
+            <span class="field-chip">BERAT (KG)</span>
+            <span class="field-chip">TINGGI (CM)</span>
+          </div>
+        </div>
+        <button class="btn warn">ISI SEKARANG →</button>
+      </div>
+
+      <h2>Penanda di form</h2>
+      <div class="form">
+        <div class="field">
+          <label>NAMA LENGKAP : <span class="badge ok">OK</span></label>
+          <div class="input">Runner Baru</div>
+        </div>
+        <div class="field">
+          <label>USIA : <span class="badge">WAJIB</span></label>
+          <div class="input missing">— belum diisi —</div>
+        </div>
+        <div class="field">
+          <label>BERAT (KG) : <span class="badge">WAJIB</span></label>
+          <div class="input missing">— belum diisi —</div>
+        </div>
+        <div class="field">
+          <label>NAMA KOMUNITAS <span class="badge ok">OPSIONAL</span></label>
+          <div class="input">— boleh kosong —</div>
+        </div>
+      </div>
+
+      <h2>Di tema terang (sebelum vs sesudah)</h2>
+      <p class="note">
+        Warna peringatan sekarang diambil dari token tema <code>--retro-warn</code>: dihitung otomatis agar
+        kontrasnya minimal <b>4.5:1</b> terhadap latar zona — jadi tetap terbaca di tema gelap maupun terang.
+      </p>
+      <table>
+        <tr><th>PRESET</th><th>LATAR</th><th>WARNA PERINGATAN</th><th>KONTRAS</th><th>STATUS</th></tr>
+        <tr><td>DEFAULT COLOR</td><td><code>#005BAC</code></td><td><code>#FFCD53</code></td><td>4.56 : 1</td><td>Terbaca</td></tr>
+        <tr><td>CARBON</td><td><code>#0B0F14</code></td><td><code>#FBBF24</code></td><td>11.51 : 1</td><td>Terbaca</td></tr>
+        <tr><td>SUNSET</td><td><code>#2B1055</code></td><td><code>#FBBF24</code></td><td>9.62 : 1</td><td>Terbaca</td></tr>
+        <tr><td>MONOCHROME</td><td><code>#101010</code></td><td><code>#FBBF24</code></td><td>11.40 : 1</td><td>Terbaca</td></tr>
+        <tr><td><b>MONOCHROME V2</b></td><td><code>#EFEFEF</code></td><td><code>#886819</code> <i>(dulu #FCD34D → 1.25:1)</i></td><td>4.52 : 1</td><td><b>Terbaca</b></td></tr>
+        <tr><td><b>WARM SAND</b></td><td><code>#F5EBE0</code></td><td><code>#856618</code> <i>(dulu #FCD34D → 1.23:1)</i></td><td>4.56 : 1</td><td><b>Terbaca</b></td></tr>
+      </table>
+
+      <h2>Pratinjau di tema terang (WARM SAND)</h2>
+      <div class="mock" style="--bg:#F5EBE0;--surface:#DBD2C8;--line:#A19A92;--accent:#766960;--text:#3B3733;--warn:#856618;background:#F5EBE0;color:#3B3733;border-color:#766960">
+        <div class="topbar" style="border-color:rgba(161,154,146,0.5)">
+          <span style="opacity:0.5">PACELAB PRO // v1.4.0</span>
+          <span style="display:inline-flex;gap:8px;align-items:center">
+            <span style="display:inline-flex;align-items:center;gap:6px;border:1px solid #856618;color:#856618;padding:2px 7px">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              PROFIL BELUM LENGKAP 4/5
+            </span>
+            <span style="color:#766960">14:32:07</span>
+          </span>
+          <span style="opacity:0.5">SYSTEM ONLINE ●</span>
+        </div>
+        <div class="nav">
+          <div class="logo">
+            <div class="mark" style="border-color:#766960;color:#766960">R</div>
+            <div>
+              <div class="name" style="color:#3B3733">PACE<b style="color:#766960">LAB</b></div>
+              <div style="font-family:var(--font-mono);font-size:8px;letter-spacing:0.3em;opacity:0.5">PRO EDITION</div>
+            </div>
+          </div>
+          <div class="items">
+            <span class="item" style="color:rgba(59,55,51,0.35)">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              CALCULATOR
+            </span>
+            <span class="item" style="color:rgba(59,55,51,0.35)">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+              DASHBOARD
+            </span>
+            <span class="item" style="color:#766960;border-bottom:2px solid #766960">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <div class="banner" style="border-color:#856618;background:rgba(133,102,24,0.08);color:#3B3733">
+        <svg class="lock-svg" style="color:#856618" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="1.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><path d="M12 14.5v3"/></svg>
+        <div style="flex:1;min-width:280px">
+          <h3 style="color:#856618;font-weight:700">AKSES TERKUNCI — LENGKAPI PROFIL</h3>
+          <p style="color:rgba(59,55,51,0.75)">Calculator, Dashboard, dan My Programs terkunci sampai profil pelari kamu lengkap.</p>
+          <div class="progress">
+            <span class="bar" style="border-color:#856618;background:rgba(0,0,0,0.08);"><i style="width:20%;background:#856618"></i></span>
+            <span style="font-family:var(--font-mono);font-size:10px;color:#856618;font-weight:700">1/5</span>
+          </div>
+          <p style="margin-top:12px;color:rgba(59,55,51,0.75)">Field wajib yang masih kosong:</p>
+          <div class="chips">
+            <span class="field-chip" style="border-color:#856618;color:#856618;font-weight:700">USIA</span>
+            <span class="field-chip" style="border-color:#856618;color:#856618;font-weight:700">JENIS KELAMIN</span>
+            <span class="field-chip" style="border-color:#856618;color:#856618;font-weight:700">BERAT (KG)</span>
+            <span class="field-chip" style="border-color:#856618;color:#856618;font-weight:700">TINGGI (CM)</span>
+          </div>
+        </div>
+        <button class="btn" style="background:#856618;border-color:#856618;color:#F5EBE0;font-weight:700">ISI SEKARANG →</button>
+      </div>
+
+      <h2>Aturan yang diterapkan</h2>
+      <table>
+        <tr><th>ASPEK</th><th>PERILAKU</th></tr>
+        <tr><td>Field wajib</td><td>Nama, Usia, Jenis Kelamin, Berat, Tinggi <i>(komunitas opsional)</i></td></tr>
+        <tr><td>Rute terkunci</td><td><code>/calculator</code>, <code>/dashboard</code>, <code>/create-training-program</code>, <code>/my-training-programs</code></td></tr>
+        <tr><td>Tetap bisa diakses</td><td><code>/profile</code> (untuk mengisi data), halaman publik, dan area <code>/admin</code></td></tr>
+        <tr><td>Setelah login</td><td>Profil belum lengkap → langsung ke <code>/profile</code> (bukan dashboard)</td></tr>
+        <tr><td>Setelah disimpan lengkap</td><td>Toast “Profil lengkap — semua menu terbuka!” dan otomatis kembali ke menu yang tadi dituju</td></tr>
+        <tr><td>Admin</td><td>Tidak dikunci (memakai area admin terpisah)</td></tr>
+      </table>
+
+      <p class="note">
+        Ini pratinjau tampilan (bukan aplikasi berjalan). Cara mengubah field wajib: edit satu array
+        <code>REQUIRED_PROFILE_FIELDS</code> di <code>frontend/src/utils/profileCompletion.js</code>.
+      </p>
+    </div>
+  </body>
+</html>

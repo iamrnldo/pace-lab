@@ -1,17 +1,53 @@
 // src/pages/ProfilePage.jsx
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import api from "../services/api";
 import toast from "react-hot-toast";
+import LockIcon from "../components/ui/LockIcon";
+import { getFieldLabel, getProfileCompletion } from "../utils/profileCompletion";
+
+// Penanda kecil untuk field wajib yang masih kosong.
+function RequiredBadge({ filled }) {
+  const { t } = useLanguage();
+  return (
+    <span
+      className={
+        "ml-2 border px-1.5 py-[1px] font-mono text-[9px] tracking-[0.14em] " +
+        (filled
+          ? "border-retro-green/40 text-retro-green/60"
+          : "border-retro-warn/60 text-retro-warn")
+      }
+    >
+      {filled ? "OK" : t("profileRequiredMark")}
+    </span>
+  );
+}
 
 export default function ProfilePage() {
   const auth = useAuth();
   const user = auth?.user;
   const setUser = auth?.setUser;
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { t, language } = useLanguage();
 
-  const [isEditing, setIsEditing] = useState(false);
+  const completion = useMemo(() => getProfileCompletion(user), [user]);
+  const missingKeys = new Set(completion.missingKeys);
+
+  // Bila profil belum lengkap, form langsung terbuka supaya user bisa mengisi.
+  const [isEditing, setIsEditing] = useState(() => !completion.isComplete);
+  const notifiedRef = useRef(false);
+
+  // Beri tahu sekali saat diarahkan ke sini karena menu terkunci.
+  useEffect(() => {
+    if (location.state?.profileRequired && !notifiedRef.current) {
+      notifiedRef.current = true;
+      toast.error(t("profileLockedToast"), { id: "profile-locked" });
+    }
+  }, [location.state, t]);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
@@ -29,8 +65,18 @@ export default function ProfilePage() {
     onSuccess: (res) => {
       const updated = res.data?.user;
       if (updated && setUser) setUser(updated);
-      toast.success("Profile updated!");
+
+      const nextCompletion = getProfileCompletion(updated);
       setIsEditing(false);
+
+      if (nextCompletion.isComplete) {
+        toast.success(t("profileSavedUnlocked"), { id: "profile-saved" });
+        // Kembali ke menu yang tadi mau dibuka, kalau ada.
+        const target = location.state?.from?.pathname;
+        navigate(target && target !== "/profile" ? target : "/dashboard", { replace: true });
+      } else {
+        toast.success(t("profileSaved"), { id: "profile-saved" });
+      }
     },
     onError: () => toast.error("Failed to update profile"),
   });
@@ -65,7 +111,7 @@ export default function ProfilePage() {
       }
       setAvatarPreview(null);
       toast.success("Avatar updated!");
-    } catch (err) {
+    } catch {
       toast.error("Failed to upload avatar");
       setAvatarPreview(null);
     } finally {
@@ -91,6 +137,62 @@ export default function ProfilePage() {
             YOUR RUNNER PROFILE & SETTINGS
           </p>
         </div>
+
+        {/* Banner: akses terkunci sampai profil lengkap */}
+        {!completion.isComplete && (
+          <div className="border-2 border-retro-warn/60 bg-retro-warn/10 p-5">
+            <div className="flex flex-wrap items-start gap-4">
+              <LockIcon className="h-8 w-8 shrink-0 text-retro-warn" />
+              <div className="min-w-[220px] flex-1 space-y-2">
+                <h2 className="font-retro text-2xl tracking-widest text-retro-warn">
+                  {t("profileBannerTitle")}
+                </h2>
+                <p className="font-mono text-[11px] leading-relaxed tracking-[0.14em] text-retro-white/60">
+                  {t("profileBannerDesc")}
+                </p>
+
+                {/* progress bar */}
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="h-2 w-full max-w-xs border border-retro-warn/50 bg-retro-black/40">
+                    <div
+                      className="h-full bg-retro-warn transition-all"
+                      style={{ width: `${completion.percent}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-[10px] tracking-[0.18em] text-retro-warn">
+                    {completion.completedCount}/{completion.total}
+                  </span>
+                </div>
+
+                <div className="pt-1">
+                  <p className="font-mono text-[10px] tracking-[0.18em] text-retro-white/45">
+                    {t("profileMissingFields")}
+                  </p>
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {completion.missing.map((field) => (
+                      <li
+                        key={field.key}
+                        className="border border-retro-warn/50 px-2 py-[3px] font-mono text-[10px] tracking-[0.14em] text-retro-warn"
+                      >
+                        {getFieldLabel(field, language)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(true)}
+                  className="btn-retro bg-retro-warn px-5 py-3 font-retro text-base tracking-widest text-retro-black"
+                >
+                  {t("fillNow")} →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
@@ -213,8 +315,9 @@ export default function ProfilePage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Name */}
                 <div>
-                  <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
+                  <label className="mb-2 flex flex-wrap items-center gap-2 font-sport text-sm tracking-wider text-retro-white/50">
                     FULL NAME :
+                    <RequiredBadge filled={!missingKeys.has("name")} />
                   </label>
                   <input
                     type="text"
@@ -222,34 +325,36 @@ export default function ProfilePage() {
                     onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
                     disabled={!isEditing}
                     placeholder="Enter Your Full Name"
-                    className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed${missingKeys.has("name") ? " border-retro-warn/70" : ""}`}
                   />
                 </div>
 
                 {/* Row: Age + Gender */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      AGE :
-                    </label>
+                    <label className="mb-2 flex flex-wrap items-center gap-2 font-sport text-sm tracking-wider text-retro-white/50">
+                    AGE :
+                    <RequiredBadge filled={!missingKeys.has("age")} />
+                  </label>
                     <input
                       type="number"
                       value={formData.age}
                       onChange={(e) => setFormData((f) => ({ ...f, age: e.target.value }))}
                       disabled={!isEditing}
                       placeholder="Enter Your Age"
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed${missingKeys.has("age") ? " border-retro-warn/70" : ""}`}
                     />
                   </div>
                   <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      GENDER
-                    </label>
+                    <label className="mb-2 flex flex-wrap items-center gap-2 font-sport text-sm tracking-wider text-retro-white/50">
+                    GENDER
+                    <RequiredBadge filled={!missingKeys.has("gender")} />
+                  </label>
                     <select
                       value={formData.gender}
                       onChange={(e) => setFormData((f) => ({ ...f, gender: e.target.value }))}
                       disabled={!isEditing}
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`input-retro w-full px-4 py-3 font-sport text-sm tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed${missingKeys.has("gender") ? " border-retro-warn/70" : ""}`}
                     >
                       <option value="">Select Your Gender</option>
                       <option value="male">Male</option>
@@ -261,9 +366,10 @@ export default function ProfilePage() {
                 {/* Row: Weight + Height */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      WEIGHT (KG) :
-                    </label>
+                    <label className="mb-2 flex flex-wrap items-center gap-2 font-sport text-sm tracking-wider text-retro-white/50">
+                    WEIGHT (KG) :
+                    <RequiredBadge filled={!missingKeys.has("weight_kg")} />
+                  </label>
                     <input
                       type="number"
                       step="0.1"
@@ -271,13 +377,14 @@ export default function ProfilePage() {
                       onChange={(e) => setFormData((f) => ({ ...f, weight_kg: e.target.value }))}
                       disabled={!isEditing}
                       placeholder="Enter Your Weight (KG)"
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed${missingKeys.has("weight_kg") ? " border-retro-warn/70" : ""}`}
                     />
                   </div>
                   <div>
-                    <label className="block font-sport text-sm text-retro-white/50 tracking-wider mb-2">
-                      HEIGHT (CM) :
-                    </label>
+                    <label className="mb-2 flex flex-wrap items-center gap-2 font-sport text-sm tracking-wider text-retro-white/50">
+                    HEIGHT (CM) :
+                    <RequiredBadge filled={!missingKeys.has("height_cm")} />
+                  </label>
                     <input
                       type="number"
                       step="0.1"
@@ -285,7 +392,7 @@ export default function ProfilePage() {
                       onChange={(e) => setFormData((f) => ({ ...f, height_cm: e.target.value }))}
                       disabled={!isEditing}
                       placeholder="Enter Your Height (CM)"
-                      className="input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                      className={`input-retro w-full px-4 py-3 font-sport text-sm tracking-wider disabled:opacity-50 disabled:cursor-not-allowed${missingKeys.has("height_cm") ? " border-retro-warn/70" : ""}`}
                     />
                   </div>
                 </div>

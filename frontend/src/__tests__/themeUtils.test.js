@@ -19,6 +19,7 @@ import {
   applyPresetToTheme,
   contrastRatio,
   relativeLuminance,
+  ensureContrast,
   DEFAULT_ZONE_VARS,
   THEME_PRESETS,
   THEME_ZONES,
@@ -66,7 +67,7 @@ test("warna custom menghasilkan variabel RGB valid & turunan yang berbeda", () =
   const vars = buildZoneVars(customColors);
 
   Object.entries(vars).forEach(([name, value]) => {
-    assert.match(name, /^--retro-(black|white|green|green-dark|green-light|gray|gray-mid|gray-light)$/);
+    assert.match(name, /^--retro-(black|white|green|green-dark|green-light|gray|gray-mid|gray-light|warn)$/);
     assert.match(value, /^\d{1,3} \d{1,3} \d{1,3}$/, `${name} = ${value}`);
     value
       .split(" ")
@@ -360,6 +361,68 @@ test("preset MONOCHROME V2 adalah kebalikan (inversi) dari MONOCHROME", () => {
     Array.isArray(v2.swatches) && v2.swatches.length >= 3,
     "swatch palette tersedia untuk chip preset",
   );
+});
+
+test("warna peringatan (--retro-warn) selalu terbaca di semua preset, termasuk tema terang", () => {
+  const toHex = (triplet) =>
+    "#" +
+    triplet
+      .split(" ")
+      .map((value) => Number(value).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+
+  THEME_PRESETS.forEach((preset) => {
+    const vars = buildZoneVars(preset.colors);
+    const warn = vars["--retro-warn"];
+    assert.ok(warn, `${preset.id} harus punya --retro-warn`);
+    assert.match(warn, /^\d{1,3} \d{1,3} \d{1,3}$/);
+
+    const ratio = contrastRatio(toHex(warn), preset.colors.bg);
+    assert.ok(
+      ratio >= 4.5,
+      `${preset.label}: kontras warn vs latar = ${ratio.toFixed(2)} (harus >= 4.5)`,
+    );
+
+    // teks tombol (memakai warna latar) harus terbaca di atas tombol peringatan
+    assert.ok(
+      contrastRatio(preset.colors.bg, toHex(warn)) >= 4.5,
+      `${preset.label}: teks tombol di atas warn harus terbaca`,
+    );
+  });
+
+  // khusus tema terang: warn harus JADI GELAP (bukan amber muda yang hilang)
+  ["warm-sand", "mono-v2"].forEach((id) => {
+    const preset = THEME_PRESETS.find((item) => item.id === id);
+    const warn = toHex(buildZoneVars(preset.colors)["--retro-warn"]);
+    assert.ok(
+      relativeLuminance(warn) < relativeLuminance(preset.colors.bg),
+      `${preset.label}: warn harus lebih gelap dari latar`,
+    );
+    assert.ok(contrastRatio(warn, preset.colors.bg) >= 4.5);
+  });
+
+  // tema default tetap memakai token yang sama dengan DEFAULT_ZONE_VARS
+  assert.equal(buildZoneVars(DEFAULT_ZONE_COLORS)["--retro-warn"], DEFAULT_ZONE_VARS["--retro-warn"]);
+});
+
+test("ensureContrast menerangkan atau menggelapkan warna sesuai latar", () => {
+  // latar gelap: amber sudah kontras -> tidak diubah
+  assert.equal(ensureContrast("#FBBF24", "#0B0F14", 4.5), "#FBBF24");
+
+  // latar sedang (biru default): amber diterangkan sedikit
+  const onMid = ensureContrast("#FBBF24", "#005BAC", 4.5);
+  assert.ok(contrastRatio(onMid, "#005BAC") >= 4.5);
+  assert.ok(relativeLuminance(onMid) > relativeLuminance("#FBBF24"));
+
+  // latar terang: amber digelapkan
+  const onLight = ensureContrast("#FBBF24", "#F5EBE0", 4.5);
+  assert.ok(contrastRatio(onLight, "#F5EBE0") >= 4.5);
+  assert.ok(relativeLuminance(onLight) < relativeLuminance("#FBBF24"));
+
+  // input rusak tidak crash
+  assert.equal(ensureContrast("bukan-warna", "#000000", 4.5), null);
+  assert.equal(ensureContrast("#FBBF24", "xx", 4.5), "#FBBF24");
 });
 
 test("shadeToContrast menurunkan warna sampai target kontras tercapai", () => {

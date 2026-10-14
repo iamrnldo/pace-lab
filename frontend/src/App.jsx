@@ -5,6 +5,7 @@ import Lenis from "@studio-freight/lenis";
 import MainLayout from "./components/layout/MainLayout";
 import AdminLayout from "./components/layout/AdminLayout";
 import AuthGuard from "./components/auth/AuthGuard";
+import ProfileGuard from "./components/auth/ProfileGuard";
 import RoleGuard from "./components/auth/RoleGuard";
 import HomePage from "./pages/HomePage";
 import CalculatorPage from "./pages/CalculatorPage";
@@ -19,6 +20,15 @@ import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminUserLogPage from "./pages/AdminUserLogPage";
 import AdminAdminLogPage from "./pages/AdminAdminLogPage";
 import AdminProfilePage from "./pages/AdminProfilePage";
+
+// Rute yang butuh login. `requireProfile` mengunci menu sampai profil lengkap.
+function Protected({ children, requireProfile = true }) {
+  return (
+    <AuthGuard>
+      {requireProfile ? <ProfileGuard>{children}</ProfileGuard> : children}
+    </AuthGuard>
+  );
+}
 
 export default function App() {
   const lenisRef = useRef(null);
@@ -49,13 +59,13 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
 
-          {/* Calculator — protected */}
+          {/* Calculator — protected (butuh profil lengkap) */}
           <Route
             path="calculator"
             element={
-              <AuthGuard>
+              <Protected>
                 <CalculatorPage />
-              </AuthGuard>
+              </Protected>
             }
           />
 
@@ -63,9 +73,9 @@ export default function App() {
           <Route
             path="dashboard"
             element={
-              <AuthGuard>
+              <Protected>
                 <DashboardPage />
-              </AuthGuard>
+              </Protected>
             }
           />
 
@@ -73,9 +83,9 @@ export default function App() {
           <Route
             path="create-training-program"
             element={
-              <AuthGuard>
+              <Protected>
                 <CreateTrainingProgramPage />
-              </AuthGuard>
+              </Protected>
             }
           />
 
@@ -83,19 +93,19 @@ export default function App() {
           <Route
             path="my-training-programs"
             element={
-              <AuthGuard>
+              <Protected>
                 <MyTrainingProgramsPage />
-              </AuthGuard>
+              </Protected>
             }
           />
 
-          {/* Profile — protected */}
+          {/* Profile — protected, TETAP bisa diakses walau profil belum lengkap */}
           <Route
             path="profile"
             element={
-              <AuthGuard>
+              <Protected requireProfile={false}>
                 <ProfilePage />
-              </AuthGuard>
+              </Protected>
             }
           />
 

@@ -2,12 +2,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import { toast } from "react-hot-toast";
 import { useAuth } from "../../context/AuthContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeSettingsModal from "./ThemeSettingsModal";
 import { APP_VERSION_LABEL } from "../../constants/appVersion";
 import GearIcon from "../ui/GearIcon";
+import LockIcon from "../ui/LockIcon";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -18,6 +20,10 @@ export default function Header() {
   const auth = useAuth();
   const user = auth?.user;
   const logout = auth?.logout;
+  // Menu dikunci selama profil runner belum lengkap (lihat ProfileGuard).
+  const profileLocked = Boolean(user) && Boolean(auth?.isProfileLocked);
+  const missingProfileCount = auth?.profileCompletion?.missing?.length || 0;
+  const requiredFieldCount = auth?.profileCompletion?.total || 5;
   const navigate = useNavigate();
   const { language, changeLanguage, t } = useLanguage();
   const { isDefault: themeIsDefault, customCount } = useTheme();
@@ -57,6 +63,13 @@ export default function Header() {
     };
   }, []);
 
+  // Klik menu yang terkunci -> arahkan ke halaman Profile.
+  const goCompleteProfile = () => {
+    setMenuOpen(false);
+    toast.error(t("profileLockedToast"), { id: "profile-locked" });
+    navigate("/profile", { state: { profileRequired: true } });
+  };
+
   const handleLogout = async () => {
     if (logout) await logout();
     navigate("/");
@@ -80,6 +93,19 @@ export default function Header() {
           PACELAB PRO // {APP_VERSION_LABEL}
         </span>
         <span className="flex items-center gap-2">
+          {profileLocked && (
+            <button
+              type="button"
+              onClick={goCompleteProfile}
+              title={t("profileLockedTitle")}
+              className="flex items-center gap-1 border border-retro-warn/50 px-2 py-[1px]
+                font-mono text-[10px] tracking-[0.18em] text-retro-warn
+                transition-colors hover:bg-retro-warn hover:text-retro-black"
+            >
+              <LockIcon className="h-3 w-3" />
+              {t("profileIncompleteChip")} {missingProfileCount}/{requiredFieldCount}
+            </button>
+          )}
           <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">
             {time.toLocaleTimeString("en-US", { hour12: false })}
           </span>
@@ -137,10 +163,23 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
-          {NAV.map(({ label, path }) => (
-            <NavLink
-              key={path}
-              to={path}
+          {NAV.map(({ label, path }) =>
+            profileLocked ? (
+              <button
+                key={path}
+                type="button"
+                onClick={goCompleteProfile}
+                title={t("profileLockedTitle")}
+                className="flex items-center gap-1.5 font-retro text-lg tracking-widest px-4 py-2
+                  text-retro-white/35 transition-colors hover:text-retro-warn"
+              >
+                <LockIcon className="h-4 w-4" />
+                {label}
+              </button>
+            ) : (
+              <NavLink
+                key={path}
+                to={path}
               className={({ isActive }) =>
                 clsx(
                   "font-retro text-lg tracking-widest px-4 py-2 relative group transition-colors",
@@ -161,8 +200,9 @@ export default function Header() {
                   />
                 </>
               )}
-            </NavLink>
-          ))}
+              </NavLink>
+            )
+          )}
         </nav>
 
         {/* CTA button — berubah sesuai login */}
@@ -267,32 +307,68 @@ export default function Header() {
             <option value="en">ENGLISH LANGUAGE</option>
             <option value="id">BAHASA INDONESIA</option>
           </select>
-          {NAV.map(({ label, path }) => (
-            <Link
-              key={path}
-              to={path}
-              className="font-retro text-xl tracking-widest text-retro-white/70
-                hover:text-retro-green py-3
-                border-b border-retro-gray-light/20 transition-colors"
-              onClick={() => setMenuOpen(false)}
-            >
-              {label}
-            </Link>
-          ))}
+          {profileLocked && (
+            <div className="mb-1 border border-retro-warn/50 bg-retro-warn/10 p-3">
+              <p className="flex items-center gap-2 font-retro text-base tracking-widest text-retro-warn">
+                <LockIcon className="h-4 w-4" />
+                {t("profileIncompleteChip")} {missingProfileCount}/{requiredFieldCount}
+              </p>
+              <p className="mt-1 font-mono text-[10px] leading-relaxed tracking-[0.14em] text-retro-white/50">
+                {t("profileLockedToast")}
+              </p>
+            </div>
+          )}
+
+          {NAV.map(({ label, path }) =>
+            profileLocked ? (
+              <button
+                key={path}
+                type="button"
+                onClick={goCompleteProfile}
+                className="flex items-center gap-2 font-retro text-xl tracking-widest
+                  text-retro-white/35 py-3 text-left
+                  border-b border-retro-gray-light/20 transition-colors"
+              >
+                <LockIcon className="h-5 w-5" />
+                {label}
+              </button>
+            ) : (
+              <Link
+                key={path}
+                to={path}
+                className="font-retro text-xl tracking-widest text-retro-white/70
+                  hover:text-retro-green py-3
+                  border-b border-retro-gray-light/20 transition-colors"
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </Link>
+            )
+          )}
 
           {user ? (
             <>
               <Link to="/profile" onClick={() => setMenuOpen(false)} className="font-retro text-xl tracking-widest text-retro-white/70 hover:text-retro-green py-3 border-b border-retro-gray-light/20">
                 PROFILE
               </Link>
-              <Link to="/calculator" onClick={() => setMenuOpen(false)}>
+              {profileLocked ? (
                 <button
-                  className="btn-retro bg-retro-green text-retro-black font-retro
+                  onClick={goCompleteProfile}
+                  className="btn-retro border-retro-warn/60 bg-retro-warn text-retro-black font-retro
                     tracking-widest px-6 py-3 w-full mt-3 text-lg"
                 >
-                  START CALCULATING →
+                  {t("completeProfileNow")} →
                 </button>
-              </Link>
+              ) : (
+                <Link to="/calculator" onClick={() => setMenuOpen(false)}>
+                  <button
+                    className="btn-retro bg-retro-green text-retro-black font-retro
+                      tracking-widest px-6 py-3 w-full mt-3 text-lg"
+                  >
+                    START CALCULATING →
+                  </button>
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="btn-retro border-red-400/40 text-red-400 font-retro

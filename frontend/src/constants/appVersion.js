@@ -4,7 +4,7 @@
 //
 // Cara pakai: kalau tampilan di layar belum sesuai, cek versi di header —
 // versi lama berarti file belum tersalin / cache Vite masih menyimpan build lama.
-export const APP_VERSION = "1.3.0";
+export const APP_VERSION = "1.4.0";
 
 // Versi theme engine (fitur Template Colors). Naikkan bila ada perubahan
 // pada themeUtils.js / ThemeContext.jsx / ThemeSettingsModal.jsx.

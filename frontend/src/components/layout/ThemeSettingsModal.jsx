@@ -199,7 +199,7 @@ function ZoneCard({ zone }) {
 
   const levelStyle = {
     good: "border-retro-green/50 text-retro-green",
-    fair: "border-amber-400/50 text-amber-300",
+    fair: "border-retro-warn/50 text-retro-warn",
     low: "border-red-400/50 text-red-400",
   }[contrastLevel];
 

@@ -45,11 +45,14 @@ export default function LoginPage() {
       redirected.current = true;
       if (user.role === "admin") {
         navigate("/admin", { replace: true });
+      } else if (!auth?.isProfileComplete) {
+        // Pengguna baru: wajib melengkapi profil dulu sebelum mengakses menu.
+        navigate("/profile", { replace: true, state: { profileRequired: true } });
       } else {
         navigate("/dashboard", { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, navigate, auth?.isProfileComplete]);
 
   // Google login
   const handleGoogleLogin = () => {

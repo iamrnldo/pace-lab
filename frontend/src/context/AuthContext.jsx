@@ -1,14 +1,15 @@
 /* eslint-disable react-refresh/only-export-components */
-/* eslint-disable react-hooks/immutability */
 // src/context/AuthContext.jsx
 import {
   createContext,
   useContext,
+  useMemo,
   useState,
   useEffect,
   useCallback,
 } from "react";
 import { authService } from "@services/authService";
+import { getProfileCompletion } from "../utils/profileCompletion";
 
 const AuthContext = createContext(null);
 
@@ -16,11 +17,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token");
       if (!token) return null;
@@ -33,7 +30,19 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Dijalankan setelah render pertama (bukan setState sinkron di dalam effect).
+    let cancelled = false;
+    const run = () => {
+      if (!cancelled) checkAuth();
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [checkAuth]);
 
   const logout = useCallback(async () => {
     try {
@@ -46,10 +55,26 @@ export function AuthProvider({ children }) {
 
   const isAdmin = user?.role === "admin";
 
+  // Status kelengkapan profil (dipakai ProfileGuard, Header, dan ProfilePage).
+  const profileCompletion = useMemo(() => getProfileCompletion(user), [user]);
+
+  const value = useMemo(
+    () => ({
+      user,
+      setUser,
+      loading,
+      logout,
+      isAdmin,
+      checkAuth,
+      profileCompletion,
+      isProfileComplete: profileCompletion.isComplete,
+      isProfileLocked: profileCompletion.isLocked,
+    }),
+    [user, loading, logout, isAdmin, checkAuth, profileCompletion],
+  );
+
   return (
-    <AuthContext.Provider
-      value={{ user, setUser, loading, logout, isAdmin, checkAuth }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
