@@ -17,6 +17,7 @@
         --font-body: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
         --font-mono: "Courier New", monospace;
       }
+      @keyframes gearSpin { to { transform: rotate(360deg); } }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
         background: var(--bg);
@@ -127,7 +128,15 @@
       <div class="mock">
         <div class="topbar">
           <span>PACELAB PRO // v1.0.0</span>
-          <span><span class="clock">14:32:07</span> &nbsp;<span class="setting">⚙ TEMPLATE COLORS</span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px">
+            <span class="clock">14:32:07</span>
+            <span class="setting" style="display:inline-flex;align-items:center;padding:2px 6px">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="animation: gearSpin 3.6s linear infinite">
+                <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10.6 3.09V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 16.11 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.5 9v.09A1.65 1.65 0 0 0 22 10.6a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51.4Z" />
+              </svg>
+            </span>
+          </span>
           <span>SYSTEM ONLINE ●</span>
         </div>
         <div class="navbar">
@@ -215,7 +224,7 @@
       </table>
       <p class="note">
         Ini pratinjau warna (bukan aplikasi berjalan). Untuk mencoba sungguhan: buka aplikasi →
-        tombol <b>⚙ TEMPLATE COLORS</b> di header → pilih preset <b>WARM SAND</b>.
+        tombol <b>ikon gear berputar</b> di header → pilih preset <b>WARM SAND</b>.
       </p>
     </div>
   </body>

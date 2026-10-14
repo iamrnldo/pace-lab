@@ -76,6 +76,65 @@ test("penanda versi build konsisten (header, modal, doctor)", () => {
   assert.ok(doctor.includes("appVersion.js"), "doctor memeriksa appVersion.js");
 });
 
+test("tombol Template Colors memakai ikon gear berputar, bukan teks", () => {
+  const header = read("../components/layout/Header.jsx");
+  const compactHeader = compact(header);
+
+  // label teks tidak boleh lagi dirender di dalam tombol
+  assert.ok(
+    !/onClick=\{\(\) => setThemeOpen\(true\)\}[\s\S]{0,400}\{t\("templateColors"\)\}/.test(
+      compactHeader,
+    ),
+    "tombol di strip atas tidak boleh menampilkan teks TEMPLATE COLORS",
+  );
+  assert.ok(compactHeader.includes("GearIcon"), "tombol memakai komponen GearIcon");
+  assert.ok(
+    compactHeader.includes("animate-gear-spin"),
+    "ikon gear harus memakai animasi putar",
+  );
+  assert.ok(
+    compactHeader.includes('aria-label={t("themeSettings")}'),
+    "tombol ikon wajib punya aria-label agar tetap terbaca screen reader",
+  );
+
+  // ikon tersedia sebagai komponen terpisah & memakai currentColor
+  const icon = read("../components/ui/GearIcon.jsx");
+  assert.ok(icon.includes("stroke=\"currentColor\""));
+  assert.ok(icon.includes('aria-hidden'), "ikon dekoratif disembunyikan dari screen reader");
+  assert.ok(icon.includes('role='), "ikon mendukung mode berlabel (role=img)");
+
+  // gear harus tersedia di dua tempat: strip atas (desktop) & baris navigasi mobile
+  const gearUsages = compactHeader.match(/<GearIcon/g) || [];
+  assert.ok(
+    gearUsages.length >= 2,
+    `GearIcon dipakai minimal 2x (desktop & mobile), ditemukan ${gearUsages.length}`,
+  );
+  assert.ok(
+    /md:hidden flex items-center gap-3/.test(compactHeader),
+    "gear mobile harus berada dalam grup md:hidden bersama hamburger",
+  );
+  const mobileGroupIndex = compactHeader.indexOf("md:hidden flex items-center gap-3");
+  const hamburgerIndex = compactHeader.indexOf('aria-label="Toggle menu"');
+  const mobileGearIndex = compactHeader.indexOf("<GearIcon", compactHeader.indexOf("md:hidden flex items-center gap-3"));
+  assert.ok(
+    mobileGroupIndex < mobileGearIndex && mobileGearIndex < hamburgerIndex,
+    "ikon gear mobile harus muncul sebelum tombol hamburger di dalam grup mobile",
+  );
+  assert.ok(
+    compactHeader.includes('className="flex flex-col gap-1.5 p-1"'),
+    "tombol hamburger tetap ada (tanpa kelas md:hidden ganda karena sudah di grup)",
+  );
+  assert.ok(
+    !compactHeader.includes('{t("templateColors")}'),
+    "entri teks TEMPLATE COLORS di dropdown mobile sudah tidak diperlukan",
+  );
+
+  // animasi didefinisikan di tailwind
+  const tailwind = read("../../tailwind.config.js");
+  assert.ok(tailwind.includes("gear-spin"), "animasi gear-spin ada di tailwind.config.js");
+  assert.ok(tailwind.includes("gearSpin"), "keyframes gearSpin didefinisikan");
+});
+
 test("tersedia npm run doctor untuk diagnosa setup lokal", () => {
   const pkg = JSON.parse(read("../../package.json"));
 

@@ -31,6 +31,8 @@ export default {
         "slide-up": "slideUp 0.6s ease-out",
         "pulse-green": "pulseGreen 2s ease-in-out infinite",
         "bounce-slow": "bounce 2s infinite",
+        "gear-spin": "gearSpin 3.6s linear infinite",
+        "gear-spin-fast": "gearSpin 1.1s linear infinite",
       },
       keyframes: {
         marquee: {
@@ -48,6 +50,10 @@ export default {
         slideUp: {
           "0%": { transform: "translateY(30px)", opacity: "0" },
           "100%": { transform: "translateY(0)", opacity: "1" },
+        },
+        gearSpin: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
         },
         pulseGreen: {
           "0%, 100%": {

@@ -7,6 +7,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeSettingsModal from "./ThemeSettingsModal";
 import { APP_VERSION_LABEL } from "../../constants/appVersion";
+import GearIcon from "../ui/GearIcon";
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -82,24 +83,24 @@ export default function Header() {
           <span className="font-mono text-[11px] text-retro-green tracking-widest animate-blink">
             {time.toLocaleTimeString("en-US", { hour12: false })}
           </span>
-          {/* ── tombol modal pengaturan warna template ── */}
+          {/* ── tombol modal pengaturan warna template (ikon gear berputar) ── */}
           <button
             type="button"
             onClick={() => setThemeOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={themeOpen}
+            aria-label={t("themeSettings")}
             title={t("themeSettings")}
-            className="flex items-center gap-1.5 border border-retro-green/30 px-2 py-[1px]
-              font-mono text-[10px] tracking-[0.18em] text-retro-green/70
+            className="group relative flex items-center justify-center border border-retro-green/30
+              p-[5px] text-retro-green/70
               transition-colors hover:border-retro-green hover:bg-retro-green hover:text-retro-black"
           >
-            <span aria-hidden="true" className="not-italic">⚙</span>
-            {t("templateColors")}
+            <GearIcon className="h-[15px] w-[15px] animate-gear-spin group-hover:animate-gear-spin-fast motion-reduce:animate-none" />
             {!themeIsDefault && (
               <span
                 aria-hidden="true"
-                className="ml-0.5 block h-1.5 w-1.5 bg-current"
                 title={`${customCount} custom zone`}
+                className="absolute -right-[2px] -top-[2px] block h-1.5 w-1.5 bg-current"
               />
             )}
           </button>
@@ -201,30 +202,56 @@ export default function Header() {
           )}
         </div>
 
-        {/* Hamburger — mobile only */}
-        <button
-          className="md:hidden flex flex-col gap-1.5 p-1"
-          onClick={() => setMenuOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className={clsx(
-                "block h-0.5 bg-retro-green transition-all duration-200",
-                i === 1
-                  ? menuOpen
-                    ? "opacity-0 w-5"
-                    : "w-3"
-                  : menuOpen
-                    ? i === 0
-                      ? "rotate-45 translate-y-2 w-5"
-                      : "-rotate-45 -translate-y-2 w-5"
-                    : "w-5"
-              )}
-            />
-          ))}
-        </button>
+        {/* Mobile only — ikon gear (Template Colors) di sebelah hamburger */}
+        <div className="md:hidden flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setThemeOpen(true);
+              setMenuOpen(false);
+            }}
+            aria-haspopup="dialog"
+            aria-expanded={themeOpen}
+            aria-label={t("themeSettings")}
+            title={t("themeSettings")}
+            className="group relative flex items-center justify-center p-2 text-retro-green/80
+              transition-colors hover:text-retro-green"
+          >
+            <GearIcon className="h-5 w-5 animate-gear-spin group-hover:animate-gear-spin-fast motion-reduce:animate-none" />
+            {!themeIsDefault && (
+              <span
+                aria-hidden="true"
+                title={`${customCount} custom zone`}
+                className="absolute right-1 top-1 block h-1.5 w-1.5 bg-current"
+              />
+            )}
+          </button>
+
+          <button
+            className="flex flex-col gap-1.5 p-1"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+            aria-expanded={menuOpen}
+          >
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className={clsx(
+                  "block h-0.5 bg-retro-green transition-all duration-200",
+                  i === 1
+                    ? menuOpen
+                      ? "opacity-0 w-5"
+                      : "w-3"
+                    : menuOpen
+                      ? i === 0
+                        ? "rotate-45 translate-y-2 w-5"
+                        : "-rotate-45 -translate-y-2 w-5"
+                      : "w-5"
+                )}
+              />
+            ))}
+          </button>
+        </div>
       </div>
 
       {/* ── Mobile dropdown menu ── */}
@@ -252,22 +279,6 @@ export default function Header() {
               {label}
             </Link>
           ))}
-
-          <button
-            type="button"
-            onClick={() => {
-              setThemeOpen(true);
-              setMenuOpen(false);
-            }}
-            className="flex items-center justify-between font-retro text-xl tracking-widest
-              text-retro-white/70 hover:text-retro-green py-3
-              border-b border-retro-gray-light/20 transition-colors"
-          >
-            {t("templateColors")}
-            <span className="font-mono text-[10px] tracking-[0.2em] text-retro-green/60">
-              ⚙ SET
-            </span>
-          </button>
 
           {user ? (
             <>

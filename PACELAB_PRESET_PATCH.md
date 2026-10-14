@@ -67,7 +67,7 @@ supaya badge menempel pada preset terbaru.
 | Cek | Yang benar |
 | --- | --- |
 | Header aplikasi | `PACELAB PRO // v1.3.0` (kalau masih `v1.0.0` → file lama) |
-| Modal `⚙ TEMPLATE COLORS` | judul `PRESETS (6)` + chip `MONOCHROME V2` dengan badge `NEW` |
+| Tombol **ikon gear berputar** di strip atas header (desktop) dan **di samping tombol hamburger** (mobile) | judul `PRESETS (6)` + chip `MONOCHROME V2` dengan badge `NEW` |
 | Footer modal | `TEMA ENGINE v2 · 6 PRESETS` |
 | Terminal | `grep -c "mono-v2" src/utils/themeUtils.js` → `1` |
 | Terminal | `npm run doctor` → `App v1.3.0`, `Preset tema lengkap (6)`, `preset: DEFAULT COLOR / CARBON / SUNSET / MONOCHROME / MONOCHROME V2 / WARM SAND` |
