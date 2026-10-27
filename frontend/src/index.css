@@ -1,0 +1,337 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Variables ───────────────────────── */
+/* Palette template PACELAB PRO.
+   Nilai ditulis sebagai triplet RGB supaya utility Tailwind
+   (bg-retro-black, text-retro-green, dst.) tetap mendukung opacity
+   modifier: rgb(var(--retro-black) / 0.4).
+   Zona HEADER / MAIN / FOOTER bisa dioverride runtime oleh
+   ThemeContext — lihat src/utils/themeUtils.js. */
+:root {
+  --retro-black:       0 91 172;   /* background dasar   */
+  --retro-white:      255 255 255; /* teks utama         */
+  --retro-green:      223 245 255; /* accent utama       */
+  --retro-green-dark: 191 234 255; /* accent hover       */
+  --retro-green-light:  0 174 239; /* accent vivid       */
+  --retro-gray:        12 111 186; /* surface / kartu    */
+  --retro-gray-mid:    22 127 207; /* surface terang     */
+  --retro-gray-light:  92 174 226; /* border / garis     */
+  --retro-warn:       255 205 83;  /* peringatan/kunci   */
+
+  /* alias lama, tetap dipakai beberapa rule di bawah */
+  --green: rgb(var(--retro-green));
+  --black: rgb(var(--retro-black));
+  --white: rgb(var(--retro-white));
+}
+
+/* ── Base ────────────────────────────── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  background: rgb(var(--retro-black));
+}
+
+body {
+  font-family: 'Barlow Condensed', sans-serif;
+  background-color: rgb(var(--retro-black));
+  color: rgb(var(--retro-white));
+  overflow-x: hidden;
+  /* cursor: none; */
+  /* aktifkan jika mau custom cursor */
+}
+
+/* ── Scrollbar ───────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: rgb(var(--retro-black)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--retro-green)); }
+
+/* ── Selection ───────────────────────── */
+::selection {
+  background: rgb(var(--retro-green));
+  color: rgb(var(--retro-black));
+}
+
+/* ── Lenis ───────────────────────────── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+/* ── Retro Grid ──────────────────────── */
+.retro-grid {
+  background-image:
+    linear-gradient(rgb(var(--retro-green) / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--retro-green) / 0.12) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Scanlines ───────────────────────── */
+.scanlines {
+  position: relative;
+}
+.scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.02) 2px,
+    rgba(255,255,255,0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ── Marquee ─────────────────────────── */
+.marquee-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+
+.marquee-group {
+  display: flex;
+  flex-shrink: 0;
+  min-width: max-content;
+  gap: 2rem;
+}
+
+.marquee-group-compact {
+  gap: 1.25rem;
+}
+
+.marquee-track-left {
+  animation: marquee-left 60s linear infinite;
+}
+
+.marquee-track-right {
+  animation: marquee-right 60s linear infinite;
+}
+
+@keyframes marquee-left {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes marquee-right {
+  0% { transform: translate3d(-50%, 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ── Card ────────────────────────────── */
+.card-retro {
+  background: rgb(var(--retro-gray));
+  border: 2px solid rgb(var(--retro-gray-light));
+  position: relative;
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+.card-retro:hover {
+  border-color: rgb(var(--retro-green));
+  box-shadow: 4px 4px 0 rgb(var(--retro-green));
+  transform: translate(-2px, -2px);
+}
+/* corner deco */
+.card-retro::before,
+.card-retro::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgb(var(--retro-green));
+  border-style: solid;
+}
+.card-retro::before {
+  top: -2px; left: -2px;
+  border-width: 2px 0 0 2px;
+}
+.card-retro::after {
+  bottom: -2px; right: -2px;
+  border-width: 0 2px 2px 0;
+}
+
+/* ── Button ──────────────────────────── */
+.btn-retro {
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.1em;
+  border: 2px solid rgb(var(--retro-green));
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-retro:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 rgb(var(--retro-green));
+}
+.btn-retro:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgb(var(--retro-green));
+}
+.btn-retro:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Input ───────────────────────────── */
+.input-retro {
+  background: rgb(var(--retro-gray));
+  border: 2px solid rgb(var(--retro-gray-light));
+  color: rgb(var(--retro-white));
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+}
+.input-retro:focus {
+  border-color: rgb(var(--retro-green));
+  box-shadow: 0 0 0 1px rgb(var(--retro-green));
+}
+.input-retro::placeholder {
+  color: rgb(var(--retro-green-dark));
+}
+
+/* ── Text Effects ────────────────────── */
+.text-neon {
+  color: rgb(var(--retro-green));
+  text-shadow: 0 0 7px rgb(var(--retro-green)), 0 0 20px rgb(var(--retro-green) / 0.35);
+}
+.text-retro-shadow {
+  text-shadow: 3px 3px 0 rgb(var(--retro-green));
+}
+
+/* ── Tab active underline ────────────── */
+.tab-active {
+  position: relative;
+}
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0; right: 0;
+  height: 2px;
+  background: rgb(var(--retro-green));
+}
+
+/* ── Image loading / optimization ────── */
+.image-shell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.image-shell picture {
+  display: block;
+  width: 100%;
+}
+
+.image-shell img {
+  display: block;
+  width: 100%;
+}
+
+.image-reveal {
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.image-reveal.is-loaded {
+  opacity: 1;
+}
+
+.image-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgb(var(--retro-gray) / 0.28);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 1;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  z-index: 2;
+}
+
+.image-shell.is-loaded .image-loading-overlay {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.image-error-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(var(--retro-white) / 0.8);
+  background: rgb(var(--retro-black) / 0.85);
+  z-index: 3;
+}
+
+/* ── Modal ───────────────────────────── */
+.retro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 28, 52, 0.52);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.retro-modal-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.retro-modal-panel {
+  max-height: 88vh;
+  overflow: hidden;
+  border: 2px solid rgb(var(--retro-green));
+  background: rgb(var(--retro-gray));
+  box-shadow: 8px 8px 0 rgb(var(--retro-green));
+  transform: translateY(12px);
+  opacity: 0;
+  will-change: transform, opacity;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.retro-modal-panel.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.retro-modal-content {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-reveal,
+  .image-loading-overlay,
+  .retro-modal-overlay,
+  .retro-modal-panel {
+    transition: none;
+  }
+}

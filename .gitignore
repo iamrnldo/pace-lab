@@ -1,0 +1,7 @@
+.preview/
+node_modules/
+dist/
+backend/src/db/
+.env
+.env.local
+.env.*.local
